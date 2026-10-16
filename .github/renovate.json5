@@ -1,0 +1,62 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+
+  // Routine version updates for the GitHub Actions pins and the version catalog. Security fixes
+  // come from GitHub's own Dependabot alerts, so vulnerabilityAlerts is off to avoid two bots
+  // opening a PR for the same CVE.
+  extends: [
+    "config:recommended",
+    ":dependencyDashboard", // one tracking issue instead of a wall of PRs
+    "helpers:pinGitHubActionDigests", // keep `uses: owner/repo@<sha> # vX.Y.Z`
+  ],
+
+  vulnerabilityAlerts: { enabled: false },
+
+  labels: ["dependencies"],
+  rebaseWhen: "conflicted",
+
+  // Hosted runners cost nothing here, so there is no queue to protect. The cap and the weekly
+  // batch are there to keep the review bot's load predictable.
+  prConcurrentLimit: 4,
+  schedule: ["before 6am on monday"],
+
+  // Don't chase a release the day it drops. A few days lets a yanked or broken version wash out.
+  minimumReleaseAge: "3 days",
+
+  // Waits for GitHub's own auto-merge, so every required check has to be green first.
+  platformAutomerge: true,
+
+  // Submodule pointers are bumped on purpose, in a commit of their own (CLAUDE.md). Renovate must
+  // not touch .gitmodules or the pins, and the submodules' own build files belong to their repos.
+  enabledManagers: ["gradle", "github-actions"],
+  ignorePaths: ["design-system/**", "binge-companions/**", "binge-ci/**"],
+
+  packageRules: [
+    {
+      matchUpdateTypes: ["patch"],
+      automerge: true,
+    },
+    {
+      // Workflow files are governed paths: the agent workflows read them as rules, and a bad edit
+      // disables the checks that would have caught it. A human merges every one, patch included.
+      matchManagers: ["github-actions"],
+      automerge: false,
+      groupName: "github actions",
+    },
+    {
+      // The toolchain has to move with the included builds: the Kotlin version comes from
+      // binge-companions, and a bump here ahead of it or binge-design-system breaks the build. Group it, never
+      // automerge it, and only open the PR once a maintainer approves it on the dashboard.
+      matchPackageNames: [
+        "/^org\\.jetbrains\\.kotlin[.:]/",
+        "/^com\\.google\\.devtools\\.ksp/",
+        "/^com\\.android\\.(tools\\.build|application|library)/",
+        "/^com\\.android\\.compose\\.screenshot/",
+        "/^androidx\\.compose\\./",
+      ],
+      groupName: "toolchain (coordinate with consumers)",
+      automerge: false,
+      dependencyDashboardApproval: true,
+    },
+  ],
+}

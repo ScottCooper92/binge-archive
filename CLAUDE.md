@@ -1,0 +1,178 @@
+# CLAUDE.md
+
+Conventions for this repository. The agent workflows in `.github/workflows/` read this file from
+`main` and treat it as the source of truth; so should you.
+
+## What this repository is
+
+An Android companion app for [Binge](https://github.com/ScottCooper92), on phones and Android TV.
+It finds public-domain and openly licensed films on the Internet Archive and hands them to Binge
+as playback sources. It is the first companion to serve the STREAM contract.
+
+Binge ships as a plain TMDB client with no bundled providers. A companion is a separate APK that
+exports a bound Android Service implementing a contract from
+[binge-companions](https://github.com/ScottCooper92/binge-companions). This one implements
+`binge.companion.stream.v1`. **Nothing in this repository defines a contract.** A change to the
+wire format is a PR against binge-companions.
+
+The plan is binge-companions' epic
+[#141](https://github.com/ScottCooper92/binge-companions/issues/141) and its phases there,
+#142 to #149.
+Status is pre-alpha: the repository is bootstrapped, and the index, the resolver and the Service
+are still to come.
+
+The contracts, the SDK and the design system are consumed as source. `binge-companions/` and
+`design-system/` are git submodules, included as composite builds in `settings.gradle.kts`.
+`binge-ci/` is a third, for the shared Gradle gates. `.gitmodules` is an agent-governed path, so
+an author bot's commit can revert a change to it: bump a submodule in a commit of its own, and check
+the pins after any bot push.
+
+The screens wear the design system's `BingeExpressiveTheme` and `BingeTvTheme`, with this app's
+own emerald `ArchiveBrand` in place of Binge's amber (`theme/ArchiveTheme.kt`).
+
+## The one rule everything else serves
+
+**Only openly licensed items are returned.**
+
+An Archive item becomes a source only if its licence is on the allowlist: the Public Domain Mark,
+the Creative Commons public-domain URL, CC0 and CC BY. Nothing else, and there is no setting that
+loosens it. Public Domain Mark items are returned everywhere. Each source's label names its licence
+(for example "Public domain (US)"), so the host can show it on the row.
+
+This rule is why the app may exist at all. Widening the allowlist, or a code path that skips the
+check, is never a fix for a test or a coverage gap. It is a decision for the maintainer in an issue.
+
+## Talking to the host
+
+- **Feature detection never uses version numbers.** The host learns what this app can do from the
+  handshake's capability set, and ignores enum values it does not know.
+- **Errors are gRPC status codes**, never fields on a response message. `Resolve` answers in three
+  distinct ways, and the resolver reports which one applies:
+  - a film the index knows with no licit copy completes with no sources (OK, empty);
+  - a TMDB id the index does not know is `NOT_FOUND`;
+  - an id the index knows that is not a film is `INVALID_ARGUMENT`.
+- **Movies only in v1.** A series resolve validates its `EpisodeRef` and completes empty.
+- **`mime_type` comes from the Archive file's format**, and is only ever a video type
+  (`video/mp4`, `video/webm`, `video/ogg` and so on). The host drops anything else.
+- **Media is identified as media type + TMDB id.** Translating that into Archive identifiers is
+  this app's job, and it lives in one clearly named place.
+- **Partial results are normal.** `Resolve` streams sources as it finds them and stops all work
+  when the call is cancelled. The host reads at most fifty.
+- The exported Service is the attack surface. Whatever guards it is load-bearing, and is not
+  loosened to make a test pass.
+
+## Talking to Wikidata and the Archive
+
+- **Keyless.** No API key, no account and no sign-in. Whether to add a TMDB fallback is decided
+  after binge-companions#148 measures coverage.
+- One HTTP client for the whole app, with fixed timeouts. Both hosts are public and served over
+  HTTPS; the network security config trusts system CAs only and refuses cleartext.
+- No caching beyond the on-device index.
+- **Coverage misses are logged on the device, by route**, for binge-companions#148's measurement.
+  They never leave the device: no analytics, no crash reporting and no upload of any kind.
+- The app stores no user data. The index is public metadata it can rebuild. Backup is off.
+
+## Kotlin, Gradle and Android
+
+- Kotlin via AGP's built-in support, `jvmTarget` 17, built and tested on JDK 21.
+- `compileSdk` 37, `minSdk` 26, `targetSdk` 36, and the AGP in `libs.versions.toml`, matching
+  binge-seerr.
+- The `org.jetbrains.kotlin.android` plugin is declared `apply false` in the root build and never
+  applied. It puts the catalog's Kotlin on AGP's classpath. See the comment in `libs.versions.toml`.
+- The version catalog is `libs.versions.toml` at the repository root, not under `gradle/`.
+- Package `io.github.scottcooper92.binge.archive`; a debug build adds `.debug`.
+- Tests are JUnit 4. Scope Gradle to the module (`:app:testDebugUnitTest`) when you are checking
+  one thing.
+- A Robolectric test needs no `@Config` for the SDK: `app/src/test/resources/robolectric.properties`
+  pins `sdk=34`, and `RobolectricDefaultsTest` asserts it. `@Config` is for what a test varies, a
+  `qualifiers` string say.
+- `runCatching` is banned in `src/main` by detekt. Use the SDK's `attempt`
+  (`com.binge.companion.sdk`): `runCatching` also catches the cancellation a cancelled scope sends.
+- Every user-visible string comes from `strings.xml`. The app is English only for now.
+
+## Gates
+
+`./gradlew build` is the whole gate, and everything below turns it red. `app/build.gradle.kts` is
+where to confirm the list.
+
+- Kotlin compilation, and the debug and release builds (R8 on release).
+- The unit tests (`:app:testDebugUnitTest`).
+- `ktlintCheck`.
+- `detekt`, with type resolution, against the root `detekt.yml`. There is no baseline: the gate is
+  zero findings. Keep it that way rather than creating one.
+- Android lint (`:app:lint`), with `UnusedResources` pinned to error.
+- `koverVerify`: line coverage of `:app` below **90%**. The floor was measured (the first suite sat
+  at 96.4%), not inherited. Generated code, the Activity and composables are excluded; nothing is
+  excluded for merely lacking tests. Raise it as the index and resolver land; never lower it.
+- `validateDebugScreenshotTest`: a `@PreviewTest` frame that no longer renders like its committed
+  PNG. `app/build.gradle.kts` wires it into `check` by hand.
+- `checkTvMaterialSeparation`: a Material 3 import under `ui/tv`, or a tv-material import anywhere
+  else. `theme/ArchiveTheme.kt` is the one allowed crossing.
+
+detekt's wiring and `checkTvMaterialSeparation` are binge-ci's shared gates, from the `binge-ci`
+submodule. Keep that submodule on the same binge-ci release as the `uses:` pins in
+`.github/workflows/`, and move them together.
+
+CI runs the same tasks as four jobs in parallel (`checks`, `tests`, `screenshots`, `release`), plus
+`submodule-pins` on a PR, which fails a pin its own repository has not merged unless the PR carries
+`hold`. A last job, `build`, is green only if all of them are. It is the check branch protection
+requires, and the one the bots read. `ci.yml` explains the split.
+
+There is no `buf` here, so do not report a finding as though one had caught it.
+
+### Screenshot frames
+
+Frames live in `app/src/screenshotTest/kotlin/…`, each a `@Composable` with `@PreviewTest` and one
+of the multipreviews in `preview/ArchivePreviewMatrices.kt`. The PNGs are committed under
+`app/src/screenshotTestDebug/reference/…`. When a change is meant to alter a frame, re-record with
+`./gradlew :app:updateDebugScreenshotTest`, look at the new PNGs, and commit them with the code.
+New UI comes with its frames in the same PR.
+
+**Never silence a gate instead of fixing it.** Do not add a ktlint baseline or a `ktlint-disable`
+comment (`./gradlew ktlintFormat` is the fix), a `lint-baseline.xml`, `abortOnError = false`, a
+`detekt-baseline.xml` or a `@Suppress` to get past detekt, and do not exclude a source set from
+`check` or lower the kover floor.
+
+## Follow-ups
+
+Anything worth doing that does not belong in the diff in front of you becomes a GitHub issue, not
+a TODO comment and not a line in a PR description.
+
+The test is **scope, not severity**. A small problem that reaches beyond the current diff is still
+an issue; a serious problem inside the diff is a change to make now. Dedupe against the open
+backlog before filing, and use the labels the repository already has.
+
+## Commits and pull requests
+
+**Open every PR from `.github/pull_request_template.md`.** Tick only the checks you ran locally on
+the final head, and say what you left to CI and why. The review bot reads the ticks against this
+PR's earlier CI runs, so a ticked check that failed one of them is a finding.
+
+- Conventional-commit subjects (`feat:`, `fix:`, `docs:`, `chore:`), imperative mood.
+- One reviewable idea per PR, one PR per issue.
+- A PR that changes how this app talks to the host says which contract version and which
+  capabilities it relies on.
+- Documentation is plain, direct English: short sentences, one idea each.
+
+## Agent workflows
+
+`.github/workflows/` holds a review bot and four author bots, from binge-ci's shared workflows.
+They act only on PRs carrying the `agent` label. An approved, green PR merges on its own, with a
+merge commit.
+
+**That label is maintainers-only.** Applying it grants an agent code execution with this
+repository's secrets in scope. Do not apply it to a PR you have not read, and never to one from a
+fork. The workflows refuse fork PRs, and on a public repository that guard is the load-bearing
+control.
+
+**Every PR gets `agent`. Add `hold` only when a human must do the merging.** `hold` withholds the
+bot's merge: the PR is still reviewed and kept current, but a maintainer lands it. Add it alongside
+`agent` only when the PR:
+
+- changes how the bots review or merge (`.ai/agents/` or `.github/workflows/`);
+- needs a check on a device first; or
+- isn't ready to merge (a stack to land by hand, or a PR waiting on a decision or another
+  repository).
+
+Everything else, including `CLAUDE.md`, skills and docs, takes `agent` alone and merges once
+reviewed and green.

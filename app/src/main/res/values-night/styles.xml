@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The design system's dark background, so the window and the first screen agree. -->
+    <style name="Theme.Archive" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#FF0E0E0F</item>
+    </style>
+</resources>

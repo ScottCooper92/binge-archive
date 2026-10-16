@@ -1,0 +1,131 @@
+# detekt config for this repository. binge-ci's gate sets `buildUponDefaultConfig = true`, so this
+# file records only DEVIATIONS from detekt's defaults.
+#
+# Taken from binge-seerr's detekt.yml, which is where the tuning was done, less the entries that
+# name that app's own files. detekt is 2.x, through binge-ci's shared gate, so the names here are
+# 2.x's. Formatting is ktlint's job: MaxLineLength and WildcardImport are off so the two cannot
+# double-report.
+
+complexity:
+  CyclomaticComplexMethod:
+    # @Composable UI branches by construction (one arm per state), which is not logic complexity.
+    ignoreSimpleWhenEntries: true
+    ignoreAnnotated: ['Composable']
+  CognitiveComplexMethod:
+    active: true
+    # Above the default: Compose layout nesting inflates the score structurally.
+    allowedComplexity: 24
+  NestedBlockDepth:
+    active: true
+    allowedDepth: 4
+  LongParameterList:
+    # A screen composable threads one lambda per action, which is idiomatic Compose.
+    allowedFunctionParameters: 11
+    allowedConstructorParameters: 15
+    ignoreDefaultParameters: true
+  LongMethod:
+    # A screen body is a flat tree of child composables, so line count tracks UI surface.
+    allowedLines: 89
+  TooManyFunctions:
+    # A file of preview functions has one per frame; the count tracks what is previewed.
+    excludes:
+      - '**/*Previews.kt'
+    allowedFunctionsPerFile: 15
+    allowedFunctionsPerClass: 15
+    allowedFunctionsPerInterface: 15
+    allowedFunctionsPerObject: 15
+    allowedFunctionsPerEnum: 15
+
+potential-bugs:
+  # The `!!` ban. It needs type resolution, which binge-ci's gate wires; without it the rule loads
+  # and never fires.
+  UnsafeCallOnNullableType:
+    active: true
+  # Off: type resolution turns these on too, and UnreachableCode mis-resolves Android platform types
+  # and calls live code dead.
+  UnreachableCode:
+    active: false
+  UnnecessarySafeCall:
+    active: false
+
+coroutines:
+  InjectDispatcher:
+    # A DI provider is the injection point, so naming a dispatcher there is what the rule wants.
+    ignoreAnnotated: ['Provides']
+    active: true
+  RedundantSuspendModifier:
+    # Off: type resolution mishandles inline suspend lambdas and flags needed modifiers.
+    active: false
+
+exceptions:
+  # A swallowed exception in the Service becomes a wrong status on the wire, which the host has to
+  # debug from the far side of a Binder call.
+  SwallowedException:
+    active: true
+  TooGenericExceptionCaught:
+    active: true
+
+naming:
+  # Off: a screen file holds composable functions, and the rule would name it after a helper class.
+  MatchingDeclarationName:
+    active: false
+  FunctionNaming:
+    # @Composable functions are PascalCase by convention.
+    ignoreAnnotated: ['Composable']
+  NoNameShadowing:
+    active: false
+
+style:
+  # The SDK's `attempt` (com.binge.companion.sdk) is the one way to turn a throw into a Result here:
+  # `runCatching` also catches the CancellationException a cancelled scope sends.
+  ForbiddenMethodCall:
+    active: true
+    methods:
+      - value: 'kotlin.runCatching'
+        reason: 'runCatching swallows cancellation. Use attempt from com.binge.companion.sdk.'
+  ReturnCount:
+    active: true
+    # Leading guard clauses are a readability win; they do not count.
+    max: 3
+    excludeGuardClauses: true
+  MagicNumber:
+    active: true
+    excludes: ['**/*PreviewData.kt', '**/*Previews.kt']
+    ignoreNumbers: ['-1', '0', '1', '2']
+    ignoreHashCodeFunction: true
+    ignoreAnnotation: true
+    ignoreNamedArgument: true
+    ignoreEnums: true
+    ignorePropertyDeclaration: true
+    ignoreConstantDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreLocalVariableDeclaration: true
+  # Deferred work is a GitHub issue, not a comment (CLAUDE.md > Follow-ups).
+  ForbiddenComment:
+    active: true
+    comments:
+      - reason: 'Track deferred work in a GitHub Issue, not a TODO comment (CLAUDE.md).'
+        value: 'TODO'
+      - reason: 'Track deferred work in a GitHub Issue, not a FIXME comment (CLAUDE.md).'
+        value: 'FIXME'
+      - reason: 'STOPSHIP markers must be resolved before shipping; open a GitHub Issue instead.'
+        value: 'STOPSHIP'
+  MaxLineLength:
+    active: false
+  WildcardImport:
+    active: false
+  AbstractClassCanBeConcreteClass:
+    active: true
+    ignoreAnnotated: ['Module']
+  AbstractClassCanBeInterface:
+    active: true
+    ignoreAnnotated: ['Module']
+  UseOrEmpty:
+    active: false
+  # Off: in 2.0.0-alpha.6 it reports a constructor property as unused when its only reads sit inside
+  # nested lambdas or are a callable reference.
+  UnusedPrivateProperty:
+    active: false
+  UnusedPrivateFunction:
+    # @Preview composables are called by the Compose tooling, not by app code.
+    ignoreAnnotated: ['Preview', 'PreviewParameter']
