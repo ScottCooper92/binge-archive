@@ -40,6 +40,12 @@ class IndexRepository(
         return dao.knowsItem(identifier)
     }
 
+    /** The most recent refresh, successful or not: a failed one is what the status screen warns about. */
+    fun latestRefresh(): Flow<RefreshLogEntity?> = dao.latestRefresh()
+
+    /** How many films the index can place. Read without seeding: the status screen shows what is there. */
+    fun filmCount(): Flow<Int> = dao.filmCount()
+
     /** The last successful refresh, seed or network; what the status screen shows as freshness. */
     fun lastSuccess(): Flow<RefreshLogEntity?> = dao.lastSuccess()
 

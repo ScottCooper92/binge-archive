@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.kover)
     alias(libs.plugins.screenshot)
     id("binge.gates.tv-material-separation")
+    id("binge.gates.translation-staleness")
 }
 
 // The exported schema is committed: a change to a table is a decision made in review.
@@ -40,10 +41,24 @@ android {
         compose = true
     }
 
-    // UnusedResources is pinned to error: a removed call site can otherwise leave its string behind
-    // with a green build.
+    // Generates the locale config from the values-<lang> directories, so Android 13+ offers this app
+    // in the per-app language picker.
+    androidResources { generateLocaleConfig = true }
+
+    // A locale is complete or it does not exist: the alternative is Android's per-string fallback,
+    // half a screen in each language. Adding an English string means adding its Spanish in the same
+    // change. UnusedResources is pinned too: a removed call site can otherwise leave its string behind.
     lint {
-        error += setOf("UnusedResources")
+        error +=
+            setOf(
+                "MissingTranslation",
+                "ExtraTranslation",
+                "MissingQuantity",
+                "UnusedQuantity",
+                "StringFormatMatches",
+                "StringFormatCount",
+                "UnusedResources",
+            )
     }
 
     // The release keystore is never in the repository: the values come from keystore.properties at
@@ -110,6 +125,13 @@ android {
     }
 }
 
+// A reworded English string is the one translation drift lint cannot see, so the hash of every
+// translated source string is committed at the root and `check` fails when one moves. Re-read the
+// translation it names, then re-stamp with `updateTranslationHashes`. The gate is binge-ci's.
+translationStaleness {
+    includes.set(listOf("app/src/*/res/values/strings.xml", "app/src/*/res/values-*/strings.xml"))
+}
+
 // Material 3 and tv-material each ship a MaterialTheme under the same simple name, so the wrong
 // import compiles and renders subtly wrong. binge-ci's gate keeps `ui/tv` on tv-material and
 // everything else off it. ArchiveTheme.kt is the one crossing: it projects this app's colours into
@@ -134,6 +156,8 @@ dependencies {
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.material3)
     implementation(libs.activity.compose)
+    implementation(libs.lifecycle.viewmodel.compose)
+    implementation(libs.lifecycle.runtime.compose)
     implementation(libs.room.runtime)
     ksp(libs.room.compiler)
     implementation(libs.work.runtime)

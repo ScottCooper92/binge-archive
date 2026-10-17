@@ -1,0 +1,217 @@
+package io.github.scottcooper92.binge.archive.ui.status
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.outlined.ClearAll
+import androidx.compose.material.icons.outlined.CloudOff
+import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.Gavel
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.outlined.Public
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.stringResource
+import com.binge.designsystem.ErrorKind
+import com.binge.designsystem.component.BingeLoadingIndicator
+import com.binge.designsystem.component.ItemGroup
+import com.binge.designsystem.component.ListItem
+import com.binge.designsystem.component.ListItemDestination
+import com.binge.designsystem.formatRelativeOrAbsolute
+import com.binge.designsystem.template.BingeScreenScaffold
+import com.binge.designsystem.template.ErrorScreen
+import com.binge.designsystem.template.ScreenBody
+import com.binge.designsystem.template.screenListPadding
+import io.github.scottcooper92.binge.archive.R
+import java.text.NumberFormat
+import com.binge.designsystem.R as DesR
+
+/**
+ * The phone's status screen: what this app is, the index, who the data comes from, and this device's
+ * recently resolved titles and reports. [now] is a parameter so frames pass a fixed instant.
+ */
+@Composable
+fun StatusScreen(
+    state: StatusUiState,
+    actions: StatusActions,
+    modifier: Modifier = Modifier,
+    now: Long = System.currentTimeMillis(),
+) {
+    BingeScreenScaffold(title = stringResource(R.string.app_label), modifier = modifier) { padding ->
+        ScreenBody(padding) { _ ->
+            when (state) {
+                StatusUiState.Loading ->
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
+                StatusUiState.Error -> ErrorScreen(kind = ErrorKind.Generic, onRetry = actions.onRetry)
+                is StatusUiState.Ready -> StatusGroups(state, actions, now, padding)
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatusGroups(
+    state: StatusUiState.Ready,
+    actions: StatusActions,
+    now: Long,
+    padding: androidx.compose.foundation.layout.PaddingValues,
+) {
+    LazyColumn(
+        contentPadding = padding.screenListPadding(),
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
+    ) {
+        item { ItemGroup(title = stringResource(R.string.status_about_title), rows = aboutRows(actions)) }
+        item { ItemGroup(title = stringResource(R.string.status_index_title), rows = indexRows(state, actions, now)) }
+        item { ItemGroup(title = stringResource(R.string.status_sources_title), rows = sourceRows(actions)) }
+        item { ItemGroup(title = stringResource(R.string.status_recent_title), rows = recentRows(state.recent, actions, now)) }
+        item { ItemGroup(title = stringResource(R.string.status_reported_title), rows = reportedRows(state.reported, actions)) }
+    }
+}
+
+@Composable
+private fun aboutRows(actions: StatusActions): List<ListItem> =
+    listOf(
+        ListItem(
+            icon = Icons.Outlined.Info,
+            label = stringResource(R.string.status_about_headline),
+            detail = stringResource(R.string.status_about_body),
+            supportingMaxLines = ABOUT_LINES,
+            clickable = false,
+        ),
+        ListItem(
+            icon = Icons.Outlined.Gavel,
+            label = stringResource(R.string.status_licences_row),
+            detail = stringResource(R.string.status_licences_detail),
+            onClick = actions.onOpenLicences,
+        ),
+    )
+
+@Composable
+private fun indexRows(
+    state: StatusUiState.Ready,
+    actions: StatusActions,
+    now: Long,
+): List<ListItem> =
+    buildList {
+        add(
+            ListItem(
+                icon = Icons.Outlined.Inventory2,
+                label = stringResource(R.string.status_films_linked),
+                detail = NumberFormat.getIntegerInstance(LocalConfiguration.current.locales[0]).format(state.filmCount),
+                clickable = false,
+            ),
+        )
+        add(
+            ListItem(
+                icon = Icons.Outlined.Schedule,
+                label = stringResource(R.string.status_last_refreshed),
+                detail = formatRelativeOrAbsolute(state.lastRefreshedAt, now) ?: stringResource(R.string.status_never_refreshed),
+                clickable = false,
+            ),
+        )
+        if (state.lastRefreshFailed) {
+            add(
+                ListItem(
+                    icon = Icons.Outlined.CloudOff,
+                    iconTint = MaterialTheme.colorScheme.error,
+                    label = stringResource(R.string.status_refresh_failed),
+                    detail = stringResource(R.string.status_refresh_failed_detail),
+                    detailColor = MaterialTheme.colorScheme.error,
+                    supportingMaxLines = 2,
+                    clickable = false,
+                ),
+            )
+        }
+        add(
+            ListItem(
+                icon = Icons.Outlined.Refresh,
+                label = stringResource(R.string.status_refresh_now),
+                detail = if (state.refreshing) stringResource(R.string.status_refresh_waiting) else null,
+                destination = ListItemDestination.Action,
+                loading = state.refreshing,
+                onClick = actions.onRefreshNow,
+            ),
+        )
+    }
+
+@Composable
+private fun sourceRows(actions: StatusActions): List<ListItem> =
+    listOf(
+        ListItem(
+            icon = Icons.Outlined.Inventory2,
+            label = stringResource(R.string.status_archive),
+            detail = stringResource(R.string.status_archive_detail),
+            destination = ListItemDestination.External,
+            onClick = { actions.onOpenUrl(StatusLinks.ARCHIVE) },
+        ),
+        ListItem(
+            icon = Icons.Outlined.Public,
+            label = stringResource(R.string.status_wikidata),
+            detail = stringResource(R.string.status_wikidata_detail),
+            destination = ListItemDestination.External,
+            onClick = { actions.onOpenUrl(StatusLinks.WIKIDATA) },
+        ),
+    )
+
+@Composable
+private fun recentRows(
+    recent: List<RecentTitle>,
+    actions: StatusActions,
+    now: Long,
+): List<ListItem> {
+    if (recent.isEmpty()) {
+        return listOf(ListItem(icon = Icons.Filled.Movie, label = stringResource(R.string.status_recent_empty), clickable = false))
+    }
+    return recent.map { title ->
+        ListItem(
+            icon = Icons.Filled.Movie,
+            label = title.title,
+            detail = formatRelativeOrAbsolute(title.resolvedAt, now),
+            destination = ListItemDestination.External,
+            onClick = { actions.onOpenUrl(StatusLinks.item(title.identifier)) },
+        )
+    } +
+        ListItem(
+            icon = Icons.Outlined.ClearAll,
+            label = stringResource(R.string.status_recent_clear),
+            destination = ListItemDestination.Action,
+            onClick = actions.onClearRecent,
+        )
+}
+
+@Composable
+private fun reportedRows(
+    reported: List<String>,
+    actions: StatusActions,
+): List<ListItem> {
+    if (reported.isEmpty()) {
+        return listOf(ListItem(icon = Icons.Outlined.Flag, label = stringResource(R.string.status_reported_empty), clickable = false))
+    }
+    return reported.map { identifier ->
+        ListItem(
+            icon = Icons.Outlined.Flag,
+            label = identifier,
+            detail = stringResource(R.string.status_reported_detail),
+            destination = ListItemDestination.External,
+            onClick = { actions.onOpenUrl(StatusLinks.item(identifier)) },
+        )
+    } +
+        ListItem(
+            icon = Icons.Outlined.ClearAll,
+            label = stringResource(R.string.status_reported_clear),
+            destination = ListItemDestination.Action,
+            onClick = actions.onClearReported,
+        )
+}
+
+private const val ABOUT_LINES = 4

@@ -24,7 +24,7 @@ class ArchiveCompanionService : IntegrationService() {
             ArchiveStreamService(
                 resolver = graph.resolver,
                 index = graph.index,
-                reports = graph.reports,
+                records = graph.records,
                 versionName = BuildConfig.VERSION_NAME,
                 errors = ArchiveErrors(AndroidUserMessages(this)),
             ),

@@ -13,7 +13,7 @@ import com.binge.companion.contracts.stream.v1.SourceProblem
 import com.binge.companion.contracts.stream.v1.StreamServiceGrpcKt
 import com.binge.companion.contracts.v1.MediaType
 import io.github.scottcooper92.binge.archive.index.IndexRepository
-import io.github.scottcooper92.binge.archive.reports.SourceReports
+import io.github.scottcooper92.binge.archive.reports.DeviceRecords
 import io.github.scottcooper92.binge.archive.resolve.ResolveOutcome
 import io.github.scottcooper92.binge.archive.resolve.TitleResolver
 import io.github.scottcooper92.binge.archive.resolve.unusableRequest
@@ -41,7 +41,7 @@ import kotlinx.coroutines.withContext
 class ArchiveStreamService(
     private val resolver: TitleResolver,
     private val index: IndexRepository,
-    private val reports: SourceReports,
+    private val records: DeviceRecords,
     private val versionName: String,
     private val errors: ArchiveErrors,
     /** Where every call runs: never a Binder thread, since a resolve reads response bodies and the index. */
@@ -111,7 +111,7 @@ class ArchiveStreamService(
                 // The contract lets an unknown or unspecified problem be read as OTHER.
                 else -> SourceProblem.SOURCE_PROBLEM_OTHER
             }
-        reports.record(identifier, problem.name)
+        records.record(identifier, problem.name)
         return ReportSourceResponse.getDefaultInstance()
     }
 

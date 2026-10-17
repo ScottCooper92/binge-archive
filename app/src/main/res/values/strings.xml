@@ -1,17 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_label">Binge Archive</string>
-    <!-- The name Binge shows for this companion. A proper noun pair, not translated. -->
+    <string name="app_label" translatable="false">Binge Archive</string>
+    <!-- The name Binge shows for this companion. A proper noun, not translated. -->
     <string name="companion_label" translatable="false">Internet Archive</string>
     <!-- Shown by Binge on this companion's row when a film is not on the Internet Archive. -->
     <string name="not_on_archive">Not on the Internet Archive</string>
-    <string name="home_headline">Free films for Binge</string>
-    <string name="home_body">This app finds public-domain and openly licensed films on the Internet Archive, and Binge plays them. It only returns items with an open licence. Open a film in Binge to see whether a copy is here.</string>
+
+    <!-- Source labels and subtitles, as Binge shows them on a row. -->
     <string name="licence_public_domain">Public domain</string>
     <string name="licence_public_domain_us">Public domain (US)</string>
-    <string name="licence_cc0">CC0</string>
-    <string name="licence_cc_by">CC BY %1$s</string>
+    <string name="licence_cc0" translatable="false">CC0</string>
+    <string name="licence_cc_by" translatable="false">CC BY %1$s</string>
     <string name="source_label_with_year">%1$s (%2$d) · %3$s</string>
     <string name="source_label_without_year">%1$s · %2$s</string>
     <string name="subtitle_automatic">Automatic captions</string>
+
+    <!-- The status screen. -->
+    <string name="status_loading">Loading the index…</string>
+    <string name="status_about_title">What this is</string>
+    <string name="status_about_headline">Free films for Binge</string>
+    <string name="status_about_body">This app finds copies of films on the Internet Archive for Binge to play. It only offers items in the public domain or under a Creative Commons licence.</string>
+    <string name="status_licences_row">Which licences</string>
+    <string name="status_licences_detail">What may be offered, and why</string>
+    <string name="status_index_title">Index</string>
+    <string name="status_films_linked">Films linked</string>
+    <string name="status_last_refreshed">Last refreshed</string>
+    <string name="status_never_refreshed">Not yet</string>
+    <string name="status_refresh_failed">The last refresh failed</string>
+    <string name="status_refresh_failed_detail">The previous index is still in use. It will try again.</string>
+    <string name="status_refresh_now">Refresh now</string>
+    <string name="status_refresh_waiting">Waiting for a network…</string>
+    <string name="status_sources_title">Powered by</string>
+    <string name="status_archive" translatable="false">Internet Archive</string>
+    <string name="status_archive_detail" translatable="false">archive.org</string>
+    <string name="status_wikidata" translatable="false">Wikidata</string>
+    <string name="status_wikidata_detail" translatable="false">wikidata.org</string>
+    <string name="status_recent_title">Recently resolved</string>
+    <string name="status_recent_empty">Nothing yet. Open a film in Binge.</string>
+    <string name="status_recent_clear">Clear this list</string>
+    <string name="status_reported_title">Reported</string>
+    <string name="status_reported_empty">No copies reported</string>
+    <string name="status_reported_detail">Offered last for 30 days</string>
+    <string name="status_reported_clear">Clear reports</string>
+
+    <!-- The licence explainer. -->
+    <string name="licences_title">Which licences</string>
+    <string name="licences_intro">A copy is offered only if the Internet Archive lists it under one of these. Anything else is never offered, and there is no setting to change that.</string>
+    <string name="licences_allowed">Allowed</string>
+    <string name="licences_pdm_detail">Public Domain Mark: no known copyright anywhere</string>
+    <string name="licences_pd_us_detail">Creative Commons public domain: no copyright in the United States</string>
+    <string name="licences_cc0_detail">The rights holder gave up every right</string>
+    <string name="licences_cc_by" translatable="false">CC BY</string>
+    <string name="licences_cc_by_detail">Free to share, with credit to the maker</string>
+    <string name="licences_not_allowed">Not offered: share-alike, non-commercial and no-derivatives licences, and items with no licence.</string>
 </resources>

@@ -46,6 +46,21 @@ annotation class ArchiveScreenPreviews
 @Preview(name = "font20", device = PHONE_PORTRAIT_SPEC, fontScale = 2f, uiMode = UI_MODE_NIGHT_YES, locale = SOURCE_LOCALE)
 annotation class ArchiveFontScalePreviews
 
+/** The phone cell alone, for a state of a screen whose layout frame has the matrix. */
+@PreviewWrapper(ArchiveScreenshotThemeWrapper::class)
+@Preview(name = "phone", device = PHONE_PORTRAIT_SPEC, uiMode = UI_MODE_NIGHT_YES, locale = SOURCE_LOCALE)
+annotation class ArchiveScreenStatePreview
+
+/** One phone cell in Spanish, whose copy runs longer than English. */
+@PreviewWrapper(ArchiveScreenshotThemeWrapper::class)
+@Preview(name = "es", device = PHONE_PORTRAIT_SPEC, uiMode = UI_MODE_NIGHT_YES, locale = "es")
+annotation class ArchiveSpanishPreviews
+
+/** A television screen root in Spanish. */
+@PreviewWrapper(ArchiveTvScreenshotThemeOnBlackWrapper::class)
+@Preview(name = "tv-es", device = TV_PREVIEW_SPEC, uiMode = UI_MODE_NIGHT_YES, locale = "es")
+annotation class ArchiveTvSpanishScreenPreviews
+
 /** A television screen root, with the window's black behind it. */
 @PreviewWrapper(ArchiveTvScreenshotThemeOnBlackWrapper::class)
 @Preview(name = "tv", device = TV_PREVIEW_SPEC, uiMode = UI_MODE_NIGHT_YES, locale = SOURCE_LOCALE)

@@ -157,4 +157,19 @@ class IndexRepositoryTest {
             assertEquals(RefreshSource.NETWORK, index.lastSuccess().first()?.source)
             assertEquals(3_000L, index.lastSuccess().first()?.finishedAt)
         }
+
+    @Test
+    fun `the film count and the latest refresh are read for the status screen`() =
+        runTest {
+            val index = repository()
+            assertEquals(0, index.filmCount().first())
+
+            index.ensureSeeded()
+            now = 2_000L
+            index.recordFailure("offline")
+
+            // 653, 10331 and 2973 (through its IMDb id), plus the 10331 the IMDb route also reaches: three films.
+            assertEquals(3, index.filmCount().first())
+            assertFalse(checkNotNull(index.latestRefresh().first()).succeeded)
+        }
 }

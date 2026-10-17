@@ -64,6 +64,21 @@
         </activity>
 
         <!--
+            Binge's "manage" row. Binge resolves it by this action and this package and starts it for a
+            result, which gives the Activity a callingPackage to check before it opens the status screen.
+            exported="true" makes it reachable by every app, so the check is what guards it.
+        -->
+        <activity
+            android:name=".SettingsHandOffActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="com.binge.companion.SETTINGS" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!--
             exported="true" is the integration surface: Binge reaches this Service with bindService,
             and what guards it is the caller policy in ArchiveCompanionService, not the manifest.
             android:process is absent so the Service runs under this app's own uid, which is what the

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="not_on_archive">No está en Internet Archive</string>
+
+    <string name="licence_public_domain">Dominio público</string>
+    <string name="licence_public_domain_us">Dominio público (EE. UU.)</string>
+    <string name="source_label_with_year">%1$s (%2$d) · %3$s</string>
+    <string name="source_label_without_year">%1$s · %2$s</string>
+    <string name="subtitle_automatic">Subtítulos automáticos</string>
+
+    <string name="status_loading">Cargando el índice…</string>
+    <string name="status_about_title">Qué es esto</string>
+    <string name="status_about_headline">Películas gratis para Binge</string>
+    <string name="status_about_body">Esta app busca copias de películas en Internet Archive para que Binge las reproduzca. Solo ofrece obras de dominio público o con licencia Creative Commons.</string>
+    <string name="status_licences_row">Qué licencias</string>
+    <string name="status_licences_detail">Qué se puede ofrecer y por qué</string>
+    <string name="status_index_title">Índice</string>
+    <string name="status_films_linked">Películas enlazadas</string>
+    <string name="status_last_refreshed">Última actualización</string>
+    <string name="status_never_refreshed">Todavía no</string>
+    <string name="status_refresh_failed">La última actualización falló</string>
+    <string name="status_refresh_failed_detail">Se sigue usando el índice anterior. Lo volverá a intentar.</string>
+    <string name="status_refresh_now">Actualizar ahora</string>
+    <string name="status_refresh_waiting">Esperando una red…</string>
+    <string name="status_sources_title">Con datos de</string>
+    <string name="status_recent_title">Resueltas hace poco</string>
+    <string name="status_recent_empty">Nada todavía. Abre una película en Binge.</string>
+    <string name="status_recent_clear">Borrar esta lista</string>
+    <string name="status_reported_title">Denunciadas</string>
+    <string name="status_reported_empty">No se ha denunciado ninguna copia</string>
+    <string name="status_reported_detail">Se ofrece en último lugar durante 30 días</string>
+    <string name="status_reported_clear">Borrar denuncias</string>
+
+    <string name="licences_title">Qué licencias</string>
+    <string name="licences_intro">Solo se ofrece una copia si Internet Archive la publica con una de estas licencias. Nada más se ofrece nunca, y ningún ajuste lo cambia.</string>
+    <string name="licences_allowed">Permitidas</string>
+    <string name="licences_pdm_detail">Marca de dominio público: sin derechos de autor conocidos en ningún país</string>
+    <string name="licences_pd_us_detail">Dominio público de Creative Commons: sin derechos de autor en Estados Unidos</string>
+    <string name="licences_cc0_detail">El titular renunció a todos sus derechos</string>
+    <string name="licences_cc_by_detail">Se puede compartir, citando al autor</string>
+    <string name="licences_not_allowed">No se ofrecen: licencias de compartir igual, no comerciales o sin obras derivadas, ni obras sin licencia.</string>
+</resources>

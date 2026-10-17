@@ -18,8 +18,8 @@ import io.github.scottcooper92.binge.archive.index.inMemoryIndex
 import io.github.scottcooper92.binge.archive.index.movie
 import io.github.scottcooper92.binge.archive.index.sampleSnapshot
 import io.github.scottcooper92.binge.archive.index.series
-import io.github.scottcooper92.binge.archive.reports.ReportDatabase
-import io.github.scottcooper92.binge.archive.reports.SourceReports
+import io.github.scottcooper92.binge.archive.reports.DeviceRecords
+import io.github.scottcooper92.binge.archive.reports.DeviceRecordsDatabase
 import io.github.scottcooper92.binge.archive.resolve.ResolveOutcome
 import io.github.scottcooper92.binge.archive.resolve.TitleResolver
 import io.grpc.ManagedChannel
@@ -53,15 +53,15 @@ import java.io.IOException
 @RunWith(RobolectricTestRunner::class)
 class ArchiveStreamServiceTest {
     private val indexDatabase: IndexDatabase = inMemoryIndex()
-    private val reportDatabase: ReportDatabase =
+    private val reportDatabase: DeviceRecordsDatabase =
         androidx.room.Room
             .inMemoryDatabaseBuilder(
                 androidx.test.core.app.ApplicationProvider
                     .getApplicationContext(),
-                ReportDatabase::class.java,
+                DeviceRecordsDatabase::class.java,
             ).allowMainThreadQueries()
             .build()
-    private val reports = SourceReports(reportDatabase.reportDao(), clock = { 1_000L })
+    private val reports = DeviceRecords(reportDatabase.dao(), clock = { 1_000L })
     private var outcome: suspend (MediaId, EpisodeRef?) -> ResolveOutcome = { _, _ -> error("No outcome set") }
     private val messages =
         object : UserMessages {
@@ -84,7 +84,7 @@ class ArchiveStreamServiceTest {
                 ArchiveStreamService(
                     resolver = TitleResolver { media, episode -> outcome(media, episode) },
                     index = IndexRepository(indexDatabase.indexDao(), seed = { sampleSnapshot }),
-                    reports = reports,
+                    records = reports,
                     versionName = "1.2.3",
                     errors = ArchiveErrors(messages),
                     io = ioExecutor.asCoroutineDispatcher(),
