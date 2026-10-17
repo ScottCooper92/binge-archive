@@ -18,8 +18,9 @@ data class LicensedItem(
  * when it has no allowlisted licence, is access-restricted or dark, is not a `movies` item, or does
  * not load. A title-route candidate must also have a video file within 8% of the film's runtime.
  *
- * One item failing to load drops that item. Every item failing is a failure of the resolve
- * (transient, so the host may retry), not an empty answer.
+ * One item failing to load drops that item while others are still read. If no item is admitted and
+ * any load failed, the resolve fails (transient, so the host may retry): the item that failed might
+ * have been the licit one, so "no licit source" is not an answer the app can give.
  */
 class ItemReader(
     private val http: ResolverHttp,
@@ -31,10 +32,12 @@ class ItemReader(
                 found.candidates.map { candidate -> async { candidate to load(candidate) } }.awaitAll()
             }
         val loaded = loads.mapNotNull { (candidate, result) -> result.getOrNull()?.let { candidate to it } }
-        if (loaded.isEmpty()) {
-            throw IOException("No candidate item could be read", loads.firstNotNullOfOrNull { it.second.exceptionOrNull() })
+        val admitted = loaded.mapNotNull { (candidate, item) -> admit(candidate, item, found) }
+        if (admitted.isEmpty()) {
+            val failure = loads.firstNotNullOfOrNull { it.second.exceptionOrNull() }
+            if (failure != null) throw IOException("No candidate item could be read", failure)
         }
-        return loaded.mapNotNull { (candidate, item) -> admit(candidate, item, found) }
+        return admitted
     }
 
     /** One item's metadata, or the [IOException] that stopped it loading. */
