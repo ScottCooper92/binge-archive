@@ -23,6 +23,8 @@ data class Found(
     val route: Route?,
     val candidates: List<Candidate>,
     val facts: TitleFacts,
+    /** Metadata the finder already read, by identifier, so [ItemReader] does not fetch it again. */
+    val preloaded: Map<String, ArchiveItem> = emptyMap(),
 )
 
 /**
@@ -31,8 +33,10 @@ data class Found(
  *
  * 1. Wikidata: the Archive identifiers (P724) on the item with this TMDB id.
  * 2. IMDb: Archive items tagged with the film's IMDb id (P345).
- * 3. Title and year: an Archive title search. Its matches are loose, so [ItemReader] keeps one only
- *    if a video file runs within 8% of the Wikidata runtime. With no runtime, this route is skipped.
+ * 3. Title and year: an Archive title search. Its matches are loose, so a match counts as found
+ *    only if a video file runs within 8% of the Wikidata runtime, checked before any licence check.
+ *    With no runtime, this route is skipped. If no match qualifies and any failed to load, the find
+ *    fails with an `IOException`: the failed one might have been the film.
  */
 class ItemFinder(
     private val http: ResolverHttp,
@@ -52,9 +56,27 @@ class ItemFinder(
         if (title != null && facts.runtimeSeconds != null) {
             val year = facts.year?.let { " AND year:$it" }.orEmpty()
             val candidates = search("mediatype:movies AND title:(\"${quoted(title)}\")$year")
-            if (candidates.isNotEmpty()) return Found(Route.TITLE, candidates, facts)
+            if (candidates.isNotEmpty()) return confirmed(candidates, facts)
         }
         return Found(null, emptyList(), facts)
+    }
+
+    /** The title matches that run like the film, or [Found] with no route when none does. */
+    private suspend fun confirmed(
+        candidates: List<Candidate>,
+        facts: TitleFacts,
+    ): Found {
+        val loads = ItemReader.loadAll(http, candidates)
+        val matches =
+            loads.mapNotNull { (candidate, result) ->
+                result.getOrNull()?.takeIf { ItemReader.runsLike(it, facts.runtimeSeconds) }?.let { candidate to it }
+            }
+        if (matches.isEmpty()) {
+            val failure = loads.firstNotNullOfOrNull { it.second.exceptionOrNull() }
+            if (failure != null) throw IOException("No title match could be read", failure)
+            return Found(null, emptyList(), facts)
+        }
+        return Found(Route.TITLE, matches.map { it.first }, facts, matches.associate { (c, item) -> c.identifier to item })
     }
 
     private suspend fun downloads(identifiers: List<String>): Map<String, Long> {

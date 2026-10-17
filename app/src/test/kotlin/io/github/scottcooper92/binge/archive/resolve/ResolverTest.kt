@@ -146,6 +146,21 @@ class ResolverTest {
         }
 
     @Test
+    fun `a title match that is not the film is not found`() =
+        runTest {
+            archive.sparql = {
+                "?ia\t?imdb\t?title\t?date\t?amount\t?unit\n" +
+                    "\"\"\t\"\"\t\"Dune\"@en\t\"2021-01-01T00:00:00Z\"\t155\t<http://www.wikidata.org/entity/Q7727>\n"
+            }
+            archive.search = { searchResponse("dune_trailer" to 9L) }
+            archive.metadataBodies["dune_trailer"] =
+                """{"metadata":{"mediatype":"movies"},"files":[{"name":"t.mp4","format":"h.264","length":"150"}]}"""
+
+            assertEquals(ResolveOutcome.NotFound, resolver.resolve(movie(1), episode = null))
+            assertEquals(listOf(CoverageMiss(1, null, CoverageMiss.Reason.NOT_IN_CATALOGUE)), misses)
+        }
+
+    @Test
     fun `a film missing from the index still resolves through the network routes`() =
         runTest {
             archive.sparql = { resolveFixture("wikidata-10331.tsv") }

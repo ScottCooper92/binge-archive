@@ -61,6 +61,19 @@ class ItemReaderTest {
     }
 
     @Test
+    fun `a failed load with nothing else admitted fails the read rather than answering empty`() {
+        archive.metadataStatus["PhantasmagoriaTheater-Nosferatu1922909"] = 503
+
+        assertThrows(IOException::class.java) {
+            kotlinx.coroutines.runBlocking {
+                ItemReader(archive.http()).read(
+                    found(Route.WIKIDATA, "Nosferatu_unlicensed_transfer", "PhantasmagoriaTheater-Nosferatu1922909"),
+                )
+            }
+        }
+    }
+
+    @Test
     fun `a title-route item must run within 8 percent of the film`() =
         runTest {
             val reader = ItemReader(archive.http())
