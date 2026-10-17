@@ -1,0 +1,30 @@
+{
+ "responseHeader": {
+  "status": 0
+ },
+ "response": {
+  "numFound": 4,
+  "start": 0,
+  "docs": [
+   {
+    "external-identifier": [
+     "urn:imdb:tt0014646",
+     "urn:rottentomatoes:aelita_queen_of_mars"
+    ],
+    "identifier": "silent-aelita-queen-of-mars"
+   },
+   {
+    "external-identifier": "urn:imdb:tt0048123",
+    "identifier": "dvd_the-glass-tomb_montgomery-tully-richard-h-landau-ae-m"
+   },
+   {
+    "external-identifier": "urn:imdb:tt0057427",
+    "identifier": "dvd_the-trial_orson-welles-pierre-cholot-franz-kafka"
+   },
+   {
+    "identifier": "no_imdb_here",
+    "external-identifier": "urn:rottentomatoes:something"
+   }
+  ]
+ }
+}

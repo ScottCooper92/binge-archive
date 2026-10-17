@@ -6,12 +6,13 @@ description: Whole-codebase (or package-scoped) sweep of binge-archive for bugs,
 # Codebase audit
 
 CI runs the tasks of `./gradlew build` (`.github/workflows/ci.yml`): compile, unit tests, ktlint,
-detekt (type-resolved, zero findings), Android lint, `koverVerify` (90%),
+detekt (type-resolved, zero findings), Android lint, `koverVerify` (95% in `:app` and `:index`),
 `validateDebugScreenshotTest`, `checkTvMaterialSeparation` and the R8 release build. Do not re-report
 anything that set decides. The audit's value is what it does not gate: the licence rule, the three
 `Resolve` answers, privacy, the exported Service, and doc drift.
 
-Scope to the whole repo or named packages under `app/src/main/kotlin/io/github/scottcooper92/binge/archive/`.
+Scope to the whole repo, or to named packages under `app/src/main/kotlin/io/github/scottcooper92/binge/archive/`
+and `index/src/main/kotlin/…`.
 Skip `binge-companions/`, `design-system/` and `binge-ci/` (submodules with their own repos) and `build/`.
 
 **Three disciplines make this useful rather than noisy:**
@@ -63,7 +64,10 @@ Skip `binge-companions/`, `design-system/` and `binge-ci/` (submodules with thei
 
 ## Dimension 5 — correctness
 
-- Index refresh: a failed refresh keeps the previous index; nothing is deleted on failure.
+- Index refresh: a failed refresh keeps the previous index; nothing is deleted on failure; an empty
+  or partial fetch never replaces the index; the seed never overwrites a newer index.
+- Wikidata queries stay well inside the 20 s read timeout (time them live), and the seed task
+  degrades to no seed offline.
 - Room schema vs exported schemas and migrations.
 - Parsers against their fixtures: missing fields, odd formats, empty results.
 - Scope hygiene: `GlobalScope`, `runBlocking` in `src/main`, hard-coded dispatchers.

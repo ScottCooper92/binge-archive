@@ -3,11 +3,18 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.room)
     alias(libs.plugins.ktlint)
     id("binge.gates.detekt")
     alias(libs.plugins.kover)
     alias(libs.plugins.screenshot)
     id("binge.gates.tv-material-separation")
+}
+
+// The exported schema is committed: a change to a table is a decision made in review.
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 android {
@@ -28,6 +35,8 @@ android {
     }
 
     buildFeatures {
+        // BuildConfig.VERSION_NAME goes in the User-Agent Wikimedia asks every client to send.
+        buildConfig = true
         compose = true
     }
 
@@ -112,6 +121,7 @@ tvMaterialSeparation {
 }
 
 dependencies {
+    implementation(project(":index"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.binge.companion.sdk)
     implementation(libs.binge.companion.contracts)
@@ -124,9 +134,14 @@ dependencies {
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.material3)
     implementation(libs.activity.compose)
+    implementation(libs.room.runtime)
+    ksp(libs.room.compiler)
+    implementation(libs.work.runtime)
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.work.testing)
     testImplementation(libs.androidx.test.core)
     testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)
@@ -137,6 +152,52 @@ dependencies {
     screenshotTestImplementation(platform(libs.compose.bom))
     screenshotTestImplementation(libs.compose.ui.tooling)
     screenshotTestImplementation(libs.screenshot.validation.api)
+}
+
+/**
+ * The seed index the APK ships, so a fresh install can answer before its first refresh. It runs
+ * :index's own fetcher against Wikidata and the Archive, the same code the weekly refresh runs.
+ *
+ * Offline, or with either host down, it writes nothing and the build goes on; the app then starts
+ * with an empty index. A seed younger than a week is reused rather than fetched again, and
+ * `-Parchive.skipSeed` skips the fetch altogether.
+ */
+abstract class GenerateIndexSeed : JavaExec() {
+    @get:OutputDirectory
+    abstract val outputDirectory: DirectoryProperty
+
+    @get:Input
+    abstract val versionName: Property<String>
+
+    override fun exec() {
+        args(
+            outputDirectory
+                .file("index/seed.tsv")
+                .get()
+                .asFile.absolutePath,
+            versionName.get(),
+        )
+        super.exec()
+    }
+}
+
+val seedMaxAgeMillis = 7L * 24 * 60 * 60 * 1000
+val generateIndexSeed =
+    tasks.register<GenerateIndexSeed>("generateIndexSeed") {
+        description = "Fetches the seed index the APK ships."
+        classpath = project(":index").extensions.getByType<SourceSetContainer>()["main"].runtimeClasspath
+        mainClass.set("io.github.scottcooper92.binge.archive.index.SeedMainKt")
+        outputDirectory.set(layout.buildDirectory.dir("generated/indexSeed"))
+        versionName.set(android.defaultConfig.versionName ?: "build")
+        onlyIf("archive.skipSeed is not set") { !project.hasProperty("archive.skipSeed") }
+        val seed = outputDirectory.file("index/seed.tsv")
+        outputs.upToDateWhen { seed.get().asFile.let { it.exists() && System.currentTimeMillis() - it.lastModified() < seedMaxAgeMillis } }
+    }
+
+androidComponents {
+    onVariants { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(generateIndexSeed, GenerateIndexSeed::outputDirectory)
+    }
 }
 
 // detekt is binge-ci's gate: production `src/main` only, with type resolution against the debug
@@ -179,16 +240,24 @@ kover {
                     "*ComposableSingletons*",
                     "*PreviewData*",
                     "io.github.scottcooper92.binge.archive.MainActivity*",
+                    // The Application and the hand-built graph: wiring, every member a constructed object.
+                    "io.github.scottcooper92.binge.archive.ArchiveApp",
+                    "io.github.scottcooper92.binge.archive.AppGraph*",
+                    // Generated: Room's DAO and database, with their inner classes, the DAO's default-method
+                    // holder, and BuildConfig.
+                    "*_Impl*",
+                    "*\$DefaultImpls",
+                    "io.github.scottcooper92.binge.archive.BuildConfig",
                 )
                 annotatedBy("androidx.compose.runtime.Composable")
             }
         }
-        // 90, measured: the first suite sat at 96.4%. Chosen rather than inherited, and low enough that
-        // a class that is awkward to reach does not trip it while a feature without tests does. Ratchet
-        // it up as the index and the resolver land with their tests; never lower it.
+        // 95, measured: the suite sat at 96.4% at the bootstrap and 98.8% when the index landed.
+        // Chosen rather than inherited, with a little headroom for a class that is awkward to reach.
+        // Ratchet it up as the resolver and the Service land; never lower it.
         verify {
             rule {
-                minBound(90)
+                minBound(95)
             }
         }
     }

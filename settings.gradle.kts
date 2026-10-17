@@ -59,3 +59,6 @@ includeBuild("design-system") {
 }
 
 include(":app")
+// The index's data sources and seed format, as plain JVM code: the app's refresh and the build's
+// seed task run the same fetchers and parsers.
+include(":index")

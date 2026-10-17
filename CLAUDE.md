@@ -18,8 +18,7 @@ wire format is a PR against binge-companions.
 The plan is binge-companions' epic
 [#141](https://github.com/ScottCooper92/binge-companions/issues/141) and its phases there,
 #142 to #149.
-Status is pre-alpha: the repository is bootstrapped, and the index, the resolver and the Service
-are still to come.
+Status is pre-alpha: the on-device index is in; the resolver and the Service are still to come.
 
 The contracts, the SDK and the design system are consumed as source. `binge-companions/` and
 `design-system/` are git submodules, included as composite builds in `settings.gradle.kts`.
@@ -77,12 +76,49 @@ check, is never a fix for a test or a coverage gap. It is a decision for the mai
 - The exported Service is the attack surface. Whatever guards it is load-bearing, and is not
   loosened to make a test pass.
 
+## The index
+
+`CAPABILITY_PROBE` is answered from a small index on the device, never by resolving. It holds two
+public sources, refreshed weekly:
+
+- **Wikidata links**: items with a TMDB id (movie P4947 or series P4983) and an Internet Archive
+  identifier (P724), with whether each is a film (an instance of a subclass of Q11424).
+- **Archive IMDb externals**: Archive `movies` items tagged `urn:imdb:…`, with the TMDB id Wikidata
+  gives for that IMDb id.
+
+The code is split in two:
+
+- `:index` is plain JVM code: the queries, the parsers, the one HTTP client (`ArchiveHttp`), the
+  fetcher and the seed format. It has its own fast JUnit tests against fixtures under
+  `index/src/test/resources/fixtures`, trimmed from real responses.
+- `:app`'s `index` package holds the Room tables (`wikidata_link`, `archive_imdb`, `refresh_log`),
+  `IndexRepository` and the weekly `IndexRefreshWorker`. `IndexRepository.lookup(mediaId)` is what
+  the resolver and Probe read.
+
+Rules that hold it together:
+
+- **A failed refresh keeps the previous index.** Only a whole, successful snapshot replaces it, in
+  one transaction. A fetch that returns no links at all is a failure, not an empty index.
+- **The seed ships in the APK.** `generateIndexSeed` runs `:index`'s own fetcher at build time and
+  writes `assets/index/seed.tsv`. Offline it writes nothing and the build goes on; the app then starts
+  empty until its first refresh. A seed under a week old is reused; `-Parchive.skipSeed` skips it.
+  Tests never depend on the live seed: `SeedAssetTest` skips itself when a build has none.
+- The seed is loaded on the first lookup, and only when the log is empty, so it never overwrites a
+  newer index.
+- The status screen's freshness is `refresh_log`'s last success (`IndexRepository.lastSuccess()`).
+- The Room schema is exported to `app/schemas` and committed. The database falls back to a
+  destructive migration: the index is rebuilt weekly and holds nothing anyone owns.
+
 ## Talking to Wikidata and the Archive
 
 - **Keyless.** No API key, no account and no sign-in. Whether to add a TMDB fallback is decided
   after binge-companions#148 measures coverage.
-- One HTTP client for the whole app, with fixed timeouts. Both hosts are public and served over
-  HTTPS; the network security config trusts system CAs only and refuses cleartext.
+- One HTTP client for the whole app (`ArchiveHttp.client`), with fixed timeouts: 10 s to connect,
+  20 s to read. Every request names the app in its User-Agent, as Wikimedia asks. Both hosts are
+  public and served over HTTPS; the network security config trusts system CAs only and refuses
+  cleartext.
+- Keep each Wikidata query well inside the read timeout. A subclass walk per row made the link query
+  take up to 27 s, so the film classes are a separate query, joined on the device.
 - No caching beyond the on-device index.
 - **Coverage misses are logged on the device, by route**, for binge-companions#148's measurement.
   They never leave the device: no analytics, no crash reporting and no upload of any kind.
@@ -97,8 +133,10 @@ check, is never a fix for a test or a coverage gap. It is a decision for the mai
   applied. It puts the catalog's Kotlin on AGP's classpath. See the comment in `libs.versions.toml`.
 - The version catalog is `libs.versions.toml` at the repository root, not under `gradle/`.
 - Package `io.github.scottcooper92.binge.archive`; a debug build adds `.debug`.
-- Tests are JUnit 4. Scope Gradle to the module (`:app:testDebugUnitTest`) when you are checking
-  one thing.
+- Two modules: `:app` and `:index` (plain JVM, see The index). Tests are JUnit 4 in both. Scope
+  Gradle to a module (`:index:test`, `:app:testDebugUnitTest`) when you are checking one thing.
+- No DI framework: `AppGraph` builds the handful of objects by hand, and `ArchiveApp` holds it and
+  hands WorkManager its worker factory.
 - A Robolectric test needs no `@Config` for the SDK: `app/src/test/resources/robolectric.properties`
   pins `sdk=34`, and `RobolectricDefaultsTest` asserts it. `@Config` is for what a test varies, a
   `qualifiers` string say.
@@ -112,14 +150,16 @@ check, is never a fix for a test or a coverage gap. It is a decision for the mai
 where to confirm the list.
 
 - Kotlin compilation, and the debug and release builds (R8 on release).
-- The unit tests (`:app:testDebugUnitTest`).
+- The unit tests (`:app:testDebugUnitTest`, `:index:test`).
 - `ktlintCheck`.
 - `detekt`, with type resolution, against the root `detekt.yml`. There is no baseline: the gate is
   zero findings. Keep it that way rather than creating one.
 - Android lint (`:app:lint`), with `UnusedResources` pinned to error.
-- `koverVerify`: line coverage of `:app` below **90%**. The floor was measured (the first suite sat
-  at 96.4%), not inherited. Generated code, the Activity and composables are excluded; nothing is
-  excluded for merely lacking tests. Raise it as the index and resolver land; never lower it.
+- `koverVerify`: line coverage below **95%** in `:app` or in `:index`. The floors were measured
+  (98.8% in each when the index landed), not inherited. Excluded: generated code (Room's, BuildConfig),
+  the Activity, the Application and `AppGraph` (wiring), composables, and `:index`'s `SeedMain` (the
+  build's entry point, covered through what it calls). Nothing is excluded for merely lacking tests.
+  Raise the floors as the code grows; never lower them.
 - `validateDebugScreenshotTest`: a `@PreviewTest` frame that no longer renders like its committed
   PNG. `app/build.gradle.kts` wires it into `check` by hand.
 - `checkTvMaterialSeparation`: a Material 3 import under `ui/tv`, or a tv-material import anywhere
@@ -129,7 +169,8 @@ detekt's wiring and `checkTvMaterialSeparation` are binge-ci's shared gates, fro
 submodule. Keep that submodule on the same binge-ci release as the `uses:` pins in
 `.github/workflows/`, and move them together.
 
-CI runs the same tasks as four jobs in parallel (`checks`, `tests`, `screenshots`, `release`), plus
+CI runs the same tasks as four jobs in parallel (`checks`, `tests`, `screenshots`, `release`;
+`:index`'s tests and coverage run in `checks`), plus
 `submodule-pins` on a PR, which fails a pin its own repository has not merged unless the PR carries
 `hold`. A last job, `build`, is green only if all of them are. It is the check branch protection
 requires, and the one the bots read. `ci.yml` explains the split.
