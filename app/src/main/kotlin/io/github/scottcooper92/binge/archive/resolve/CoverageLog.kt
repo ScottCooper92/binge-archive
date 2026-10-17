@@ -3,9 +3,8 @@ package io.github.scottcooper92.binge.archive.resolve
 import android.util.Log
 
 /**
- * A resolve that found nothing, and where it stopped. Logged for binge-companions#148's coverage
- * measurement. [route] is the route that found candidates, or null when none did or the index did
- * not know the title.
+ * A gap in coverage, and where it showed. Logged for binge-companions#148's measurement. [route] is
+ * the route that found candidates, or null when none did.
  */
 data class CoverageMiss(
     val tmdbId: Int,
@@ -13,10 +12,13 @@ data class CoverageMiss(
     val reason: Reason,
 ) {
     enum class Reason {
-        /** The index does not know the TMDB id. */
+        /** Neither the index nor any route knows the film: the resolve was NOT_FOUND. */
+        NOT_IN_CATALOGUE,
+
+        /** The index did not know the film, and [route] found it: a gap in the index, not a miss. */
         NOT_IN_INDEX,
 
-        /** No route found any Archive item. */
+        /** The index knows the film, and no route found any Archive item for it. */
         NO_ITEMS,
 
         /** Items were found, and none passed the licence and access checks. */

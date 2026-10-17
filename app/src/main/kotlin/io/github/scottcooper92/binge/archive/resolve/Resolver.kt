@@ -11,14 +11,16 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 
 /**
- * What a `Resolve` comes to. The Service maps each to the contract's answer:
+ * What a `Resolve` comes to: `stream.proto`'s four answers. The Service maps each to the contract:
  *
- * - [Sources]: OK. The flow may complete empty, which is a film the index knows with no licit copy.
- * - [NotFound]: `NOT_FOUND`, a TMDB id the index does not know.
- * - [NotAFilm]: `INVALID_ARGUMENT`, an id the index knows that is not a film.
+ * - [Sources]: OK. The flow may complete empty: a known title with no licit source.
+ * - [NotFound]: `NOT_FOUND`, a title not in the catalogue. For a film, that is one neither the
+ *   index nor any network route can place on the Archive. A valid series is always this: v1
+ *   carries no series.
+ * - [NotAFilm]: `INVALID_ARGUMENT`, a movie id the index knows is not a film.
  * - [Invalid]: `INVALID_ARGUMENT`, a request the contract calls unusable.
  *
- * A network failure while the sources are found is an `IOException` out of the flow, which the
+ * A network failure is an `IOException`, out of [Resolver.resolve] or out of the flow, which the
  * Service maps to `UNAVAILABLE`.
  */
 sealed interface ResolveOutcome {
@@ -36,9 +38,10 @@ sealed interface ResolveOutcome {
 }
 
 /**
- * Resolves a title to [StreamSource]s: the index decides whether the title is one this app can
- * place at all, then [ItemFinder], [ItemReader] and [SourceMapper] run in turn. Movies only in v1: a
- * series request is validated and answers no sources.
+ * Resolves a title to [StreamSource]s. The index answers first: a known non-film is [ResolveOutcome.NotAFilm].
+ * Then [ItemFinder] looks for Archive items, for a film the index knows and for one it does not, since a
+ * network route can place a film the index has not linked. A film no route places is
+ * [ResolveOutcome.NotFound]; otherwise [ItemReader] and [SourceMapper] turn the items into sources.
  */
 class Resolver(
     private val index: IndexRepository,
@@ -51,26 +54,38 @@ class Resolver(
         media: MediaId,
         episode: EpisodeRef?,
     ): ResolveOutcome {
-        invalid(media, episode)?.let { return ResolveOutcome.Invalid(it) }
+        val invalidReason = invalid(media, episode)
+        if (invalidReason != null) return ResolveOutcome.Invalid(invalidReason)
+        if (media.mediaType == MediaType.MEDIA_TYPE_TV) return ResolveOutcome.NotFound
         val hit = index.lookup(media)
-        if (hit == null) {
-            coverage.miss(CoverageMiss(media.tmdbId, route = null, reason = CoverageMiss.Reason.NOT_IN_INDEX))
-            return ResolveOutcome.NotFound
-        }
+        if (hit != null && !hit.isFilm) return ResolveOutcome.NotAFilm
+        val tmdbId = media.tmdbId
+        val found = finder.find(tmdbId)
+        val inIndex = hit != null
         return when {
-            media.mediaType == MediaType.MEDIA_TYPE_TV -> ResolveOutcome.Sources(emptyFlow())
-            !hit.isFilm -> ResolveOutcome.NotAFilm
-            else -> ResolveOutcome.Sources(sources(media.tmdbId))
+            found.candidates.isNotEmpty() -> {
+                if (!inIndex) coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.NOT_IN_INDEX))
+                ResolveOutcome.Sources(sources(tmdbId, found))
+            }
+            inIndex -> {
+                coverage.miss(CoverageMiss(tmdbId, route = null, reason = CoverageMiss.Reason.NO_ITEMS))
+                ResolveOutcome.Sources(emptyFlow())
+            }
+            else -> {
+                coverage.miss(CoverageMiss(tmdbId, route = null, reason = CoverageMiss.Reason.NOT_IN_CATALOGUE))
+                ResolveOutcome.NotFound
+            }
         }
     }
 
-    private fun sources(tmdbId: Int): Flow<StreamSource> =
+    private fun sources(
+        tmdbId: Int,
+        found: Found,
+    ): Flow<StreamSource> =
         flow {
-            val found = finder.find(tmdbId)
             val items = reader.read(found)
             val sources = mapper.map(items, found.facts)
             when {
-                found.candidates.isEmpty() -> coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.NO_ITEMS))
                 items.isEmpty() -> coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.NO_LICIT_ITEM))
                 sources.isEmpty() -> coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.NO_PLAYABLE_FILE))
             }

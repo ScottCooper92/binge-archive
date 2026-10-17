@@ -116,8 +116,9 @@ maps to the contract: `Sources` (a flow, possibly empty), `NotFound`, `NotAFilm`
 network failure comes out of the flow as an `IOException`, for `UNAVAILABLE`.
 
 1. **The request.** An unusable `MediaId` or `EpisodeRef` is `Invalid` before anything is looked up.
-2. **The index.** Unknown is `NotFound`; known and not a film is `NotAFilm`; a known series is an
-   empty `Sources`.
+2. **Series and the index.** A valid series is `NotFound` (v1 carries none). A movie id the index
+   knows is not a film is `NotAFilm`. A film the index does not know goes on to the routes: it is
+   `NotFound` only if none of them finds an Archive item.
 3. **`ItemFinder`.** Routes in a fixed order, stopping at the first that finds items: the Wikidata
    item's Archive ids, then Archive items tagged with its IMDb id, then a title-and-year search
    (only with a Wikidata runtime to check against). At most five candidates, best-downloaded first.
@@ -132,8 +133,9 @@ network failure comes out of the flow as an `IOException`, for `UNAVAILABLE`.
    download order, at most fifty sources. URLs are `https://archive.org/download/…`, with a nominal
    24-hour expiry.
 
-Every resolve that ends with nothing is a `CoverageMiss` (route and reason) for
-binge-companions#148, written to logcat on the device by `LogcatCoverageLog` and nowhere else.
+Every gap is a `CoverageMiss` (route and reason) for binge-companions#148: a film not in the
+catalogue, one the routes found but the index did not know, and a resolve that ends with nothing.
+`LogcatCoverageLog` writes them to logcat on the device and nowhere else.
 Every HTTP call is cancellable: when the host cancels, the call is cancelled with it.
 
 ## Talking to Wikidata and the Archive

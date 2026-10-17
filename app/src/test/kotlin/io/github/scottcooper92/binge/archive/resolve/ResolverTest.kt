@@ -128,10 +128,24 @@ class ResolverTest {
         }
 
     @Test
-    fun `a TMDB id the index does not know is not found`() =
+    fun `a film neither the index nor any route can place is not found`() =
         runTest {
+            archive.sparql = { "?ia\t?imdb\t?title\t?date\t?amount\t?unit\n" }
+
             assertEquals(ResolveOutcome.NotFound, resolver.resolve(movie(1), episode = null))
-            assertEquals(listOf(CoverageMiss(1, null, CoverageMiss.Reason.NOT_IN_INDEX)), misses)
+            assertEquals(listOf(CoverageMiss(1, null, CoverageMiss.Reason.NOT_IN_CATALOGUE)), misses)
+        }
+
+    @Test
+    fun `a film missing from the index still resolves through the network routes`() =
+        runTest {
+            archive.sparql = { resolveFixture("wikidata-10331.tsv") }
+            archive.search = { resolveFixture("search-downloads-10331.json") }
+
+            val sources = sources(resolver.resolve(movie(99), episode = null)).toList()
+
+            assertEquals(3, sources.size)
+            assertEquals(listOf(CoverageMiss(99, Route.WIKIDATA, CoverageMiss.Reason.NOT_IN_INDEX)), misses)
         }
 
     @Test
@@ -141,7 +155,7 @@ class ResolverTest {
         }
 
     @Test
-    fun `a series is validated and resolves to nothing`() =
+    fun `a valid series is not carried, so it is not found`() =
         runTest {
             val episode =
                 EpisodeRef
@@ -150,8 +164,9 @@ class ResolverTest {
                     .setEpisodeNumber(1)
                     .build()
 
-            assertEquals(emptyList<Any>(), sources(resolver.resolve(series(894), episode)).toList())
+            assertEquals(ResolveOutcome.NotFound, resolver.resolve(series(894), episode))
             assertEquals(ResolveOutcome.NotFound, resolver.resolve(series(1), episode))
+            assertEquals(emptyList<CoverageMiss>(), misses)
         }
 
     @Test
@@ -191,10 +206,8 @@ class ResolverTest {
         kotlinx.coroutines.runBlocking {
             archive.sparql = { resolveFixture("wikidata-10331.tsv") }
             archive.sparqlDelaySeconds = 30
-            val outcome = resolver.resolve(movie(10331), episode = null)
-
             val started = System.nanoTime()
-            val job = launch(kotlinx.coroutines.Dispatchers.IO) { sources(outcome).toList() }
+            val job = launch(kotlinx.coroutines.Dispatchers.IO) { sources(resolver.resolve(movie(10331), episode = null)).toList() }
             kotlinx.coroutines.delay(500)
             job.cancelAndJoin()
 
@@ -203,13 +216,11 @@ class ResolverTest {
         }
 
     @Test
-    fun `a Wikidata failure fails the stream, for the host to retry`() =
+    fun `a Wikidata failure fails the resolve, for the host to retry`() =
         runTest {
             archive.sparql = { throw IllegalStateException("down") }
 
-            val outcome = resolver.resolve(movie(10331), episode = null)
-
-            val failure = runCatching { sources(outcome).toList() }.exceptionOrNull()
+            val failure = runCatching { sources(resolver.resolve(movie(10331), episode = null)).toList() }.exceptionOrNull()
             assertTrue(failure.toString(), failure is java.io.IOException)
         }
 }
