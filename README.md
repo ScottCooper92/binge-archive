@@ -32,7 +32,7 @@ against the film's runtime. It keeps only items with an allowed licence, and map
 to sources. The plan is
 [binge-companions#141](https://github.com/ScottCooper92/binge-companions/issues/141).
 
-Status is pre-alpha. The on-device index is in; the resolver and the Service follow.
+Status is pre-alpha. The on-device index and the resolver are in; the Service follows.
 
 ## Building
 
