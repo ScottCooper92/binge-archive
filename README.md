@@ -34,8 +34,8 @@ against the film's runtime. It keeps only items with an allowed licence, and map
 to sources. The plan is
 [binge-companions#141](https://github.com/ScottCooper92/binge-companions/issues/141).
 
-Status is pre-alpha. The index, the resolver, the STREAM Service and the app's screens are in; the
-release follows.
+Status is pre-alpha. The index, the resolver, the STREAM Service, the app's screens and the release
+tooling are in. It is not on Play yet.
 
 ## Building
 
@@ -48,6 +48,9 @@ cd binge-archive
 `build` is the whole gate: it compiles, tests, lints, checks coverage and compares the screenshot
 frames. You need JDK 21 and an Android SDK with platform 37. The contracts, the SDK and the design
 system are submodules built from source, so `--recurse-submodules` matters.
+
+A `v*` tag builds a signed release bundle (`.github/workflows/release.yml`). The store listing and
+the privacy policy are in [`docs/listing/`](docs/listing/).
 
 `CLAUDE.md` holds the conventions, for people and agents alike.
 

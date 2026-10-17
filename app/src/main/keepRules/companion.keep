@@ -1,0 +1,16 @@
+# This app's R8 keep rules. It is a `keepRules` source set (AGP 9.3+), so every `.keep` file here is
+# picked up with no `proguardFiles` entry naming it. It sits in `main` rather than `release` so the
+# opt-in `-PminifyDebug` build the device lane runs minifies against the same rules as release; a
+# per-variant copy is the one that goes stale.
+#
+# OkHttp, Room, WorkManager and kotlinx.serialization ship their own consumer rules, and so does
+# binge-companions' contracts module: its META-INF/proguard rule keeps the fields of every contract
+# message, which the lite protobuf runtime looks up by name. R8 reads it even though the contracts
+# arrive through the composite build. The Wikidata and Archive responses are read as JsonElement
+# trees, never through @Serializable classes, so there is no DTO to keep. Only what this app
+# genuinely needs on top of those belongs here: a rule copied from a library silently diverges when
+# the library is upgraded.
+
+# Line numbers and source file names, so a crash a user reports reads as a stack trace.
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile

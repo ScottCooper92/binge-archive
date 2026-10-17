@@ -34,7 +34,7 @@
     <string name="status_archive" translatable="false">Internet Archive</string>
     <string name="status_archive_detail" translatable="false">archive.org</string>
     <string name="status_wikidata" translatable="false">Wikidata</string>
-    <string name="status_wikidata_detail" translatable="false">wikidata.org</string>
+    <string name="status_wikidata_detail" translatable="false">wikidata.org · CC0</string>
     <string name="status_recent_title">Recently resolved</string>
     <string name="status_recent_empty">Nothing yet. Open a film in Binge.</string>
     <string name="status_recent_clear">Clear this list</string>

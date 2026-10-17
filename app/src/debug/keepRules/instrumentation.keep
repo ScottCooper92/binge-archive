@@ -1,0 +1,136 @@
+# Debug only: exactly what the instrumentation test calls in the minified app under test.
+#
+# When the app under test is minified, the test APK leaves out every library the app already
+# carries, and resolves those classes and members from the app at run time. R8 strips what the app
+# itself never uses, so the test would fail before it starts (NoClassDefFoundError, "0 tests") or
+# mid-way (NoSuchMethodError). The app serves STREAM, so it never builds a request, reads a response
+# or calls the gRPC client; the test does all three. These rules keep exactly those members, and
+# nothing the lane proves: the Service, the server-side stubs and the messages' own fields still
+# stand on the rules in main. Release builds never see this file.
+#
+# Regenerate after changing the test: `tools/instrumentation-keep/check.sh` builds both APKs and
+# prints a rule for every method and field the test APK references that neither APK defines
+# (superclasses included). Empty output means this file is complete.
+#
+# Not kept, because no rule can: androidx.test's ViewCapture and WindowCapture refer to
+# androidx.concurrent.futures.SuspendToFutureAdapter, which the concurrent-futures version this app
+# resolves (1.1.0) does not have. The smoke test never captures a view, so the gap is never reached.
+
+-keep class androidx.tracing.Trace {
+    void forceEnableAppTracing();
+}
+
+-keep class com.binge.companion.contracts.stream.v1.HandshakeRequest {
+    com.binge.companion.contracts.stream.v1.HandshakeRequest$Builder newBuilder();
+}
+
+-keep class com.binge.companion.contracts.stream.v1.HandshakeRequest$Builder {
+    com.binge.companion.contracts.stream.v1.HandshakeRequest$Builder setHost(com.binge.companion.contracts.v1.HostInfo$Builder);
+}
+
+-keep class com.binge.companion.contracts.stream.v1.HandshakeResponse {
+    int getCapabilitiesCount();
+    java.lang.String getProviderName();
+}
+
+-keep class com.binge.companion.contracts.stream.v1.ProbeRequest {
+    com.binge.companion.contracts.stream.v1.ProbeRequest$Builder newBuilder();
+}
+
+-keep class com.binge.companion.contracts.stream.v1.ProbeRequest$Builder {
+    com.binge.companion.contracts.stream.v1.ProbeRequest$Builder setMedia(com.binge.companion.contracts.v1.MediaId);
+}
+
+-keep class com.binge.companion.contracts.stream.v1.ProbeResponse {
+    boolean getMayHaveSources();
+}
+
+-keep class com.binge.companion.contracts.stream.v1.ResolveRequest {
+    com.binge.companion.contracts.stream.v1.ResolveRequest$Builder newBuilder();
+}
+
+-keep class com.binge.companion.contracts.stream.v1.ResolveRequest$Builder {
+    com.binge.companion.contracts.stream.v1.ResolveRequest$Builder setMedia(com.binge.companion.contracts.v1.MediaId);
+}
+
+-keep class com.binge.companion.contracts.stream.v1.ResolveResponse {
+    com.binge.companion.contracts.stream.v1.StreamSource getSource();
+}
+
+-keep class com.binge.companion.contracts.stream.v1.StreamServiceGrpcKt$StreamServiceCoroutineStub {
+    java.lang.Object handshake$default(com.binge.companion.contracts.stream.v1.StreamServiceGrpcKt$StreamServiceCoroutineStub,com.binge.companion.contracts.stream.v1.HandshakeRequest,io.grpc.Metadata,kotlin.coroutines.Continuation,int,java.lang.Object);
+    java.lang.Object probe$default(com.binge.companion.contracts.stream.v1.StreamServiceGrpcKt$StreamServiceCoroutineStub,com.binge.companion.contracts.stream.v1.ProbeRequest,io.grpc.Metadata,kotlin.coroutines.Continuation,int,java.lang.Object);
+    kotlinx.coroutines.flow.Flow resolve$default(com.binge.companion.contracts.stream.v1.StreamServiceGrpcKt$StreamServiceCoroutineStub,com.binge.companion.contracts.stream.v1.ResolveRequest,io.grpc.Metadata,int,java.lang.Object);
+    void <init>(io.grpc.Channel,io.grpc.CallOptions,int,kotlin.jvm.internal.DefaultConstructorMarker);
+}
+
+-keep class com.binge.companion.contracts.stream.v1.StreamSource {
+    com.binge.companion.contracts.v1.PlaybackSource getSource();
+}
+
+-keep class com.binge.companion.contracts.v1.HostInfo {
+    com.binge.companion.contracts.v1.HostInfo$Builder newBuilder();
+}
+
+-keep class com.binge.companion.contracts.v1.HostInfo$Builder {
+    com.binge.companion.contracts.v1.HostInfo$Builder setPackageName(java.lang.String);
+    com.binge.companion.contracts.v1.HostInfo$Builder setVersionCode(long);
+    com.binge.companion.contracts.v1.HostInfo$Builder setVersionName(java.lang.String);
+}
+
+-keep class com.binge.companion.contracts.v1.MediaId {
+    com.binge.companion.contracts.v1.MediaId$Builder newBuilder();
+}
+
+-keep class com.binge.companion.contracts.v1.MediaId$Builder {
+    com.binge.companion.contracts.v1.MediaId$Builder setMediaType(com.binge.companion.contracts.v1.MediaType);
+    com.binge.companion.contracts.v1.MediaId$Builder setTmdbId(int);
+}
+
+-keep class com.binge.companion.contracts.v1.PlaybackSource {
+    java.lang.String getMimeType();
+}
+
+-keep class io.grpc.ManagedChannel {
+    io.grpc.ManagedChannel shutdownNow();
+}
+
+-keep class io.grpc.binder.AndroidComponentAddress {
+    io.grpc.binder.AndroidComponentAddress forRemoteComponent(java.lang.String,java.lang.String);
+}
+
+-keep class io.grpc.binder.BinderChannelBuilder {
+    io.grpc.ManagedChannel build();
+    io.grpc.binder.BinderChannelBuilder forAddress(io.grpc.binder.AndroidComponentAddress,android.content.Context);
+    io.grpc.binder.BinderChannelBuilder securityPolicy(io.grpc.binder.SecurityPolicy);
+}
+
+-keep class kotlin.LazyKt {
+    kotlin.Lazy lazy(kotlin.jvm.functions.Function0);
+}
+
+-keep class kotlin.collections.CollectionsKt {
+    int collectionSizeOrDefault(java.lang.Iterable,int);
+}
+
+-keep class kotlin.coroutines.intrinsics.IntrinsicsKt {
+    java.lang.Object getCOROUTINE_SUSPENDED();
+    kotlin.coroutines.Continuation intercepted(kotlin.coroutines.Continuation);
+}
+
+-keep class kotlin.text.StringsKt {
+    boolean isBlank(java.lang.CharSequence);
+    boolean startsWith$default(java.lang.String,java.lang.String,boolean,int,java.lang.Object);
+}
+
+-keep class kotlinx.coroutines.BuildersKt {
+    java.lang.Object runBlockingK$default(kotlin.coroutines.CoroutineContext,kotlin.jvm.functions.Function2,int,java.lang.Object);
+}
+
+-keep class kotlinx.coroutines.CancellableContinuation {
+    void resume(java.lang.Object,kotlin.jvm.functions.Function1);
+}
+
+-keep class kotlinx.coroutines.flow.FlowKt {
+    java.lang.Object toList$default(kotlinx.coroutines.flow.Flow,java.util.List,kotlin.coroutines.Continuation,int,java.lang.Object);
+}

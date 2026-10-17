@@ -18,9 +18,9 @@ wire format is a PR against binge-companions.
 The plan is binge-companions' epic
 [#141](https://github.com/ScottCooper92/binge-companions/issues/141) and its phases there,
 #142 to #149.
-Status is pre-alpha: the index, the resolver, the exported Service and the app's own screens are in.
-Release readiness (#147) is still to come, and the Service has yet to be checked against Binge on a
-device.
+Status is pre-alpha: the index, the resolver, the exported Service, the app's own screens and the
+release tooling are in. Nothing is on Play yet, and the Service has yet to be checked against Binge
+on a device.
 
 The contracts, the SDK and the design system are consumed as source. `binge-companions/` and
 `design-system/` are git submodules, included as composite builds in `settings.gradle.kts`.
@@ -208,7 +208,8 @@ its licence page, and the hand-off Binge's "manage" row starts:
 - **Coverage misses are logged on the device, by route**, for binge-companions#148's measurement.
   They never leave the device: no analytics, no crash reporting and no upload of any kind.
 - The app stores no user data beyond the user's own source reports and the last ten titles it
-  resolved, kept on the device in `device-records.db`. The index is public metadata it can rebuild. Backup is off.
+  resolved, kept on the device in `device-records.db`. The index is public metadata it can rebuild.
+  Backup is off.
 
 ## Kotlin, Gradle and Android
 
@@ -281,6 +282,31 @@ New UI comes with its frames in the same PR, every state arm included. Frames pi
 comment (`./gradlew ktlintFormat` is the fix), a `lint-baseline.xml`, `abortOnError = false`, a
 `detekt-baseline.xml` or a `@Suppress` to get past detekt, and do not exclude a source set from
 `check` or lower the kover floor.
+
+## Releasing
+
+- **R8.** Release builds shrink. The app's own keep rules are the `keepRules` source set
+  (`app/src/main/keepRules/`), in `main` so the minified debug build uses the same ones. The
+  libraries and the contracts bring their own; add a rule here only for what they do not cover.
+  `app/src/debug/keepRules/` keeps, for the minified debug build only, the exact members the
+  instrumentation test calls that the app itself never uses: request builders, response getters,
+  the gRPC client and a few stdlib and coroutines helpers. Without it the test fails on the device
+  (`NoClassDefFoundError`, `NoSuchMethodError`). `tools/instrumentation-keep/check.sh` lists what is
+  missing; run it after changing the test.
+- **`-PminifyDebug`** builds a minified debug app. The device lane runs it, so a stale keep rule fails
+  there rather than on a user. Its `optimization` block must match release's.
+- **The device lane** (`device-smoke.yml`, never `ci.yml`): an emulator binds the Service across a real
+  Binder on the minified debug build, then handshakes, probes and resolves Night of the Living Dead
+  (`app/src/androidTest`). Its Resolve uses the live network, so an `UNAVAILABLE` there names
+  Wikidata or the Archive first. A run with zero tests fails: a crashed test process can otherwise
+  end green. It runs on a push to `main` that touches the paths it lists, weekly,
+  and by hand. A red weekly run opens one issue, which closes on the next green one.
+- **`release.yml`** builds a signed bundle from a `v*` tag, checks it is release-signed (never
+  `CN=Android Debug`), shrunk and seeded, and attaches it with the R8 mapping to a GitHub Release. Play
+  upload, the upload key's secrets and the Play Console app are the maintainer's.
+- **The listing** lives in `docs/listing/`: the store text in English and Spanish, the privacy policy
+  and the Data safety answers. A change to what the app stores, sends or asks for changes
+  `privacy.md` and `data-safety.md` in the same PR.
 
 ## Follow-ups
 

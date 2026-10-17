@@ -1,0 +1,104 @@
+name: Release
+
+# Pushing a version tag (`git tag v0.1.0 && git push origin v0.1.0`) builds a signed release bundle
+# and attaches it, with the R8 mapping, to a GitHub Release for that tag. Publishing to Play is a
+# separate step that arrives with the Play Console app and its service account; until then the
+# bundle is uploaded by hand.
+#
+# The keystore is the upload key, held in secrets and never in the repository:
+#   RELEASE_KEYSTORE_BASE64  base64 -w0 release.keystore
+#   RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_KEY_PASSWORD
+# app/build.gradle.kts reads the four RELEASE_* values from the environment.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build the signed bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+
+      - name: Verify
+        run: ./gradlew build
+
+      - name: Derive the version from the tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-].*)?$ ]]; then
+            echo "::error::Tag '${GITHUB_REF_NAME}' yields versionName '$version', which is not semver."
+            exit 1
+          fi
+          # The run number keeps versionCode monotonic across tags without a counter to maintain;
+          # the offset stays clear of anything uploaded by hand.
+          code=$((GITHUB_RUN_NUMBER + 100))
+          echo "VERSION_NAME=$version" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=$code" >> "$GITHUB_ENV"
+          echo "versionName=$version versionCode=$code"
+
+      - name: Decode the release keystore
+        shell: bash
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [ -z "$RELEASE_KEYSTORE_BASE64" ]; then
+            echo "::error::RELEASE_KEYSTORE_BASE64 is not set, so there is no upload key to sign with."
+            exit 1
+          fi
+          echo "$RELEASE_KEYSTORE_BASE64" | base64 --decode > release.keystore
+
+      - name: Build the release bundle
+        env:
+          RELEASE_STORE_FILE: release.keystore
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: ./gradlew :app:bundleRelease
+
+      # The seed is fetched from Wikidata and the Archive at build time and skipped when offline, so
+      # a build can succeed without it. A release must not: a fresh install would then place nothing
+      # until its first refresh.
+      - name: Verify the bundle is release-signed, shrunk and seeded
+        shell: bash
+        run: |
+          set -euo pipefail
+          aab="app/build/outputs/bundle/release/app-release.aab"
+          mapping="app/build/outputs/mapping/release/mapping.txt"
+          [ -s "$aab" ] || { echo "::error::$aab is missing or empty."; exit 1; }
+          [ -s "$mapping" ] || { echo "::error::$mapping is missing or empty: R8 produced no mapping."; exit 1; }
+          out=$(jarsigner -verify -verbose -certs "$aab" 2>&1) || { echo "::error::jarsigner could not verify $aab."; echo "$out"; exit 1; }
+          grep -q "jar verified" <<<"$out" || { echo "::error::$aab is not signed."; echo "$out"; exit 1; }
+          if grep -qiE "CN=Android Debug" <<<"$out"; then
+            echo "::error::$aab is signed with the debug certificate: the RELEASE_* secrets did not reach the build."
+            exit 1
+          fi
+          unzip -l "$aab" | grep -q "base/assets/index/seed.tsv" || { echo "::error::$aab has no index seed: the seed fetch failed."; exit 1; }
+          echo "Bundle is release-signed and seeded; mapping present ($(wc -c < "$mapping") bytes)."
+
+      - name: Attach the bundle and mapping to the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "$GITHUB_REF_NAME"
+          app/build/outputs/bundle/release/app-release.aab
+          app/build/outputs/mapping/release/mapping.txt
+          --title "$GITHUB_REF_NAME" --generate-notes
