@@ -1,5 +1,6 @@
 package io.github.scottcooper92.binge.archive.resolve
 
+import com.binge.companion.contracts.stream.v1.LicenceKind
 import com.binge.companion.contracts.stream.v1.Resolution
 import com.binge.companion.contracts.v1.EpisodeRef
 import com.binge.companion.contracts.v1.MediaId
@@ -189,8 +190,11 @@ class ResolverTest {
                 listOf("Nosferatu_unlicensed_transfer", "PhantasmagoriaTheater-Nosferatu1922909"),
                 sources.map { it.id.substringBefore('/') },
             )
-            assertEquals("Nosferatu (1922) · No licence stated", sources.first().label)
-            assertEquals("Nosferatu (1922) · Public domain (US)", sources.last().label)
+            assertEquals("Nosferatu (1922)", sources.first().label)
+            assertEquals("No licence stated", sources.first().licenceLabel)
+            assertEquals(LicenceKind.LICENCE_KIND_NONE_STATED, sources.first().licenceKind)
+            assertEquals("Public domain (US)", sources.last().licenceLabel)
+            assertEquals(LicenceKind.LICENCE_KIND_OPEN, sources.last().licenceKind)
         }
 
     @Test
@@ -212,7 +216,9 @@ class ResolverTest {
             assertEquals(emptyList<Any>(), sources(resolverWith().resolve(movie(653), null)).toList())
             val any = sources(resolverWith(settings = SourceSettings(licences = LicenceLevel.ANY)).resolve(movie(653), null)).toList()
 
-            assertEquals("Nosferatu (1922) · All rights reserved", any.single().label)
+            assertEquals("Nosferatu (1922)", any.single().label)
+            assertEquals("All rights reserved", any.single().licenceLabel)
+            assertEquals(LicenceKind.LICENCE_KIND_RESTRICTED, any.single().licenceKind)
         }
 
     @Test
@@ -245,7 +251,7 @@ class ResolverTest {
                 """"files":[{"name":"film.mp4","format":"h.264","height":"480","length":"5600"}]}"""
 
             val byDefault = sources(resolverWith().resolve(movie(653), null)).toList()
-            assertEquals("Nosferatu (1922) · CC BY 4.0", byDefault.single().label)
+            assertEquals("CC BY 4.0", byDefault.single().licenceLabel)
             assertEquals(emptyList<CoverageMiss>(), misses)
 
             val onlyPd = resolverWith(settings = SourceSettings(licences = LicenceLevel.PUBLIC_DOMAIN)).resolve(movie(653), null)
@@ -444,7 +450,8 @@ class ResolverTest {
             val sources = sources(resolver.resolve(movie(653), episode = null)).toList()
 
             assertEquals(listOf("PhantasmagoriaTheater-Nosferatu1922909"), sources.map { it.id.substringBefore('/') })
-            assertEquals("Nosferatu (1922) · Public domain (US)", sources.single().label)
+            assertEquals("Nosferatu (1922)", sources.single().label)
+            assertEquals("Public domain (US)", sources.single().licenceLabel)
         }
 
     @Test
@@ -614,7 +621,7 @@ class ResolverTest {
             assertEquals(3, sources.size)
             assertTrue(sources.all { it.id.startsWith("Night.Of.The.Living.Dead_1080p/") })
             // With no Wikidata facts, the label is the item's own title, and no year.
-            assertTrue(sources.first().label, sources.first().label.startsWith("Night of the Living Dead · "))
+            assertEquals("Night of the Living Dead", sources.first().label)
             assertEquals(listOf(CoverageMiss(10331, Route.WIKIDATA, CoverageMiss.Reason.WIKIDATA_FAILED)), misses)
         }
 

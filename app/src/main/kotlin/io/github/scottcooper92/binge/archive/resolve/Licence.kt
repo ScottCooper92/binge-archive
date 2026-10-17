@@ -8,7 +8,8 @@ data class Licence(
     val kind: Kind,
     /**
      * For a Creative Commons licence with terms, the version and any jurisdiction: "4.0" or "3.0 US".
-     * For [Kind.RESTRICTED] and [Kind.UNKNOWN], the item's own licence text, whitespace collapsed.
+     * For [Kind.RESTRICTED] and [Kind.UNKNOWN], the item's own licence text, whitespace collapsed and
+     * control and format characters removed.
      */
     val detail: String = "",
 ) {
@@ -97,7 +98,12 @@ object LicenceAllowlist {
         if (licenseUrl.isNullOrBlank()) return Licence(Licence.Kind.NONE_STATED)
         val recognised = normalise(licenseUrl)?.let(::recognise)
         if (recognised != null) return recognised
-        val text = licenseUrl.trim().replace(whitespace, " ")
+        // Free text from the uploader reaches the host: no control or bidi-override characters.
+        val text =
+            licenseUrl
+                .replace(whitespace, " ")
+                .filterNot { Character.getType(it) in invisible }
+                .trim()
         return Licence(if (restrictive.containsMatchIn(text)) Licence.Kind.RESTRICTED else Licence.Kind.UNKNOWN, text)
     }
 
@@ -138,6 +144,9 @@ object LicenceAllowlist {
     }
 
     private val whitespace = Regex("\\s+")
+
+    /** Character types that draw nothing or reorder text, once whitespace is a plain space: controls and format marks. */
+    private val invisible = setOf(Character.FORMAT.toInt(), Character.CONTROL.toInt())
 
     /** Words that reserve the rights, as the Archive's free-text licence fields put it. */
     private val restrictive = Regex("all rights reserved|©|\\(c\\)\\s*\\d{4}|copyright\\s+(?:\\(c\\)\\s*)?\\d{4}", RegexOption.IGNORE_CASE)

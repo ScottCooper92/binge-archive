@@ -8,7 +8,6 @@ val testStrings =
         cc0 = "CC0",
         creativeCommons = "CC %1\$s %2\$s",
         noneStated = "No licence stated",
-        labelWithYear = "%1\$s (%2\$d) · %3\$s",
-        labelWithoutYear = "%1\$s · %2\$s",
+        labelWithYear = "%1\$s (%2\$d)",
         automaticCaptions = "Automatic captions",
     )

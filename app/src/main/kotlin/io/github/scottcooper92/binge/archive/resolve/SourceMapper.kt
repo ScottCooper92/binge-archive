@@ -1,5 +1,6 @@
 package io.github.scottcooper92.binge.archive.resolve
 
+import com.binge.companion.contracts.stream.v1.LicenceKind
 import com.binge.companion.contracts.stream.v1.Resolution
 import com.binge.companion.contracts.stream.v1.SourceQuality
 import com.binge.companion.contracts.stream.v1.StreamSource
@@ -20,7 +21,8 @@ import java.util.concurrent.TimeUnit
  * - One source per resolution class per item. Among encodes of the same class, h.264 in MP4 wins,
  *   then any MP4 (the Archive's `512Kb MPEG4` does not name its codec), then the taller picture, the
  *   longer file and the larger one.
- * - Each source's label names the film and its licence, so the host can show the licence on the row.
+ * - Each source's label names the film. Its licence goes in `licence_label` and `licence_kind`, which
+ *   the host shows on a line of its own, with a warning for anything but an open licence.
  * - SubRip and WebVTT files become subtitle tracks, at most ten per source.
  * - [kept] applies the user's minimum quality and subtitle-language settings to an item's sources.
  * - An item's sources go by height. The order of items, holding back an item this device reported
@@ -54,11 +56,12 @@ class SourceMapper(
             encodes
                 .groupBy { VideoFormats.resolutionOf(it.height) }
                 .mapValues { (_, group) -> group.maxWith(PREFERENCE) }
-        val label = strings.label(facts.title ?: item.title ?: item.identifier, facts.year, licensed.licence, MAX_LABEL)
+        val label = strings.label(facts.title ?: item.title ?: item.identifier, facts.year, MAX_LABEL)
+        val licence = Licensing(strings.licenceName(licensed.licence), licensed.licence.kind.onTheWire())
         val subtitles = subtitles(item)
         return best.entries
             .sortedByDescending { it.value.height }
-            .map { (resolution, encode) -> source(item, encode, resolution, label, subtitles, expiresAt) }
+            .map { (resolution, encode) -> source(item, encode, resolution, label, licence, subtitles, expiresAt) }
     }
 
     /**
@@ -81,6 +84,7 @@ class SourceMapper(
         encode: Encode,
         resolution: Resolution,
         label: String,
+        licence: Licensing,
         subtitles: List<SubtitleTrack>,
         expiresAt: Timestamp,
     ): StreamSource =
@@ -100,6 +104,8 @@ class SourceMapper(
                     .setVideoCodec(encode.format.codec)
                     .setSizeBytes(encode.file.sizeBytes),
             ).setLabel(label)
+            .setLicenceLabel(licence.label)
+            .setLicenceKind(licence.kind)
             .addAllSubtitles(subtitles)
             .build()
 
@@ -119,6 +125,12 @@ class SourceMapper(
                     .build()
             }
     }
+
+    /** What `licence_label` and `licence_kind` carry for one item's sources. */
+    private data class Licensing(
+        val label: String,
+        val kind: LicenceKind,
+    )
 
     private data class Encode(
         val file: ArchiveFile,
@@ -158,3 +170,12 @@ class SourceMapper(
                 .toString()
     }
 }
+
+/** The contract's kind for a licence: every public-domain and Creative Commons licence is open. */
+internal fun Licence.Kind.onTheWire(): LicenceKind =
+    when (this) {
+        Licence.Kind.NONE_STATED -> LicenceKind.LICENCE_KIND_NONE_STATED
+        Licence.Kind.RESTRICTED -> LicenceKind.LICENCE_KIND_RESTRICTED
+        Licence.Kind.UNKNOWN -> LicenceKind.LICENCE_KIND_UNKNOWN
+        else -> LicenceKind.LICENCE_KIND_OPEN
+    }
