@@ -61,7 +61,10 @@ class ItemFinder(
         return Found(null, emptyList(), facts)
     }
 
-    /** The title matches that run like the film, or [Found] with no route when none does. */
+    /**
+     * The title matches that run like the film, plus any candidate that failed to load, or [Found]
+     * with no route when none matches.
+     */
     private suspend fun confirmed(
         candidates: List<Candidate>,
         facts: TitleFacts,
@@ -76,7 +79,10 @@ class ItemFinder(
             if (failure != null) throw IOException("No title match could be read", failure)
             return Found(null, emptyList(), facts)
         }
-        return Found(Route.TITLE, matches.map { it.first }, facts, matches.associate { (c, item) -> c.identifier to item })
+        // A candidate that failed to load stays in, unread: ItemReader tries it again, and fails the
+        // resolve if nothing is admitted and it still does not load.
+        val kept = loads.filter { (candidate, result) -> result.isFailure || matches.any { it.first == candidate } }
+        return Found(Route.TITLE, kept.map { it.first }, facts, matches.associate { (c, item) -> c.identifier to item })
     }
 
     private suspend fun downloads(identifiers: List<String>): Map<String, Long> {
