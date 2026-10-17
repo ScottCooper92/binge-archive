@@ -33,7 +33,7 @@ own emerald `ArchiveBrand` in place of Binge's amber (`theme/ArchiveTheme.kt`).
 
 ## The one rule everything else serves
 
-**By default, only openly licensed items are returned. Anything wider is the user's explicit choice.**
+**By default, only openly licensed items are returned. Anything wider is the user's own choice.**
 
 An Archive item becomes a source only if the user's licence level admits its licence
 (`LicenceLevel`, set in Sources). The default is `PUBLIC_DOMAIN_AND_CC_BY`: the Public Domain Mark,
@@ -157,7 +157,8 @@ query (step 3): they keep the index's order.
    `NotFound` only if none of them finds an Archive item.
 3. **`ItemFinder`.** Routes in a fixed order, stopping at the first that finds items: the Wikidata
    item's Archive ids, then Archive items tagged with its IMDb id, then a title-and-year search
-   (only with a Wikidata runtime to check against, and only with title matches on in Sources). At most five candidates, best-downloaded first.
+   (only with a Wikidata runtime to check against, and only with title matches on in Sources).
+   At most five candidates, best-downloaded first.
    A title match counts as found only if a video file runs within 8% of the runtime, checked
    before any licence. If none qualifies and any failed to load, the resolve fails, never
    `NotFound`.
@@ -170,8 +171,8 @@ query (step 3): they keep the index's order.
    `WIKIDATA_FAILED` coverage miss. With no hit, or a hit with no ids, the resolve fails.
 4. **`ItemReader`.** Reads every candidate's metadata in parallel, and hands on each admitted item
    as soon as it and the candidates ahead of it are read: a slow item holds back only those after
-   it. It drops items whose licence the user's level does not admit, restricted or dark items, non-`movies` items,
-   and items that fail to load. If none is admitted and any failed to load, the resolve fails rather
+   it. It drops items whose licence the user's level does not admit, restricted or dark items,
+   non-`movies` items, and items that fail to load. If none is admitted and any failed to load, the resolve fails rather
    than answering empty.
 5. **`SourceMapper`.** Video files only (`VideoFormats`). With a runtime, a file under half of it is
    dropped: a reel, a trailer or an extra is not the film. One source per resolution class per
@@ -226,8 +227,8 @@ with the Sources settings, its licence page, and the hand-off Binge's "manage" r
 - **`ui/status`**: `StatusViewModel` exposes one `StateFlow<StatusUiState>`, a sealed `Loading`,
   `Ready` or `Error`, never a set of flags. `StatusScreen` (phone) and `ui/tv/TvStatusScreen` take the
   state and a `StatusActions`, so every arm renders in a frame. Sections: what this is (and the
-  licence page), Sources, the index (films linked, last refresh, a failed refresh, "Refresh now"), who the
-  data comes from, recently resolved titles, and reported copies.
+  licence page), Sources, the index (films linked, last refresh, a failed refresh, "Refresh now"),
+  who the data comes from, recently resolved titles, and reported copies.
 - **Recently resolved and reported** live in `device-records.db` (`reports/DeviceRecords.kt`), on
   the device only, never shown to the host. Each list has a clear action.
 - **`SettingsHandOffActivity`** answers `CompanionManifest.ACTION_SETTINGS`. It checks its caller
