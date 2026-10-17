@@ -32,14 +32,18 @@ class SourceMapper(
         facts: TitleFacts,
         deranked: Set<String> = emptySet(),
     ): List<StreamSource> {
-        val expiresAt = Timestamp.newBuilder().setSeconds(TimeUnit.MILLISECONDS.toSeconds(clock()) + EXPIRY_SECONDS).build()
+        val expiresAt = expiresAt()
         return items
             .sortedWith(compareBy<LicensedItem> { it.item.identifier in deranked }.thenByDescending { it.downloads })
             .flatMap { sources(it, facts, expiresAt) }
             .take(MAX_SOURCES)
     }
 
-    private fun sources(
+    /** When sources issued now expire: one resolve stamps all of its sources with the same time. */
+    fun expiresAt(): Timestamp = Timestamp.newBuilder().setSeconds(TimeUnit.MILLISECONDS.toSeconds(clock()) + EXPIRY_SECONDS).build()
+
+    /** One item's sources, by height, for a resolve that streams item by item. */
+    fun sources(
         licensed: LicensedItem,
         facts: TitleFacts,
         expiresAt: Timestamp,
