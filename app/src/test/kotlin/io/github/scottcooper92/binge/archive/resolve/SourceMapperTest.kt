@@ -1,6 +1,8 @@
 package io.github.scottcooper92.binge.archive.resolve
 
 import com.binge.companion.contracts.stream.v1.Resolution
+import io.github.scottcooper92.binge.archive.settings.MinimumQuality
+import io.github.scottcooper92.binge.archive.settings.SourceSettings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -90,6 +92,60 @@ class SourceMapperTest {
 
         assertEquals(120, label.length)
         assertTrue(label.endsWith("… (1922) · CC BY 4.0"))
+    }
+
+    @Test
+    fun `the default settings keep every source`() {
+        val sources = sources(item("Night.Of.The.Living.Dead_1080p"), notld)
+
+        assertEquals(sources, mapper.kept(sources, SourceSettings.DEFAULT))
+    }
+
+    @Test
+    fun `a minimum quality drops the sources below it`() {
+        val sources = sources(item("Night.Of.The.Living.Dead_1080p"), notld)
+
+        fun kept(quality: MinimumQuality) = mapper.kept(sources, SourceSettings(minimumQuality = quality)).map { it.quality.resolution }
+
+        assertEquals(
+            listOf(Resolution.RESOLUTION_HD_1080, Resolution.RESOLUTION_HD_720, Resolution.RESOLUTION_SD),
+            kept(MinimumQuality.ANY),
+        )
+        assertEquals(listOf(Resolution.RESOLUTION_HD_1080, Resolution.RESOLUTION_HD_720), kept(MinimumQuality.HD_720))
+        assertEquals(listOf(Resolution.RESOLUTION_HD_1080), kept(MinimumQuality.HD_1080))
+    }
+
+    @Test
+    fun `subtitles in my language keep only sources with a track in the device's language`() {
+        val sources = sources(item("Night.Of.The.Living.Dead_1080p"), notld)
+        val mine = SourceSettings(subtitlesInMyLanguage = true)
+
+        assertEquals(sources, SourceMapper(testStrings, deviceLanguage = { "en" }).kept(sources, mine))
+        assertEquals(emptyList<Any>(), SourceMapper(testStrings, deviceLanguage = { "es" }).kept(sources, mine))
+        assertEquals(sources, SourceMapper(testStrings, deviceLanguage = { "es" }).kept(sources, SourceSettings.DEFAULT))
+    }
+
+    @Test
+    fun `an item with no subtitles is dropped when subtitles in my language are asked for`() {
+        val files = listOf(ArchiveFile("film.mp4", "h.264", 1, 480, 100.0))
+        val item = ArchiveItem("item", "movies", "Film", null, "English", accessRestricted = false, dark = false, files = files)
+        val sources = sources(item, TitleFacts.NONE)
+
+        assertEquals(1, sources.size)
+        assertEquals(
+            emptyList<Any>(),
+            SourceMapper(testStrings, deviceLanguage = {
+                "en"
+            }).kept(sources, SourceSettings(subtitlesInMyLanguage = true)),
+        )
+    }
+
+    @Test
+    fun `an item with no licence stated says so on its label`() {
+        assertEquals(
+            "Film (1950) · No licence stated",
+            testStrings.label("Film", 1950, Licence(Licence.Kind.NONE_STATED)),
+        )
     }
 
     @Test

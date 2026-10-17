@@ -4,6 +4,7 @@
 
     <string name="licence_public_domain">Dominio público</string>
     <string name="licence_public_domain_us">Dominio público (EE. UU.)</string>
+    <string name="licence_none_stated">Sin licencia indicada</string>
     <string name="source_label_with_year">%1$s (%2$d) · %3$s</string>
     <string name="source_label_without_year">%1$s · %2$s</string>
     <string name="subtitle_automatic">Subtítulos automáticos</string>

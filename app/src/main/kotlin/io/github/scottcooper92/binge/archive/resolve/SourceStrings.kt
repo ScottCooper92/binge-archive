@@ -12,8 +12,9 @@ class SourceStrings(
     private val publicDomainMark: String,
     private val publicDomainUs: String,
     private val cc0: String,
-    /** Takes the version and any jurisdiction: "CC BY %1$s". */
-    private val ccBy: String,
+    /** Takes the licence's code and its version with any jurisdiction: "CC %1$s %2$s". */
+    private val creativeCommons: String,
+    private val noneStated: String,
     /** Takes the title, the year and the licence name. */
     private val labelWithYear: String,
     /** Takes the title and the licence name. */
@@ -25,7 +26,8 @@ class SourceStrings(
             Licence.Kind.PUBLIC_DOMAIN_MARK -> publicDomainMark
             Licence.Kind.PUBLIC_DOMAIN_US -> publicDomainUs
             Licence.Kind.CC0 -> cc0
-            Licence.Kind.CC_BY -> ccBy.format(Locale.ROOT, licence.detail)
+            Licence.Kind.NONE_STATED -> noneStated
+            else -> creativeCommons.format(Locale.ROOT, licence.kind.code, licence.detail)
         }
 
     /** "Night of the Living Dead (1968) · Public domain (US)". */
@@ -57,7 +59,8 @@ class SourceStrings(
                 publicDomainMark = context.getString(R.string.licence_public_domain),
                 publicDomainUs = context.getString(R.string.licence_public_domain_us),
                 cc0 = context.getString(R.string.licence_cc0),
-                ccBy = context.getString(R.string.licence_cc_by),
+                creativeCommons = context.getString(R.string.licence_creative_commons),
+                noneStated = context.getString(R.string.licence_none_stated),
                 labelWithYear = context.getString(R.string.source_label_with_year),
                 labelWithoutYear = context.getString(R.string.source_label_without_year),
                 automaticCaptions = context.getString(R.string.subtitle_automatic),

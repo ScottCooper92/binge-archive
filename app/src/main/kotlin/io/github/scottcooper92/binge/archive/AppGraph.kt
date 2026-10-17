@@ -1,6 +1,10 @@
 package io.github.scottcooper92.binge.archive
 
 import android.content.Context
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.work.ListenableWorker
 import androidx.work.WorkManager
 import androidx.work.WorkerFactory
@@ -22,6 +26,7 @@ import io.github.scottcooper92.binge.archive.resolve.Resolver
 import io.github.scottcooper92.binge.archive.resolve.ResolverHttp
 import io.github.scottcooper92.binge.archive.resolve.SourceMapper
 import io.github.scottcooper92.binge.archive.resolve.SourceStrings
+import io.github.scottcooper92.binge.archive.settings.SourceSettingsStore
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import okhttp3.OkHttpClient
@@ -49,6 +54,20 @@ class AppGraph(
     /** What this device remembers of its own use: source reports and recently resolved titles. */
     val records: DeviceRecords by lazy { DeviceRecords(DeviceRecordsDatabase.open(appContext).dao()) }
 
+    /**
+     * The user's Sources settings, on the device. One store per process, as DataStore requires; the
+     * Service runs in this app's process, so the screens and the resolver share it. A corrupt file
+     * reads as the defaults.
+     */
+    val sourceSettings: SourceSettingsStore by lazy {
+        SourceSettingsStore(
+            PreferenceDataStoreFactory.create(
+                corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+                produceFile = { appContext.preferencesDataStoreFile("source_settings") },
+            ),
+        )
+    }
+
     /** The status screen's "Refresh now", on the same worker as the weekly refresh. */
     val refresher: IndexRefresher by lazy { WorkManagerIndexRefresher(WorkManager.getInstance(appContext)) }
 
@@ -63,6 +82,7 @@ class AppGraph(
             LogcatCoverageLog,
             deranked = records::deranked,
             recordResolved = records::recordResolved,
+            settings = sourceSettings::current,
         )
     }
 

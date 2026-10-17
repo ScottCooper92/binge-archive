@@ -10,7 +10,10 @@
     <string name="licence_public_domain">Public domain</string>
     <string name="licence_public_domain_us">Public domain (US)</string>
     <string name="licence_cc0" translatable="false">CC0</string>
-    <string name="licence_cc_by" translatable="false">CC BY %1$s</string>
+    <!-- A Creative Commons licence: its code ("BY-SA") and its version ("4.0", "3.0 US"). -->
+    <string name="licence_creative_commons" translatable="false">CC %1$s %2$s</string>
+    <!-- An item the Internet Archive lists with no licence at all. -->
+    <string name="licence_none_stated">No licence stated</string>
     <string name="source_label_with_year">%1$s (%2$d) · %3$s</string>
     <string name="source_label_without_year">%1$s · %2$s</string>
     <string name="subtitle_automatic">Automatic captions</string>

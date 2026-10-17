@@ -7,6 +7,7 @@ import com.binge.companion.contracts.v1.MediaId
 import com.binge.companion.contracts.v1.MediaType
 import com.binge.companion.sdk.attempt
 import io.github.scottcooper92.binge.archive.index.IndexRepository
+import io.github.scottcooper92.binge.archive.settings.SourceSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
@@ -53,6 +54,9 @@ fun interface TitleResolver {
  * network route can place a film the index has not linked. When Wikidata fails, the finder falls back
  * on the index's own Archive ids for the film, and the fallback is logged as a [CoverageMiss]. A film no route places is
  * [ResolveOutcome.NotFound]; otherwise [ItemReader] and [SourceMapper] turn the items into sources.
+ *
+ * The user's [SourceSettings] are read once, before the routes, and hold for the whole resolve. They
+ * never change the answer's kind: a known film they filter down to nothing is still OK and empty.
  */
 class Resolver(
     private val index: IndexRepository,
@@ -63,6 +67,8 @@ class Resolver(
     private val deranked: suspend () -> Set<String> = { emptySet() },
     /** Told of each resolve that found sources: the TMDB id, the title and the first source's Archive item. */
     private val recordResolved: suspend (tmdbId: Int, title: String, identifier: String) -> Unit = { _, _, _ -> },
+    /** The user's settings now. A failure to read them is an `IOException`, so the resolve fails. */
+    private val settings: suspend () -> SourceSettings = { SourceSettings.DEFAULT },
 ) : TitleResolver {
     override suspend fun resolve(
         media: MediaId,
@@ -74,13 +80,18 @@ class Resolver(
         val hit = index.lookup(media)
         if (hit != null && !hit.isFilm) return ResolveOutcome.NotAFilm
         val tmdbId = media.tmdbId
-        val found = finder.find(tmdbId, hit)
+        val settings = settings()
+        val found = finder.find(tmdbId, hit, titleMatches = settings.titleMatches)
         val inIndex = hit != null
         return when {
             found.candidates.isNotEmpty() -> {
                 if (found.fromIndex) coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.WIKIDATA_FAILED))
                 if (!inIndex) coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.NOT_IN_INDEX))
-                ResolveOutcome.Sources(sources(tmdbId, found))
+                ResolveOutcome.Sources(sources(tmdbId, found, settings))
+            }
+            found.titleSkipped -> {
+                coverage.miss(CoverageMiss(tmdbId, Route.TITLE, CoverageMiss.Reason.FILTERED_BY_SETTINGS))
+                if (inIndex) ResolveOutcome.Sources(emptyFlow()) else ResolveOutcome.NotFound
             }
             inIndex -> {
                 coverage.miss(CoverageMiss(tmdbId, route = null, reason = CoverageMiss.Reason.NO_ITEMS))
@@ -96,11 +107,12 @@ class Resolver(
     /**
      * Each item's sources as soon as the item is read, so a deadline keeps what was found before it. Items
      * come in download order; one this device reported is held back and sent after every other. At most
-     * [SourceMapper.MAX_SOURCES] in all.
+     * [SourceMapper.MAX_SOURCES] in all, after the user's [settings] have dropped what they exclude.
      */
     private fun sources(
         tmdbId: Int,
         found: Found,
+        settings: SourceSettings,
     ): Flow<StreamSource> =
         flow {
             val derankedIds = attempt { deranked() }.onFailure { bookkeepingFailed("deranking", it) }.getOrDefault(emptySet())
@@ -108,9 +120,13 @@ class Resolver(
             val heldBack = mutableListOf<LicensedItem>()
             var items = 0
             var sent = 0
+            var filtered = false
 
             suspend fun send(licensed: LicensedItem) {
-                for (source in mapper.sources(licensed, found.facts, expiresAt)) {
+                val all = mapper.sources(licensed, found.facts, expiresAt)
+                val kept = mapper.kept(all, settings)
+                if (kept.size < all.size) filtered = true
+                for (source in kept) {
                     if (sent == SourceMapper.MAX_SOURCES) return
                     if (sent == 0) {
                         attempt {
@@ -126,12 +142,13 @@ class Resolver(
                 }
             }
 
-            reader.readEach(found).collect { licensed ->
+            reader.readEach(found, settings.licences, onFiltered = { filtered = true }).collect { licensed ->
                 items++
                 if (licensed.item.identifier in derankedIds) heldBack += licensed else send(licensed)
             }
             heldBack.forEach { send(it) }
             when {
+                sent == 0 && filtered -> coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.FILTERED_BY_SETTINGS))
                 items == 0 -> coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.NO_LICIT_ITEM))
                 sent == 0 -> coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.NO_PLAYABLE_FILE))
             }

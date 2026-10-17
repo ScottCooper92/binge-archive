@@ -94,6 +94,29 @@ class ItemFinderTest {
         }
 
     @Test
+    fun `with title matches off, the title route is not searched and the skip is said`() =
+        runTest {
+            archive.sparql = { facts(imdb = "tt0000001", runtime = "60") }
+            archive.search = { searchResponse() }
+
+            val found = ItemFinder(archive.http()).find(1, titleMatches = false)
+
+            assertEquals(null, found.route)
+            assertTrue(found.titleSkipped)
+            assertTrue(archive.searches.none { it.contains("title:") })
+        }
+
+    @Test
+    fun `with title matches off, a film with no runtime is not a skip`() =
+        runTest {
+            archive.sparql = { facts() }
+
+            val found = ItemFinder(archive.http()).find(1, titleMatches = false)
+
+            assertEquals(false, found.titleSkipped)
+        }
+
+    @Test
     fun `a title match that does not run like the film is not found`() =
         runTest {
             archive.sparql = { facts(runtime = "60") }

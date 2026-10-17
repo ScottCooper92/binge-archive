@@ -29,6 +29,12 @@ data class CoverageMiss(
 
         /** Wikidata failed, and [route]'s candidates are the index's Archive ids instead. */
         WIKIDATA_FAILED,
+
+        /**
+         * The resolve ended with nothing, and the user's settings, narrower than the default, removed
+         * something the default would have kept: the title route, an item's licence, or a source.
+         */
+        FILTERED_BY_SETTINGS,
     }
 }
 
