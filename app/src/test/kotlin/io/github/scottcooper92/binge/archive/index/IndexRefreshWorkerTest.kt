@@ -67,7 +67,8 @@ class IndexRefreshWorkerTest {
 
             assertNotNull(repository.lookup(movie(10331)))
             assertEquals(RefreshSource.SEED, repository.lastSuccess().first()?.source)
-            assertEquals("offline", database.indexDao().lastRefresh()?.message)
+            val dao = database.indexDao()
+            assertEquals("offline", dao.latestRefresh().first()?.message)
         }
 
     @Test

@@ -135,7 +135,7 @@ class IndexRepositoryTest {
 
             assertTrue(index.lookup(movie(10331)) != null)
             assertEquals(1_000L, index.lastSuccess().first()?.finishedAt)
-            val last = checkNotNull(dao.lastRefresh())
+            val last = checkNotNull(dao.latestRefresh().first())
             assertFalse(last.succeeded)
             assertEquals("HTTP 503 from query.wikidata.org", last.message)
         }
