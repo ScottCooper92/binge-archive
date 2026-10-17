@@ -7,6 +7,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
@@ -109,7 +110,7 @@ class IndexRepositoryTest {
 
             assertEquals(10, dao.archiveItemCount())
             assertEquals(1, dao.refreshCount())
-            assertNull(index.lookup(movie(653)))
+            assertNotNull(index.lookup(movie(653)))
         }
 
     @Test
@@ -158,7 +159,7 @@ class IndexRepositoryTest {
             val index = repository(seed = null)
 
             assertNull(index.lookup(movie(10331)))
-            assertNull(index.lookup(movie(653)))
+            assertNotNull(index.lookup(movie(653)))
             assertEquals(1, seedLoads)
             assertNull(index.lastSuccess().first())
         }
@@ -187,7 +188,7 @@ class IndexRepositoryTest {
 
             now = 3_000L
             index.replace(
-                IndexSnapshot(listOf(WikidataLink(LinkedMediaType.MOVIE, 7, "new", true)), emptyList(), emptyList()),
+                IndexSnapshot(listOf(WikidataLink(LinkedMediaType.MOVIE, 7, "new", true)), items(2), emptyList()),
                 RefreshSource.NETWORK,
             )
 
