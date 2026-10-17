@@ -65,7 +65,8 @@ Skip `binge-companions/`, `design-system/` and `binge-ci/` (submodules with thei
 ## Dimension 5 — correctness
 
 - Index refresh: a failed refresh keeps the previous index; nothing is deleted on failure; an empty
-  or partial fetch never replaces the index; the seed never overwrites a newer index.
+  Wikidata or Archive fetch, an Archive paging loop that ends with `seen < numFound`, and an Archive
+  result under half the current `archive_imdb` size never replace the index; the seed never overwrites a newer index.
 - Wikidata queries stay well inside the 20 s read timeout (time them live), and the seed task
   degrades to no seed offline.
 - Room schema vs exported schemas and migrations.
