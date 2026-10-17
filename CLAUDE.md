@@ -45,14 +45,30 @@ check, is never a fix for a test or a coverage gap. It is a decision for the mai
 
 - **Feature detection never uses version numbers.** The host learns what this app can do from the
   handshake's capability set, and ignores enum values it does not know.
-- **Errors are gRPC status codes**, never fields on a response message. `Resolve` answers in three
-  distinct ways, and the resolver reports which one applies:
-  - a film the index knows with no licit copy completes with no sources (OK, empty);
-  - a TMDB id the index does not know is `NOT_FOUND`;
-  - an id the index knows that is not a film is `INVALID_ARGUMENT`.
-- **Movies only in v1.** A series resolve validates its `EpisodeRef` and completes empty.
+- **Errors are gRPC status codes**, never fields on a response message. `stream.proto` is the
+  authority, and the resolver reports which answer applies. In its words:
+
+  > So `Resolve` has four answers: sources; OK and empty (a known title with no licit source);
+  > NOT_FOUND (not in the catalogue); and INVALID_ARGUMENT (a bad request).
+
+  > NOT_FOUND — the title is not in this integration's catalogue. It is an answer, not a failure
+  > […] Distinct from a `Resolve` that completes with no sources, which is OK and empty: the
+  > integration knows the title and has no source for it.
+
+  > INVALID_ARGUMENT — a bad request: an unusable `MediaId` (MEDIA_TYPE_UNSPECIFIED, `tmdb_id`
+  > <= 0), a `MediaId` whose type the integration knows is wrong (a movie id that is not a film,
+  > or the reverse), an `episode` on a movie, an episode the series does not have, or a
+  > `source_id` this integration never issued. A valid series the integration does not carry is
+  > NOT_FOUND.
+
+  For this app, "the catalogue" is every film some route can place on the Archive: the index, and
+  the network routes behind it. A film missing from the index is not `NOT_FOUND` until the routes
+  have also found nothing.
+- **Movies only in v1.** A series request is validated (`INVALID_ARGUMENT` when unusable) and is
+  otherwise `NOT_FOUND`: a valid series this app does not carry.
 - **`mime_type` comes from the Archive file's format**, and is only ever a video type
-  (`video/mp4`, `video/webm`, `video/ogg` and so on). The host drops anything else.
+  (`video/mp4`, `video/webm`, `video/ogg` and so on). The host drops anything off its video
+  allowlist (`common.proto`, `PlaybackSource`).
 - **Media is identified as media type + TMDB id.** Translating that into Archive identifiers is
   this app's job, and it lives in one clearly named place.
 - **Partial results are normal.** `Resolve` streams sources as it finds them and stops all work
@@ -210,7 +226,8 @@ control.
 bot's merge: the PR is still reviewed and kept current, but a maintainer lands it. Add it alongside
 `agent` only when the PR:
 
-- changes how the bots review or merge (`.ai/agents/` or `.github/workflows/`);
+- changes how the bots review or merge (`.ai/agents/`, `.github/workflows/`, or these label rules
+  themselves);
 - needs a check on a device first; or
 - isn't ready to merge (a stack to land by hand, or a PR waiting on a decision or another
   repository).
