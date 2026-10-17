@@ -179,7 +179,8 @@ query (step 3): they keep the index's order.
 5. **`SourceMapper`.** Video files only (`VideoFormats`). With a runtime, a file under half of it is
    dropped: a reel, a trailer or an extra is not the film. One source per resolution class per
    item, preferring h.264 in MP4, then any MP4, then height, length and size. The label is
-   "Title (year)", and the licence goes in `licence_label` and `licence_kind`. SubRip and WebVTT become subtitle tracks, at most ten. Each item's
+   "Title (year)", and the licence goes in `licence_label` and `licence_kind`. SubRip and WebVTT
+   become subtitle tracks, at most ten. Each item's
    sources are sent as soon as the item is read, in download order; an item this device reported is
    held back and sent last. At most fifty sources. URLs are `https://archive.org/download/…`, with a
    nominal 24-hour expiry. Before an item's sources are sent, the user's minimum quality drops those
