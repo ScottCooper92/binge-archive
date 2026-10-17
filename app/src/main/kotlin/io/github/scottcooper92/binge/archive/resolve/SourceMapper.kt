@@ -171,11 +171,23 @@ class SourceMapper(
     }
 }
 
-/** The contract's kind for a licence: every public-domain and Creative Commons licence is open. */
+/**
+ * The contract's kind for a licence: every public-domain and Creative Commons licence is open. Listed
+ * in full, with no `else`, so a kind added later has to choose its own value rather than pass as open.
+ */
 internal fun Licence.Kind.onTheWire(): LicenceKind =
     when (this) {
+        Licence.Kind.PUBLIC_DOMAIN_MARK,
+        Licence.Kind.PUBLIC_DOMAIN_US,
+        Licence.Kind.CC0,
+        Licence.Kind.CC_BY,
+        Licence.Kind.CC_BY_SA,
+        Licence.Kind.CC_BY_NC,
+        Licence.Kind.CC_BY_ND,
+        Licence.Kind.CC_BY_NC_SA,
+        Licence.Kind.CC_BY_NC_ND,
+        -> LicenceKind.LICENCE_KIND_OPEN
         Licence.Kind.NONE_STATED -> LicenceKind.LICENCE_KIND_NONE_STATED
         Licence.Kind.RESTRICTED -> LicenceKind.LICENCE_KIND_RESTRICTED
         Licence.Kind.UNKNOWN -> LicenceKind.LICENCE_KIND_UNKNOWN
-        else -> LicenceKind.LICENCE_KIND_OPEN
     }
