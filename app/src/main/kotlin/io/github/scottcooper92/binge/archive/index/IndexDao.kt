@@ -41,9 +41,6 @@ interface IndexDao {
     fun lastSuccess(): Flow<RefreshLogEntity?>
 
     @Query("SELECT * FROM refresh_log ORDER BY id DESC LIMIT 1")
-    suspend fun lastRefresh(): RefreshLogEntity?
-
-    @Query("SELECT * FROM refresh_log ORDER BY id DESC LIMIT 1")
     fun latestRefresh(): Flow<RefreshLogEntity?>
 
     /** Films the index can place: a Wikidata film link, or an Archive item tagged with a film's IMDb id. */

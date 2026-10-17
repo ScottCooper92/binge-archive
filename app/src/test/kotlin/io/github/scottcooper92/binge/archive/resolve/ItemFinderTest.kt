@@ -1,6 +1,7 @@
 package io.github.scottcooper92.binge.archive.resolve
 
 import io.github.scottcooper92.binge.archive.index.IndexHit
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -142,7 +143,7 @@ class ItemFinderTest {
         assertThrows(IOException::class.java) {
             kotlinx.coroutines.runBlocking {
                 val http = archive.http()
-                ItemReader(http).read(ItemFinder(http).find(1))
+                ItemReader(http).readEach(ItemFinder(http).find(1)).toList()
             }
         }
     }

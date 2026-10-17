@@ -5,7 +5,6 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.toList
 import java.io.IOException
 import kotlin.math.abs
 
@@ -32,9 +31,6 @@ data class LicensedItem(
 class ItemReader(
     private val http: ResolverHttp,
 ) {
-    /** Every admitted item, in candidate order, once all are read. */
-    suspend fun read(found: Found): List<LicensedItem> = readEach(found).toList()
-
     /** Each admitted item, in candidate order, as soon as it and every candidate ahead of it are read. */
     fun readEach(found: Found): Flow<LicensedItem> =
         flow {
