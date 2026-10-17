@@ -1,5 +1,6 @@
 package io.github.scottcooper92.binge.archive.resolve
 
+import io.github.scottcooper92.binge.archive.index.IndexHit
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -25,6 +26,8 @@ data class Found(
     val facts: TitleFacts,
     /** Metadata the finder already read, by identifier, so [ItemReader] does not fetch it again. */
     val preloaded: Map<String, ArchiveItem> = emptyMap(),
+    /** True when Wikidata failed and the candidates are the index's Archive ids instead. */
+    val fromIndex: Boolean = false,
 )
 
 /**
@@ -37,17 +40,28 @@ data class Found(
  *    only if a video file runs within 8% of the Wikidata runtime, checked before any licence check.
  *    With no runtime, this route is skipped. If no match qualifies and any failed to load, the find
  *    fails with an `IOException`: the failed one might have been the film.
+ *
+ * Wikidata is asked first even for a film the index knows, since only it gives the title, year and
+ * runtime. When the query fails, the index's Archive ids stand in: its Wikidata ids as route 1, else
+ * its IMDb-tagged ids as route 2, with [TitleFacts.NONE]. Neither route checks a runtime, so nothing
+ * is lost but the label's title and year and [SourceMapper]'s minimum length. The licence check is
+ * [ItemReader]'s and still applies. With no index ids to fall back on, the failure is the find's.
  */
 class ItemFinder(
     private val http: ResolverHttp,
 ) {
-    suspend fun find(tmdbId: Int): Found {
-        val facts = WikidataTitle.parse(http.sparql(WikidataTitle.query(tmdbId)))
-        if (facts.archiveIds.isNotEmpty()) {
-            val downloads = downloads(facts.archiveIds)
-            val candidates = facts.archiveIds.map { Candidate(it, downloads[it] ?: 0) }.sortedByDescending { it.downloads }
-            return Found(Route.WIKIDATA, candidates.take(MAX_CANDIDATES), facts)
-        }
+    /** Finds the items for [tmdbId]. [hit] is what the index knows of it, the fallback when Wikidata fails. */
+    suspend fun find(
+        tmdbId: Int,
+        hit: IndexHit? = null,
+    ): Found {
+        val facts =
+            try {
+                WikidataTitle.parse(http.sparql(WikidataTitle.query(tmdbId)))
+            } catch (e: IOException) {
+                return fromIndex(hit) ?: throw e
+            }
+        if (facts.archiveIds.isNotEmpty()) return Found(Route.WIKIDATA, ranked(facts.archiveIds), facts)
         facts.imdbId?.let { imdb ->
             val candidates = search("mediatype:movies AND external-identifier:\"urn:imdb:$imdb\"")
             if (candidates.isNotEmpty()) return Found(Route.IMDB, candidates, facts)
@@ -82,6 +96,27 @@ class ItemFinder(
         // resolve if nothing is admitted and it still does not load.
         val kept = loads.filter { (candidate, result) -> result.isFailure || matches.any { it.first == candidate } }
         return Found(Route.TITLE, kept.map { it.first }, facts, matches.associate { (c, item) -> c.identifier to item })
+    }
+
+    /** The index's Archive ids for [hit] as candidates, or null when it has none. */
+    private suspend fun fromIndex(hit: IndexHit?): Found? {
+        val (route, identifiers) =
+            when {
+                hit == null -> return null
+                hit.wikidataArchiveIds.isNotEmpty() -> Route.WIKIDATA to hit.wikidataArchiveIds
+                hit.imdbArchiveIds.isNotEmpty() -> Route.IMDB to hit.imdbArchiveIds
+                else -> return null
+            }
+        return Found(route, ranked(identifiers), TitleFacts.NONE, fromIndex = true)
+    }
+
+    /** [identifiers] as candidates, best-downloaded first, at most [MAX_CANDIDATES]. */
+    private suspend fun ranked(identifiers: List<String>): List<Candidate> {
+        val downloads = downloads(identifiers)
+        return identifiers
+            .map { Candidate(it, downloads[it] ?: 0) }
+            .sortedByDescending { it.downloads }
+            .take(MAX_CANDIDATES)
     }
 
     private suspend fun downloads(identifiers: List<String>): Map<String, Long> {

@@ -96,7 +96,8 @@ The code is split in two:
   `index/src/test/resources/fixtures`, trimmed from real responses.
 - `:app`'s `index` package holds the Room tables (`wikidata_link`, `archive_imdb`, `refresh_log`),
   `IndexRepository` and the weekly `IndexRefreshWorker`. `IndexRepository.lookup(mediaId)` is what
-  the resolver and Probe read.
+  the resolver and Probe read. Probe answers from it. The resolver reads `isFilm`, and reads the hit's
+  Archive ids only when its live Wikidata query fails (see The resolver).
 
 Rules that hold it together:
 
@@ -130,6 +131,11 @@ search calls, and the title route's loads) or out of the flow. The Service maps 
    A title match counts as found only if a video file runs within 8% of the runtime, checked
    before any licence. If none qualifies and any failed to load, the resolve fails, never
    `NotFound`.
+   Wikidata is always asked first, since only it gives the title, year and runtime. If that query
+   fails, the index hit's Archive ids stand in: its Wikidata ids as route 1, else its IMDb-tagged ids
+   as route 2. They are read with no title facts, so the label takes the item's own title, and the
+   minimum length is off. The licence check still applies. The fallback is logged as a
+   `WIKIDATA_FAILED` coverage miss. With no hit, or a hit with no ids, the resolve fails.
 4. **`ItemReader`.** Reads every candidate's metadata in parallel, and hands on each admitted item
    as soon as it and the candidates ahead of it are read: a slow item holds back only those after
    it. It drops items with no allowlisted licence, restricted or dark items, non-`movies` items,
@@ -144,7 +150,8 @@ search calls, and the title route's loads) or out of the flow. The Service maps 
    nominal 24-hour expiry.
 
 Every gap is a `CoverageMiss` (route and reason) for binge-companions#148: a film not in the
-catalogue, one the routes found but the index did not know, and a resolve that ends with nothing.
+catalogue, one the routes found but the index did not know, a resolve that fell back on the index
+because Wikidata failed, and a resolve that ends with nothing.
 `LogcatCoverageLog` writes them to logcat on the device and nowhere else.
 Every HTTP call is cancellable: when the host cancels, the call is cancelled with it.
 

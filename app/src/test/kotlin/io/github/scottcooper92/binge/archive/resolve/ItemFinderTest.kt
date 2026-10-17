@@ -1,5 +1,6 @@
 package io.github.scottcooper92.binge.archive.resolve
 
+import io.github.scottcooper92.binge.archive.index.IndexHit
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -152,5 +153,58 @@ class ItemFinderTest {
             listOf(Candidate("a", 0)),
             ItemFinder.parseSearch("""{"response":{"docs":[{"identifier":"a"},{"downloads":3},"x"]}}"""),
         )
+    }
+
+    @Test
+    fun `when Wikidata fails, the index's Wikidata ids stand in for route 1, with no facts`() =
+        runTest {
+            archive.sparqlStatus = 503
+            archive.search = { resolveFixture("search-downloads-653.json") }
+            val hit = IndexHit(isFilm = true, listOf("Nosferatu_DVD_quality", "Nosferatu_unlicensed_transfer"), listOf("by_imdb"))
+
+            val found = ItemFinder(archive.http()).find(653, hit)
+
+            assertEquals(Route.WIKIDATA, found.route)
+            assertEquals(listOf("Nosferatu_unlicensed_transfer", "Nosferatu_DVD_quality"), found.candidates.map { it.identifier })
+            assertEquals(TitleFacts.NONE, found.facts)
+            assertTrue(found.fromIndex)
+        }
+
+    @Test
+    fun `when Wikidata fails, the index's candidates still pass the licence check`() =
+        runTest {
+            archive.sparqlStatus = 503
+            archive.search = { resolveFixture("search-downloads-653.json") }
+            val hit = IndexHit(isFilm = true, listOf("Nosferatu_DVD_quality", "Nosferatu_unlicensed_transfer"), emptyList())
+            val http = archive.http()
+
+            val admitted = ItemReader(http).read(ItemFinder(http).find(653, hit))
+
+            assertEquals(listOf("Nosferatu_DVD_quality"), admitted.map { it.item.identifier })
+        }
+
+    @Test
+    fun `when Wikidata fails and the index has no Wikidata id, its IMDb-tagged ids stand in for route 2`() =
+        runTest {
+            archive.sparqlStatus = 503
+            archive.search = { searchResponse("by_imdb" to 10) }
+
+            val found = ItemFinder(archive.http()).find(1, IndexHit(isFilm = true, emptyList(), listOf("by_imdb")))
+
+            assertEquals(Route.IMDB, found.route)
+            assertEquals(listOf(Candidate("by_imdb", 10)), found.candidates)
+            assertTrue(found.fromIndex)
+        }
+
+    @Test
+    fun `when Wikidata fails and the index has no Archive id, the find fails`() {
+        archive.sparqlStatus = 503
+
+        listOf(null, IndexHit(isFilm = true, emptyList(), emptyList())).forEach { hit ->
+            assertThrows(IOException::class.java) {
+                kotlinx.coroutines.runBlocking { ItemFinder(archive.http()).find(1, hit) }
+            }
+        }
+        assertEquals(emptyList<String>(), archive.searches)
     }
 }

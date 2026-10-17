@@ -47,7 +47,8 @@ fun interface TitleResolver {
 /**
  * Resolves a title to [StreamSource]s. The index answers first: a known non-film is [ResolveOutcome.NotAFilm].
  * Then [ItemFinder] looks for Archive items, for a film the index knows and for one it does not, since a
- * network route can place a film the index has not linked. A film no route places is
+ * network route can place a film the index has not linked. When Wikidata fails, the finder falls back
+ * on the index's own Archive ids for the film, and the fallback is logged as a [CoverageMiss]. A film no route places is
  * [ResolveOutcome.NotFound]; otherwise [ItemReader] and [SourceMapper] turn the items into sources.
  */
 class Resolver(
@@ -70,10 +71,11 @@ class Resolver(
         val hit = index.lookup(media)
         if (hit != null && !hit.isFilm) return ResolveOutcome.NotAFilm
         val tmdbId = media.tmdbId
-        val found = finder.find(tmdbId)
+        val found = finder.find(tmdbId, hit)
         val inIndex = hit != null
         return when {
             found.candidates.isNotEmpty() -> {
+                if (found.fromIndex) coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.WIKIDATA_FAILED))
                 if (!inIndex) coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.NOT_IN_INDEX))
                 ResolveOutcome.Sources(sources(tmdbId, found))
             }
