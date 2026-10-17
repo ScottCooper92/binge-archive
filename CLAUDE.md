@@ -229,6 +229,11 @@ with the Sources settings, its licence page, and the hand-off Binge's "manage" r
   state and a `StatusActions`, so every arm renders in a frame. Sections: what this is (and the
   licence page), Sources, the index (films linked, last refresh, a failed refresh, "Refresh now"),
   who the data comes from, recently resolved titles, and reported copies.
+- **Wide windows** (#49): `PhoneStatusRoot` is the one place the phone's layout is chosen, from
+  the window size class. Below 840dp it is `StatusScreen` or the licence page alone, capped at
+  `content_max_width` and centred. From 840dp it is `StatusListDetail`: the status list and its
+  detail (Sources, or the licence page) side by side, in even halves. No screen below it asks the
+  window.
 - **Recently resolved and reported** live in `device-records.db` (`reports/DeviceRecords.kt`), on
   the device only, never shown to the host. Each list has a clear action.
 - **`SettingsHandOffActivity`** answers `CompanionManifest.ACTION_SETTINGS`. It checks its caller
