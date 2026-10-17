@@ -161,16 +161,34 @@ class CoverageMeasurement {
                 val year = facts.year?.let { " AND year:$it" }.orEmpty()
                 runCatchingIo {
                     ItemFinder
-                        .parseSearch(http.search("mediatype:movies AND title:(\"${ItemFinder.quoted(facts.title)}\")$year", rows = ItemFinder.MAX_CANDIDATES))
-                        .joinToString(",") { it.identifier }
+                        .parseSearch(
+                            http.search(
+                                "mediatype:movies AND title:(\"${ItemFinder.quoted(facts.title)}\")$year",
+                                rows = ItemFinder.MAX_CANDIDATES,
+                            ),
+                        ).joinToString(",") { it.identifier }
                 }
             } else {
                 null
             }
         return listOf(
-            list, tmdbId, answer, route?.name?.lowercase(), inIndex, sources, firstMs, totalMs, used, codes,
-            missReasons, facts?.title, facts?.year, facts?.runtimeSeconds?.toInt(),
-            facts?.imdbId, facts?.archiveIds?.size, titleSearch,
+            list,
+            tmdbId,
+            answer,
+            route?.name?.lowercase(),
+            inIndex,
+            sources,
+            firstMs,
+            totalMs,
+            used,
+            codes,
+            missReasons,
+            facts?.title,
+            facts?.year,
+            facts?.runtimeSeconds?.toInt(),
+            facts?.imdbId,
+            facts?.archiveIds?.size,
+            titleSearch,
         )
     }
 
@@ -186,8 +204,23 @@ class CoverageMeasurement {
         const val REFRESH_ATTEMPTS = 3
         val HEADER =
             listOf(
-                "list", "tmdb", "answer", "route", "in_index", "sources", "first_ms", "total_ms", "requests", "http_errors",
-                "misses", "title", "year", "runtime_s", "imdb", "wikidata_archive_ids", "title_search",
+                "list",
+                "tmdb",
+                "answer",
+                "route",
+                "in_index",
+                "sources",
+                "first_ms",
+                "total_ms",
+                "requests",
+                "http_errors",
+                "misses",
+                "title",
+                "year",
+                "runtime_s",
+                "imdb",
+                "wikidata_archive_ids",
+                "title_search",
             )
     }
 }
