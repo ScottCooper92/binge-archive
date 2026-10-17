@@ -42,7 +42,9 @@ class AppGraph(
 
     private val database: IndexDatabase by lazy { IndexDatabase.open(appContext) }
 
-    val index: IndexRepository by lazy { IndexRepository(database.indexDao(), seed = { appContext.assets.readSeed() }) }
+    val index: IndexRepository by lazy {
+        IndexRepository(database.indexDao(), seed = { appContext.assets.readSeed() }, seedContext = io)
+    }
 
     /** What this device remembers of its own use: source reports and recently resolved titles. */
     val records: DeviceRecords by lazy { DeviceRecords(DeviceRecordsDatabase.open(appContext).dao()) }
