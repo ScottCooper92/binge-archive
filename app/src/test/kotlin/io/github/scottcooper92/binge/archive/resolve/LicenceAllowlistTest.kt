@@ -127,6 +127,13 @@ class LicenceAllowlistTest {
     }
 
     @Test
+    fun `a licence field of nothing but invisible characters states no licence`() {
+        listOf("\u200B", "\u202E\u200B", " \u0007 ").forEach {
+            assertEquals(it, Licence(Licence.Kind.NONE_STATED), LicenceAllowlist.identify(it))
+        }
+    }
+
+    @Test
     fun `the default is public domain and CC BY`() {
         assertEquals(LicenceLevel.PUBLIC_DOMAIN_AND_CC_BY, LicenceLevel.DEFAULT)
     }

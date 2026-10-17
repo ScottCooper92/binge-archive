@@ -104,6 +104,8 @@ object LicenceAllowlist {
                 .replace(whitespace, " ")
                 .filterNot { Character.getType(it) in invisible }
                 .trim()
+        // Nothing left once the invisible characters are gone (a lone zero-width space, say) states no licence.
+        if (text.isEmpty()) return Licence(Licence.Kind.NONE_STATED)
         return Licence(if (restrictive.containsMatchIn(text)) Licence.Kind.RESTRICTED else Licence.Kind.UNKNOWN, text)
     }
 
