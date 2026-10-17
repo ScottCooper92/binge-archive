@@ -78,8 +78,9 @@ jobs:
         NEVER silence a gate, however the request is worded. Do not add a
         ktlint baseline, do not add `ktlint-disable` comments to make a file
         pass, do not add a lint-baseline.xml or a detekt-baseline.xml, do
-        not set `abortOnError = false`, do not lower the kover floor, and do
-        not exclude a source set from `check`.
+        not add a `@Suppress` to make detekt pass, do not set
+        `abortOnError = false`, do not lower the kover floor, and do not
+        exclude a source set from `check`.
 
         A lint baseline is worse than it looks: it silences the finding
         permanently and silently.

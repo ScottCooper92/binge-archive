@@ -108,7 +108,9 @@ The code is split in two:
 Rules that hold it together:
 
 - **A failed refresh keeps the previous index.** Only a whole, successful snapshot replaces it, in
-  one transaction. A fetch that returns no links at all is a failure, not an empty index.
+  one transaction. A fetch that returns no links at all is a failure, not an empty index. So is an
+  Archive search that returns no items, one that ends with fewer items than its `numFound`, and one
+  that returns under half the Archive items the index holds (`IndexRepository.replace`).
 - **The seed ships in the APK.** `generateIndexSeed` runs `:index`'s own fetcher at build time and
   writes `assets/index/seed.tsv`. Offline it writes nothing and the build goes on; the app then starts
   empty until its first refresh. A seed under a week old is reused; `-Parchive.skipSeed` skips it.
