@@ -159,7 +159,7 @@ class IndexRepositoryTest {
             val index = repository(seed = null)
 
             assertNull(index.lookup(movie(10331)))
-            assertNotNull(index.lookup(movie(653)))
+            assertNull(index.lookup(movie(653)))
             assertEquals(1, seedLoads)
             assertNull(index.lastSuccess().first())
         }
