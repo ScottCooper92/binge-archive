@@ -19,9 +19,14 @@ La traducción de `listing.md`. El nombre de la app es el mismo en los dos idiom
 > Una app complementaria de Binge. Abre una película en Binge y, si Internet Archive tiene una
 > copia de dominio público o con licencia abierta, Binge te la ofrece para verla.
 >
-> **Solo licencias abiertas.** Esta app solo devuelve una copia si su licencia es de dominio
-> público, CC0 o CC BY. Cada copia indica su licencia. Nada más se ofrece nunca, y no hay ningún
-> ajuste para cambiarlo.
+> **Licencias abiertas de forma predeterminada.** De entrada, esta app solo devuelve una copia si
+> su licencia es de dominio público, CC0 o CC BY. Cada copia indica su licencia.
+>
+> **Tú eliges las fuentes.** En los ajustes de Fuentes de la app puedes desactivar las coincidencias
+> por título, quedarte solo con el dominio público, aceptar cualquier licencia Creative Commons,
+> fijar una calidad mínima de 720p o 1080p, o pedir solo copias con subtítulos en tu idioma.
+> También puedes elegir qué licencias incluir. Cada copia sigue indicando su licencia, o que no
+> indica ninguna. Los ajustes se quedan en tu dispositivo.
 >
 > **Sobre todo películas antiguas.** La mayoría de las películas de dominio público son de antes
 > de 1960, así que muchos títulos no tendrán nada aquí. Las series aún no están incluidas.

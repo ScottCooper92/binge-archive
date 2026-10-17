@@ -1,7 +1,7 @@
 # Privacy policy
 
-*Internet Archive for Binge* ("the app") finds openly licensed copies of films on the Internet
-Archive for Binge to play. This policy says what the app stores, where it sends anything, and what
+*Internet Archive for Binge* ("the app") finds copies of films on the Internet Archive for Binge to
+play: by default only openly licensed ones, or whatever you choose in its Sources settings. This policy says what the app stores, where it sends anything, and what
 it does not do. It is written to be checked against the source code, which is public at
 https://github.com/ScottCooper92/binge-archive.
 
@@ -14,6 +14,9 @@ https://github.com/ScottCooper92/binge-archive.
 - **Copies you reported**, when you tell Binge a copy did not play. The app offers that copy last
   for 30 days. After that the app forgets the report. You can also clear reports on the app's
   screen, or uninstall the app, at any time.
+- **Your Sources settings**: whether title matches are used, which licences are accepted, a minimum
+  quality, and whether a copy must have subtitles in your language. They change what the app finds,
+  and are never sent anywhere. Uninstalling the app removes them.
 - **A log of films it could not find**, written to the device's own system log to help improve
   the index. It is never sent anywhere.
 

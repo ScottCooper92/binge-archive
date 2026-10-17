@@ -23,9 +23,14 @@ README.
 > A companion for Binge. Open a film in Binge, and if the Internet Archive holds a copy in the
 > public domain or under an open licence, Binge offers it to play.
 >
-> **Only open licences.** This app returns a copy only if its licence is the public domain, CC0 or
-> CC BY. Each copy names its licence on the row. Anything else is never offered, and there is no
-> setting to change that.
+> **Open licences by default.** Out of the box, this app returns a copy only if its licence is the
+> public domain, CC0 or CC BY. Each copy names its licence on the row.
+>
+> **Your choice of sources.** In the app's Sources settings you can turn off title matches, keep to
+> the public domain only, accept any Creative Commons licence, set a minimum quality of 720p or
+> 1080p, or ask only for copies with subtitles in your language. You can also choose which
+> licences to include. Each copy still shows its licence, or says it states none. The settings stay
+> on your device.
 >
 > **Mostly older films.** Most public-domain films are from before 1960, so many titles will have
 > nothing here. Series are not covered yet.
@@ -45,7 +50,7 @@ README.
 >
 > Open source, under the Apache 2.0 licence: github.com/ScottCooper92/binge-archive.
 
-(About 1,200 characters)
+(About 1,550 characters)
 
 ## Category and contact
 
