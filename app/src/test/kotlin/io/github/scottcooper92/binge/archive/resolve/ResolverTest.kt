@@ -366,4 +366,17 @@ class ResolverTest {
             assertTrue(sources.first().label, sources.first().label.startsWith("Night of the Living Dead · "))
             assertEquals(listOf(CoverageMiss(10331, Route.WIKIDATA, CoverageMiss.Reason.WIKIDATA_FAILED)), misses)
         }
+
+    @Test
+    fun `a Wikidata query that stalls past its budget resolves from the index's Archive ids`() =
+        runTest {
+            archive.sparqlDelaySeconds = 30
+            archive.search = { resolveFixture("search-downloads-10331.json") }
+
+            val sources = sources(resolver.resolve(movie(10331), episode = null)).toList()
+
+            assertEquals(3, sources.size)
+            assertTrue(sources.all { it.id.startsWith("Night.Of.The.Living.Dead_1080p/") })
+            assertEquals(listOf(CoverageMiss(10331, Route.WIKIDATA, CoverageMiss.Reason.WIKIDATA_FAILED)), misses)
+        }
 }

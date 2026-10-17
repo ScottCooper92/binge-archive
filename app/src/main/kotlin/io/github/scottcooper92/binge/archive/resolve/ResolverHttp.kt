@@ -5,6 +5,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.FormBody
@@ -30,16 +31,21 @@ class ResolverHttp(
     private val archiveMetadata: HttpUrl = ARCHIVE_METADATA.toHttpUrl(),
     /** Where a response body is read: the read blocks, so never the caller's thread. */
     private val io: CoroutineDispatcher = Dispatchers.IO,
+    /** The Wikidata query's own budget: well inside the host's 10 s deadline, so the index fallback has time to run. */
+    private val sparqlBudgetMillis: Long = SPARQL_BUDGET_MILLIS,
 ) {
+    /** Running out of [sparqlBudgetMillis] is an [IOException], like any other Wikidata failure. */
     suspend fun sparql(query: String): String =
-        body(
-            Request
-                .Builder()
-                .url(wikidataEndpoint)
-                .header("Accept", "text/tab-separated-values")
-                .post(FormBody.Builder().add("query", query).build())
-                .build(),
-        )
+        withTimeoutOrNull(sparqlBudgetMillis) {
+            body(
+                Request
+                    .Builder()
+                    .url(wikidataEndpoint)
+                    .header("Accept", "text/tab-separated-values")
+                    .post(FormBody.Builder().add("query", query).build())
+                    .build(),
+            )
+        } ?: throw IOException("Wikidata did not answer within $sparqlBudgetMillis ms")
 
     /** An advancedsearch query, best-downloaded first, returning identifier and downloads. */
     suspend fun search(
@@ -91,6 +97,8 @@ class ResolverHttp(
         }
 
     companion object {
+        /** About 4 s: the resolver's Wikidata budget. The weekly refresh keeps the shared client's 20 s read timeout. */
+        const val SPARQL_BUDGET_MILLIS = 4_000L
         const val ARCHIVE_METADATA = "https://archive.org/metadata"
         const val ARCHIVE_DOWNLOAD = "https://archive.org/download"
     }
