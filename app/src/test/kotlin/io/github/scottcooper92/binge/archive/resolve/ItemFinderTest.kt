@@ -186,6 +186,22 @@ class ItemFinderTest {
         }
 
     @Test
+    fun `when Wikidata and the download-count search both fail, the index's ids keep the index's order`() =
+        runTest {
+            archive.sparqlStatus = 503
+            archive.searchStatus = 503
+            val logged = mutableListOf<IOException>()
+            val hit = IndexHit(isFilm = true, listOf("second_by_downloads", "first_by_downloads"), emptyList())
+
+            val found = ItemFinder(archive.http()) { _, e -> logged += e }.find(653, hit)
+
+            assertEquals(Route.WIKIDATA, found.route)
+            assertEquals(listOf("second_by_downloads", "first_by_downloads"), found.candidates.map { it.identifier })
+            assertTrue(found.fromIndex)
+            assertEquals(1, logged.size)
+        }
+
+    @Test
     fun `when Wikidata fails, the index's candidates still pass the licence check`() =
         runTest {
             archive.sparqlStatus = 503
