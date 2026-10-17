@@ -1,8 +1,8 @@
 # binge-archive
 
-Free films for [Binge](https://github.com/ScottCooper92), from the Internet Archive. This app only
-returns items with an open licence: the public domain, CC0 or CC BY. It never returns anything else,
-and there is no setting to change that.
+Free films for [Binge](https://github.com/ScottCooper92), from the Internet Archive. By default this
+app only returns items with an open licence: the public domain, CC0 or CC BY. Its Sources settings
+let you narrow that, or widen it, and only your own choice ever widens it.
 
 ## For the person watching
 
@@ -19,7 +19,9 @@ holds an openly licensed copy, Binge offers it to play, and names the licence on
   and offers that copy last.
 
 The app itself has a status screen and a licence page. The status screen shows what the app does,
-how fresh its index is, the films it found for you recently and any copies you reported. The licence
+its Sources settings, how fresh its index is, the films it found for you recently and any copies
+you reported. Sources chooses whether title matches are used, which licences are accepted, a
+minimum quality, and whether a copy must have subtitles in your language. The licence
 page says which licences it accepts, and why. You find films from Binge. The app speaks English and Spanish.
 
 ## For the person writing a companion

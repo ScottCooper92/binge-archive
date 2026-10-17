@@ -33,15 +33,26 @@ own emerald `ArchiveBrand` in place of Binge's amber (`theme/ArchiveTheme.kt`).
 
 ## The one rule everything else serves
 
-**Only openly licensed items are returned.**
+**By default, only openly licensed items are returned. Anything wider is the user's explicit choice.**
 
-An Archive item becomes a source only if its licence is on the allowlist: the Public Domain Mark,
-the Creative Commons public-domain URL, CC0 and CC BY. Nothing else, and there is no setting that
-loosens it. Public Domain Mark items are returned everywhere. Each source's label names its licence
-(for example "Public domain (US)"), so the host can show it on the row.
+An Archive item becomes a source only if the user's licence level admits its licence
+(`LicenceLevel`, set in Sources). The default is `PUBLIC_DOMAIN_AND_CC_BY`: the Public Domain Mark,
+the Creative Commons public-domain URL, CC0 and CC BY. The user may narrow it to the public domain
+only, or widen it to every Creative Commons licence, or to "Any, including no licence", which only
+a confirm can set (#48). Public Domain Mark items are returned everywhere. Each source's label names
+its licence (for example "Public domain (US)", or "No licence stated"), so the host can show it on
+the row.
 
-This rule is why the app may exist at all. Widening the allowlist, or a code path that skips the
-check, is never a fix for a test or a coverage gap. It is a decision for the maintainer in an issue.
+- **Never widen the default.** `SourceSettings.DEFAULT` is today's behaviour, and a fresh install
+  or a setting this build does not know reads as it.
+- **Never skip the check.** Every item goes through `LicenceAllowlist` at the user's level, on
+  every route and every fallback. No code path admits an item without it.
+- **Nothing chooses a wider level for the user.** Only the user's own pick does, and "Any" only
+  after its confirm.
+
+This rule is why the app may exist at all. Widening the default, a level the user did not choose,
+or a code path that skips the check, is never a fix for a test or a coverage gap. It is a decision
+for the maintainer in an issue.
 
 ## Talking to the host
 
@@ -124,7 +135,8 @@ Rules that hold it together:
 
 ## The resolver
 
-`Resolver.resolve(mediaId, episode)` (package `resolve`) answers a `ResolveOutcome`, which the Service
+`Resolver.resolve(mediaId, episode)` (package `resolve`) reads the user's `SourceSettings` once, at
+the start, and answers a `ResolveOutcome`, which the Service
 maps to the contract: `Sources` (a flow, possibly empty), `NotFound`, `NotAFilm` or `Invalid`. A
 network failure is an `IOException`, thrown out of `resolve()` itself (the finder's Wikidata call, its
 IMDb and title searches, and the title route's loads) or out of the flow. The Service maps both to
@@ -138,7 +150,7 @@ query (step 3): they keep the index's order.
    `NotFound` only if none of them finds an Archive item.
 3. **`ItemFinder`.** Routes in a fixed order, stopping at the first that finds items: the Wikidata
    item's Archive ids, then Archive items tagged with its IMDb id, then a title-and-year search
-   (only with a Wikidata runtime to check against). At most five candidates, best-downloaded first.
+   (only with a Wikidata runtime to check against, and only with title matches on in Sources). At most five candidates, best-downloaded first.
    A title match counts as found only if a video file runs within 8% of the runtime, checked
    before any licence. If none qualifies and any failed to load, the resolve fails, never
    `NotFound`.
@@ -151,7 +163,7 @@ query (step 3): they keep the index's order.
    `WIKIDATA_FAILED` coverage miss. With no hit, or a hit with no ids, the resolve fails.
 4. **`ItemReader`.** Reads every candidate's metadata in parallel, and hands on each admitted item
    as soon as it and the candidates ahead of it are read: a slow item holds back only those after
-   it. It drops items with no allowlisted licence, restricted or dark items, non-`movies` items,
+   it. It drops items whose licence the user's level does not admit, restricted or dark items, non-`movies` items,
    and items that fail to load. If none is admitted and any failed to load, the resolve fails rather
    than answering empty.
 5. **`SourceMapper`.** Video files only (`VideoFormats`). With a runtime, a file under half of it is
@@ -160,11 +172,16 @@ query (step 3): they keep the index's order.
    "Title (year) · licence". SubRip and WebVTT become subtitle tracks, at most ten. Each item's
    sources are sent as soon as the item is read, in download order; an item this device reported is
    held back and sent last. At most fifty sources. URLs are `https://archive.org/download/…`, with a
-   nominal 24-hour expiry.
+   nominal 24-hour expiry. Before an item's sources are sent, the user's minimum quality drops those
+   below it, and "only copies with subtitles in my language" drops those with no track in the
+   device's language.
+6. **Settings never change the answer's kind.** A known film they filter down to nothing is OK and
+   empty; a film only the title route could place is `NOT_FOUND` with title matches off.
 
 Every gap is a `CoverageMiss` (route and reason) for binge-companions#148: a film not in the
 catalogue, one the routes found but the index did not know, a resolve that fell back on the index
-because Wikidata failed, and a resolve that ends with nothing.
+because Wikidata failed, and a resolve that ends with nothing. A resolve that ends with nothing
+because a setting narrower than the default removed something is `FILTERED_BY_SETTINGS`.
 `LogcatCoverageLog` writes them to logcat on the device and nowhere else.
 Every HTTP call is cancellable: when the host cancels, the call is cancelled with it.
 
@@ -181,8 +198,8 @@ action with the SDK's manifest meta-data (`com.binge.companion.name`, `.icon`, `
   `NOT_FOUND` carries a `LocalizedMessage`, "Not on the Internet Archive", in the device's locale.
   A Wikidata or Archive failure is `UNAVAILABLE` with a fixed description, never an exception's
   message, before or after sources were sent.
-- **`Probe`** reads the index and never the network. It refuses what `Resolve` refuses, and a
-  valid series is `NOT_FOUND`.
+- **`Probe`** reads the index and never the network, and ignores the Sources settings. It refuses
+  what `Resolve` refuses, and a valid series is `NOT_FOUND`.
 - **`ReportSource`** takes a `source_id` of the form `<identifier>/<file name>`, the identifier in
   the Archive's character set; anything else is `INVALID_ARGUMENT`. The index is not consulted, so
   an item found by any route can be reported. The report is stored on the device
@@ -196,21 +213,27 @@ action with the SDK's manifest meta-data (`com.binge.companion.name`, `.icon`, `
 
 ## The app's own screens
 
-A companion's UI is for what only it can do. With nothing to sign in to, this one is a status screen,
-its licence page, and the hand-off Binge's "manage" row starts:
+A companion's UI is for what only it can do. With nothing to sign in to, this one is a status screen
+with the Sources settings, its licence page, and the hand-off Binge's "manage" row starts:
 
 - **`ui/status`**: `StatusViewModel` exposes one `StateFlow<StatusUiState>`, a sealed `Loading`,
   `Ready` or `Error`, never a set of flags. `StatusScreen` (phone) and `ui/tv/TvStatusScreen` take the
   state and a `StatusActions`, so every arm renders in a frame. Sections: what this is (and the
-  licence page), the index (films linked, last refresh, a failed refresh, "Refresh now"), who the
+  licence page), Sources, the index (films linked, last refresh, a failed refresh, "Refresh now"), who the
   data comes from, recently resolved titles, and reported copies.
 - **Recently resolved and reported** live in `device-records.db` (`reports/DeviceRecords.kt`), on
   the device only, never shown to the host. Each list has a clear action.
 - **`SettingsHandOffActivity`** answers `CompanionManifest.ACTION_SETTINGS`. It checks its caller
   with the SDK's `HandOffPolicy` (the same pins as the Service) and opens `MainActivity`. A start
   with no calling package opens nothing.
-- **No browse, no search, and no setting that changes what is resolved.** Not a quality preference,
-  and never a licence toggle.
+- **Sources** (`settings/SourceSettingsStore`, a DataStore on the device, saved as made with no Save
+  button): title matches (a switch, default on), licences (a level, default public domain and CC
+  BY), minimum quality (any, 720p, 1080p; default any) and "only copies with subtitles in my
+  language" (default off). "Any, including no licence" asks first, on the design system's confirm,
+  focus on Cancel on the TV; `StatusViewModel` saves it only on confirm. These four are the only
+  settings that change what is resolved; adding another is a decision for the maintainer in an
+  issue.
+- **No browse and no search.**
 - Everything is the design system's: `ItemGroup` rows on the phone, `TvTwoPanePage` and
   `TvOptionRow` on the television. The brand colour is chosen once, in `theme/`.
 
@@ -229,8 +252,8 @@ its licence page, and the hand-off Binge's "manage" row starts:
 - **Coverage misses are logged on the device, by route**, for binge-companions#148's measurement.
   They never leave the device: no analytics, no crash reporting and no upload of any kind.
 - The app stores no user data beyond the user's own source reports and the last ten titles it
-  resolved, kept on the device in `device-records.db`. The index is public metadata it can rebuild.
-  Backup is off.
+  resolved, kept on the device in `device-records.db`, and the Sources settings in its DataStore.
+  The index is public metadata it can rebuild. Backup is off.
 
 ## Kotlin, Gradle and Android
 
