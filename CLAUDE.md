@@ -44,11 +44,13 @@ app does not recognise, and text that reserves the rights. Restricted and dark i
 every level, because that is the Archive's own access control, not a licence. Public Domain Mark
 items are returned everywhere.
 
-Each source's label names its licence, so the host can show it on the row. A recognised licence
-keeps its short name ("Public domain (US)", "CC BY-SA 4.0"). A missing or blank one reads "No
-licence stated". Anything else shows the item's own text, shortened. `LicenceAllowlist.identify`
-classes every licence field as one `Licence.Kind`; the kinds outside Creative Commons and the public
-domain are `NONE_STATED`, `RESTRICTED` and `UNKNOWN`.
+Each source carries its licence in `licence_label` and `licence_kind` (binge-companions #248), so
+the host shows it on a line of its own and warns on anything but an open licence; the `label` is the
+film alone. A recognised licence keeps its short name ("Public domain (US)", "CC BY-SA 4.0"). A
+missing or blank one reads "No licence stated". Anything else shows the item's own text, without
+control or format characters and shortened to 40 characters. `LicenceAllowlist.identify` classes
+every licence field as one `Licence.Kind`; public domain and every Creative Commons licence go on
+the wire as `OPEN`, and the rest as `NONE_STATED`, `RESTRICTED` or `UNKNOWN`.
 
 - **Never widen the default.** `SourceSettings.DEFAULT` is today's behaviour, and a fresh install
   or a setting this build does not know reads as it.
@@ -177,7 +179,7 @@ query (step 3): they keep the index's order.
 5. **`SourceMapper`.** Video files only (`VideoFormats`). With a runtime, a file under half of it is
    dropped: a reel, a trailer or an extra is not the film. One source per resolution class per
    item, preferring h.264 in MP4, then any MP4, then height, length and size. The label is
-   "Title (year) · licence". SubRip and WebVTT become subtitle tracks, at most ten. Each item's
+   "Title (year)", and the licence goes in `licence_label` and `licence_kind`. SubRip and WebVTT become subtitle tracks, at most ten. Each item's
    sources are sent as soon as the item is read, in download order; an item this device reported is
    held back and sent last. At most fifty sources. URLs are `https://archive.org/download/…`, with a
    nominal 24-hour expiry. Before an item's sources are sent, the user's minimum quality drops those
