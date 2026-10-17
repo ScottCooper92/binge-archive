@@ -35,8 +35,10 @@ Skip `binge-companions/`, `design-system/` and `binge-ci/` (submodules with thei
 
 ## Dimension 2 — the host boundary (`CLAUDE.md` > Talking to the host)
 
-- The three `Resolve` answers: known film with no licit copy is OK and empty, unknown id is
-  `NOT_FOUND`, known non-film is `INVALID_ARGUMENT`. A network failure mapped onto one of them is a bug.
+- `Resolve`'s four answers, checked against `stream.proto`'s own words, not a paraphrase: sources;
+  OK and empty (a known title with no licit source); `NOT_FOUND` (not in the catalogue: the index
+  and every network route found nothing; a valid series); `INVALID_ARGUMENT` (a bad request,
+  including a known non-film). A network failure mapped onto one of them is a bug.
 - `mime_type` only ever a `video/*` type.
 - Cancellation: work after the host cancels, `runCatching` or `catch (e: Exception)` around suspend
   calls swallowing `CancellationException`.

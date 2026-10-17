@@ -62,7 +62,7 @@ jobs:
       (github.event_name != 'workflow_run' || github.event.workflow_run.event != 'schedule') &&
       (!github.event.pull_request || github.event.pull_request.head.repo.full_name == github.repository) &&
       (!github.event.workflow_run || github.event.workflow_run.head_repository.full_name == github.repository)
-    uses: ScottCooper92/binge-ci/.github/workflows/bot-review.yml@789874fef2e1aca228f610d68617a30386d5a3d8 # v1
+    uses: ScottCooper92/binge-ci/.github/workflows/bot-review.yml@a802d4ad866837e53971f984980beeb88b937da1 # v1
     with:
       dispatch_pr: ${{ inputs.pr }}
       auto_merge: true
