@@ -160,7 +160,7 @@ action with the SDK's manifest meta-data (`com.binge.companion.name`, `.icon`, `
 - **`ReportSource`** takes a `source_id` of the form `<identifier>/<file name>`, the identifier in
   the Archive's character set; anything else is `INVALID_ARGUMENT`. The index is not consulted, so
   an item found by any route can be reported. The report is stored on the device
-  (`reports.db`, separate from the index) and pushes that item after every other for 30 days.
+  (`device-records.db`, separate from the index) and pushes that item after every other for 30 days.
 - A gated rpc checks its capability with a STREAM `requireDeclared`, the twin of the SDK's
   REQUEST-typed one.
 - **Who may bind:** a release build pins Binge's published certificate (`HostPolicy.pinned` with
@@ -201,8 +201,8 @@ its licence page, and the hand-off Binge's "manage" row starts:
 - No caching beyond the on-device index.
 - **Coverage misses are logged on the device, by route**, for binge-companions#148's measurement.
   They never leave the device: no analytics, no crash reporting and no upload of any kind.
-- The app stores no user data beyond the user's own source reports, kept on the device in
-  `reports.db`. The index is public metadata it can rebuild. Backup is off.
+- The app stores no user data beyond the user's own source reports and the last ten titles it
+  resolved, kept on the device in `device-records.db`. The index is public metadata it can rebuild. Backup is off.
 
 ## Kotlin, Gradle and Android
 
