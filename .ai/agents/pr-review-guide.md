@@ -7,9 +7,10 @@ here; this file says what to *check* and how hard to press.
 ## 1. What CI has already decided
 
 CI is green on the head under review before a review starts. That means `./gradlew build` compiled
-the Kotlin, ran the unit tests, passed `ktlintCheck`, passed `detekt` with zero findings, passed
-Android lint, held coverage at the kover floor, matched every screenshot frame, built the R8 release
-and passed `checkTvMaterialSeparation`.
+the Kotlin, ran the unit tests in `:app` and `:index`, passed `ktlintCheck`, passed `detekt` with zero
+findings, passed Android lint, held coverage at the kover floor in `:app` and `:index`, matched every
+screenshot frame, built the R8 release, and passed `checkTranslationStaleness` and
+`checkTvMaterialSeparation`.
 
 Do not re-report anything in that set. A finding that says "lint would flag this" on a green head is
 wrong, and saying it costs more than staying quiet would have.

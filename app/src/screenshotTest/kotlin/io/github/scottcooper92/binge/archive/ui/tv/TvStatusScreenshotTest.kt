@@ -10,6 +10,7 @@ import io.github.scottcooper92.binge.archive.ui.status.StatusUiState
 import io.github.scottcooper92.binge.archive.ui.status.previewEmpty
 import io.github.scottcooper92.binge.archive.ui.status.previewFailedRefreshing
 import io.github.scottcooper92.binge.archive.ui.status.previewReady
+import io.github.scottcooper92.binge.archive.ui.status.previewRefreshing
 
 /** The television's status screen in each state, and its licence page. */
 class TvStatusScreenshotTest {
@@ -36,6 +37,11 @@ class TvStatusScreenshotTest {
     @PreviewTest
     @ArchiveTvScreenPreviews
     @Composable
+    fun refreshing() = TvStatusScreen(previewRefreshing, StatusActions(), now = PREVIEW_NOW)
+
+    @PreviewTest
+    @ArchiveTvScreenPreviews
+    @Composable
     fun loading() = TvStatusScreen(StatusUiState.Loading, StatusActions(), now = PREVIEW_NOW)
 
     @PreviewTest
@@ -47,4 +53,9 @@ class TvStatusScreenshotTest {
     @ArchiveTvScreenPreviews
     @Composable
     fun licences() = TvLicenceScreen()
+
+    @PreviewTest
+    @ArchiveTvSpanishScreenPreviews
+    @Composable
+    fun licencesSpanish() = TvLicenceScreen()
 }

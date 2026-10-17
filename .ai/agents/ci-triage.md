@@ -9,7 +9,7 @@ on a PR, then aggregates them in a last one. `.github/workflows/ci.yml` is the s
 | Job | Runs |
 | --- | --- |
 | `submodule-pins` | On a PR only: binge-ci's check that every submodule pin is merged upstream, unless the PR carries `hold` |
-| `checks` | `./gradlew build` minus the tasks the next three jobs own: Kotlin compile, `ktlintCheck`, `detekt`, Android `lint`, `checkTvMaterialSeparation`, the debug assemble |
+| `checks` | `./gradlew build` minus the tasks the next three jobs own: Kotlin compile, `ktlintCheck`, `detekt`, Android `lint`, `checkTvMaterialSeparation`, the debug assemble, `checkTranslationStaleness`, and `:index:test` with `:index:koverVerify` |
 | `tests` | `:app:testDebugUnitTest` and `:app:koverVerify` |
 | `screenshots` | `:app:validateDebugScreenshotTest` |
 | `release` | `:app:assembleRelease`: R8 and lint-vital |
@@ -52,6 +52,7 @@ Run only what failed:
 ./gradlew :app:detekt
 ./gradlew :app:lintDebug
 ./gradlew :app:testDebugUnitTest
+./gradlew :index:test
 ```
 
 Do not run the full gate. CI does that on push.

@@ -43,7 +43,7 @@ The app has no server of its own.
 - No account and no sign-in. It needs no key and asks you for nothing.
 - No analytics, crash reporting or advertising libraries.
 - No access to your contacts, location, files, camera or microphone.
-- No background activity except the weekly index refresh.
+- No background activity except the weekly index refresh, and a refresh you ask for.
 
 ## Permissions
 

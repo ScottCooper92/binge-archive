@@ -18,8 +18,9 @@ holds an openly licensed copy, Binge offers it to play, and names the licence on
   backups. If you tell Binge a copy did not play, this app remembers that on your device for 30 days
   and offers that copy last.
 
-The app itself has one screen: what it does, how fresh its index is, the films it found for you
-recently and any copies you reported. You find films from Binge. The app speaks English and Spanish.
+The app itself has a status screen and a licence page. The status screen shows what the app does,
+how fresh its index is, the films it found for you recently and any copies you reported. The licence
+page says which licences it accepts, and why. You find films from Binge. The app speaks English and Spanish.
 
 ## For the person writing a companion
 
