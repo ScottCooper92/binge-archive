@@ -11,12 +11,6 @@ import com.binge.designsystem.tv.theme.BingeTvTheme
 import com.binge.designsystem.tv.theme.toTvColorScheme
 import androidx.tv.material3.ColorScheme as TvColorScheme
 
-/**
- * This app's own accent: the icon's emerald, not Binge's amber. Only the brand family changes, as in
- * binge-seerr's theme. The neutral surfaces and `error` are shared meaning, so they stay the design
- * system's. The fixed roles are set too, because the design system paints its big fills on them
- * (filled buttons, switches, selected chips); left unset they would stay amber.
- */
 private val Emerald100 = Color(0xFFD1FAE5)
 private val Emerald200 = Color(0xFFA7F3D0)
 private val Emerald300 = Color(0xFF6EE7B7)
@@ -76,7 +70,14 @@ val ArchiveLightColorScheme: ColorScheme =
         onPrimaryFixedVariant = Emerald900,
     )
 
-/** The design system's brand slot, with this app's emerald in place of Binge's amber. */
+/**
+ * The design system's brand slot, with this app's emerald in place of Binge's amber.
+ *
+ * The accent is the icon's emerald. Only the brand family changes, as in binge-seerr's theme. The
+ * neutral surfaces and `error` are shared meaning, so they stay the design system's. The fixed roles
+ * are set too, because the design system paints its big fills on them (filled buttons, switches,
+ * selected chips); left unset they would stay amber.
+ */
 val ArchiveBrand = BingeBrand(light = ArchiveLightColorScheme, dark = ArchiveDarkColorScheme)
 
 /** [ArchiveDarkColorScheme] projected for the TV surface, which is dark-only like [BingeTvTheme]. */

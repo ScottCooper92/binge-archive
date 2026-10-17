@@ -50,8 +50,6 @@ potential-bugs:
 
 coroutines:
   InjectDispatcher:
-    # A DI provider is the injection point, so naming a dispatcher there is what the rule wants.
-    ignoreAnnotated: ['Provides']
     active: true
   RedundantSuspendModifier:
     # Off: type resolution mishandles inline suspend lambdas and flags needed modifiers.
@@ -116,10 +114,8 @@ style:
     active: false
   AbstractClassCanBeConcreteClass:
     active: true
-    ignoreAnnotated: ['Module']
   AbstractClassCanBeInterface:
     active: true
-    ignoreAnnotated: ['Module']
   UseOrEmpty:
     active: false
   # Off: in 2.0.0-alpha.6 it reports a constructor property as unused when its only reads sit inside
