@@ -38,10 +38,17 @@ own emerald `ArchiveBrand` in place of Binge's amber (`theme/ArchiveTheme.kt`).
 An Archive item becomes a source only if the user's licence level admits its licence
 (`LicenceLevel`, set in Sources). The default is `PUBLIC_DOMAIN_AND_CC_BY`: the Public Domain Mark,
 the Creative Commons public-domain URL, CC0 and CC BY. The user may narrow it to the public domain
-only, or widen it to every Creative Commons licence, or to "Any, including no licence", which only
-a confirm can set (#48). Public Domain Mark items are returned everywhere. Each source's label names
-its licence (for example "Public domain (US)", or "No licence stated"), so the host can show it on
-the row.
+only, or widen it to every Creative Commons licence, or to "Any, whatever the licence", which only
+a confirm can set (#48). That widest level admits every item: no licence stated, licence text this
+app does not recognise, and text that reserves the rights. Restricted and dark items stay out at
+every level, because that is the Archive's own access control, not a licence. Public Domain Mark
+items are returned everywhere.
+
+Each source's label names its licence, so the host can show it on the row. A recognised licence
+keeps its short name ("Public domain (US)", "CC BY-SA 4.0"). A missing or blank one reads "No
+licence stated". Anything else shows the item's own text, shortened. `LicenceAllowlist.identify`
+classes every licence field as one `Licence.Kind`; the kinds outside Creative Commons and the public
+domain are `NONE_STATED`, `RESTRICTED` and `UNKNOWN`.
 
 - **Never widen the default.** `SourceSettings.DEFAULT` is today's behaviour, and a fresh install
   or a setting this build does not know reads as it.
@@ -229,7 +236,7 @@ with the Sources settings, its licence page, and the hand-off Binge's "manage" r
 - **Sources** (`settings/SourceSettingsStore`, a DataStore on the device, saved as made with no Save
   button): title matches (a switch, default on), licences (a level, default public domain and CC
   BY), minimum quality (any, 720p, 1080p; default any) and "only copies with subtitles in my
-  language" (default off). "Any, including no licence" asks first, on the design system's confirm,
+  language" (default off). "Any, whatever the licence" asks first, on the design system's confirm,
   focus on Cancel on the TV; `StatusViewModel` saves it only on confirm. These four are the only
   settings that change what is resolved; adding another is a decision for the maintainer in an
   issue.
