@@ -43,14 +43,14 @@
     <string name="settings_licences_public_domain">Public domain only</string>
     <string name="settings_licences_default">Public domain and CC BY</string>
     <string name="settings_licences_creative_commons">Any Creative Commons licence</string>
-    <string name="settings_licences_any">Any, including no licence</string>
+    <string name="settings_licences_any">Any, whatever the licence</string>
     <string name="settings_quality">Minimum quality</string>
     <string name="settings_quality_any">Any</string>
     <string name="settings_quality_720" translatable="false">720p</string>
     <string name="settings_quality_1080" translatable="false">1080p</string>
     <string name="settings_subtitles">Only copies with subtitles in my language</string>
-    <string name="settings_any_title">Include items with no licence?</string>
-    <string name="settings_any_message">Items with no licence stated may not be licensed for viewing. You can change this back at any time.</string>
+    <string name="settings_any_title">Include copies whatever their licence?</string>
+    <string name="settings_any_message">These copies may not be licensed for viewing. Some state no licence, and some reserve all rights. You can change this back at any time.</string>
     <string name="settings_any_confirm">Include them</string>
     <string name="status_archive" translatable="false">Internet Archive</string>
     <string name="status_archive_detail" translatable="false">archive.org</string>

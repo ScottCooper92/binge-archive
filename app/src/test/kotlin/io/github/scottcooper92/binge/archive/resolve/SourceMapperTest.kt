@@ -149,6 +149,16 @@ class SourceMapperTest {
     }
 
     @Test
+    fun `an item's own licence text is shortened, so a long title still fits the label`() {
+        val own = Licence(Licence.Kind.RESTRICTED, "Copyright 1931 Universal Pictures Company, Inc. All rights reserved worldwide.")
+
+        val label = testStrings.label("A".repeat(200), 1931, own, SourceMapper.MAX_LABEL)
+
+        assertEquals(120, label.length)
+        assertTrue(label, label.endsWith("… (1931) · Copyright 1931 Universal Pictures Compa…"))
+    }
+
+    @Test
     fun `file names are encoded into the download URL`() {
         assertEquals(
             "https://archive.org/download/my_item/dir/A%20Film%20(2).mp4",

@@ -69,7 +69,7 @@ class ItemReader(
         onFiltered: () -> Unit,
     ): LicensedItem? {
         if (item.dark || item.accessRestricted || item.mediaType != MOVIES) return null
-        val licence = LicenceAllowlist.identify(item.licenseUrl) ?: return null
+        val licence = LicenceAllowlist.identify(item.licenseUrl)
         if (!licences.admits(licence.kind)) {
             if (LicenceLevel.DEFAULT.admits(licence.kind)) onFiltered()
             return null

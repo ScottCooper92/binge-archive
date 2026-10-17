@@ -194,6 +194,28 @@ class ResolverTest {
         }
 
     @Test
+    fun `any licence admits a copy that reserves its rights, labelled with its own words`() =
+        runTest {
+            archive.sparql =
+                {
+                    resolveFixture("wikidata-653.tsv")
+                        .lines()
+                        .take(2)
+                        .joinToString("\n")
+                        .replace("Nosferatu_DVD_quality", "reserved")
+                }
+            archive.search = { searchResponse("reserved" to 1L) }
+            archive.metadataBodies["reserved"] =
+                """{"metadata":{"mediatype":"movies","licenseurl":"All rights reserved"},""" +
+                """"files":[{"name":"film.mp4","format":"h.264","height":"480","length":"5600"}]}"""
+
+            assertEquals(emptyList<Any>(), sources(resolverWith().resolve(movie(653), null)).toList())
+            val any = sources(resolverWith(settings = SourceSettings(licences = LicenceLevel.ANY)).resolve(movie(653), null)).toList()
+
+            assertEquals("Nosferatu (1922) · All rights reserved", any.single().label)
+        }
+
+    @Test
     fun `every Creative Commons licence still leaves out the unlicensed transfer`() =
         runTest {
             archive.sparql = { resolveFixture("wikidata-653.tsv") }
