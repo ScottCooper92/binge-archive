@@ -54,6 +54,9 @@ interface DeviceRecordsDao {
     @Query("DELETE FROM source_report")
     suspend fun clearReports()
 
+    @Query("DELETE FROM source_report WHERE reported_at < :before")
+    suspend fun deleteReportsBefore(before: Long)
+
     /** Records [title] and keeps only the [keep] most recent. */
     @Transaction
     suspend fun recordResolved(
@@ -94,7 +97,7 @@ abstract class DeviceRecordsDatabase : RoomDatabase() {
 /**
  * The device's own records. An item reported in the last [DERANK_DAYS] days goes after every other
  * item in this device's answers; it is not removed, since one bad report should not take the only copy
- * of a film away. "Recently resolved" keeps the last [RECENT_KEEP] titles.
+ * of a film away. A report is forgotten once the window has passed ([pruneReports]). "Recently resolved" keeps the last [RECENT_KEEP] titles.
  */
 class DeviceRecords(
     private val dao: DeviceRecordsDao,
@@ -113,6 +116,9 @@ class DeviceRecords(
     fun reported(): Flow<List<String>> = dao.reportedSinceFlow(derankSince())
 
     suspend fun clearReports() = dao.clearReports()
+
+    /** Forgets the reports older than the derank window: past it they no longer do anything. */
+    suspend fun pruneReports() = dao.deleteReportsBefore(derankSince())
 
     suspend fun recordResolved(
         tmdbId: Int,

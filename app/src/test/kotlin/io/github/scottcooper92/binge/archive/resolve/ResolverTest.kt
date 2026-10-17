@@ -92,6 +92,45 @@ class ResolverTest {
             slow.countDown()
         }
 
+    private fun resolverWith(
+        deranked: suspend () -> Set<String> = { emptySet() },
+        recordResolved: suspend (Int, String, String) -> Unit = { _, _, _ -> },
+    ) = archive.http().let { http ->
+        Resolver(
+            IndexRepository(database.indexDao(), seed = { seed }),
+            ItemFinder(http),
+            ItemReader(http),
+            SourceMapper(testStrings),
+            misses::add,
+            deranked = deranked,
+            recordResolved = recordResolved,
+        )
+    }
+
+    @Test
+    fun `a failing deranking lookup still sends the sources`() =
+        runTest {
+            archive.sparql = { resolveFixture("wikidata-653.tsv") }
+            archive.search = { searchResponse("Nosferatu_DVD_quality" to 900L) }
+
+            val resolver = resolverWith(deranked = { error("db closed") })
+            val sources = sources(resolver.resolve(movie(653), episode = null)).toList()
+
+            assertTrue(sources.isNotEmpty())
+        }
+
+    @Test
+    fun `a failing recent-titles write still sends the sources`() =
+        runTest {
+            archive.sparql = { resolveFixture("wikidata-653.tsv") }
+            archive.search = { searchResponse("Nosferatu_DVD_quality" to 900L) }
+
+            val resolver = resolverWith(recordResolved = { _, _, _ -> error("db closed") })
+            val sources = sources(resolver.resolve(movie(653), episode = null)).toList()
+
+            assertTrue(sources.isNotEmpty())
+        }
+
     @Test
     fun `an item this device reported is sent after every other, even when it reads first`() =
         runTest {
