@@ -8,8 +8,8 @@ description: Whole-codebase (or package-scoped) sweep of binge-archive for bugs,
 CI runs the tasks of `./gradlew build` (`.github/workflows/ci.yml`): compile, unit tests, ktlint,
 detekt (type-resolved, zero findings), Android lint, `koverVerify` (95% in `:app` and `:index`),
 `validateDebugScreenshotTest`, `checkTvMaterialSeparation` and the R8 release build. Do not re-report
-anything that set decides. The audit's value is what it does not gate: the licence rule, `Resolve`'s
-four answers (sources, OK and empty, `NOT_FOUND`, `INVALID_ARGUMENT`), privacy, the exported Service, and doc drift.
+anything that set decides. The audit's value is what it does not gate: the licence rule, the three
+`Resolve` answers, privacy, the exported Service, and doc drift.
 
 Scope to the whole repo, or to named packages under `app/src/main/kotlin/io/github/scottcooper92/binge/archive/`
 and `index/src/main/kotlin/…`.
