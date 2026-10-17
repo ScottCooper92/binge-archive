@@ -5,10 +5,13 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class LicenceAllowlistTest {
+    /** The label [url]'s licence takes when [level] admits it, or null when it does not. */
     private fun label(
         url: String?,
         level: LicenceLevel = LicenceLevel.DEFAULT,
-    ) = LicenceAllowlist.match(url, level)?.let(testStrings::licenceName)
+    ) = LicenceAllowlist.identify(url).takeIf { level.admits(it.kind) }?.let(testStrings::licenceName)
+
+    private fun kind(url: String?) = LicenceAllowlist.identify(url).kind
 
     @Test
     fun `the four default licences, each with its label`() {
@@ -40,6 +43,7 @@ class LicenceAllowlistTest {
             "https://example.org/creativecommons.org/licenses/publicdomain/",
             "https://creativecommons.org.example.org/licenses/publicdomain/",
             "Public Domain",
+            "All rights reserved",
             "",
         ).forEach { assertNull(it, label(it)) }
         assertNull(label(null))
@@ -56,6 +60,8 @@ class LicenceAllowlistTest {
         val byNd = "https://creativecommons.org/licenses/by-nd/2.0/"
         val byNcSa = "https://creativecommons.org/licenses/by-nc-sa/4.0/deed.es"
         val byNcNd = "https://creativecommons.org/licenses/by-nc-nd/3.0/legalcode"
+        val reserved = "Copyright 1931 Universal Pictures. All rights reserved."
+        val unknown = "https://example.org/licence"
         val labels =
             mapOf(
                 pd to "Public domain",
@@ -69,6 +75,8 @@ class LicenceAllowlistTest {
                 byNcNd to "CC BY-NC-ND 3.0",
                 null to "No licence stated",
                 "" to "No licence stated",
+                reserved to "Copyright 1931 Universal Pictures. All…",
+                unknown to unknown,
             )
         val publicDomain = setOf(pd, pdUs, cc0)
         val admitted =
@@ -88,13 +96,25 @@ class LicenceAllowlistTest {
     }
 
     @Test
-    fun `no level admits what is not a Creative Commons URL`() {
+    fun `text that reserves the rights is restricted, anything else unrecognised is unknown`() {
+        listOf("All rights reserved", "© 1950 Some Studio", "Copyright 1931 Universal", "(c) 1977 Lucasfilm").forEach {
+            assertEquals(it, Licence.Kind.RESTRICTED, kind(it))
+        }
         listOf(
             "Public Domain",
             "https://example.org/licence",
             "https://creativecommons.org/licenses/sampling+/1.0/",
             "https://creativecommons.org/licenses/by-xx/4.0/",
-        ).forEach { assertNull(it, label(it, LicenceLevel.ANY)) }
+            "No known copyright restrictions",
+        ).forEach { assertEquals(it, Licence.Kind.UNKNOWN, kind(it)) }
+    }
+
+    @Test
+    fun `an item's own text keeps its words, with its whitespace collapsed`() {
+        assertEquals(
+            Licence(Licence.Kind.UNKNOWN, "Free to view, not to sell"),
+            LicenceAllowlist.identify("  Free to view,\n  not to sell "),
+        )
     }
 
     @Test

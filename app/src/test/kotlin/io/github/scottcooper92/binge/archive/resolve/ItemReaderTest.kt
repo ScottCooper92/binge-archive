@@ -113,7 +113,9 @@ class ItemReaderTest {
                 """{"metadata":{"mediatype":"movies","licenseurl":"https://creativecommons.org/licenses/by-sa/4.0/"}}"""
             archive.metadataBodies["by"] =
                 """{"metadata":{"mediatype":"movies","licenseurl":"https://creativecommons.org/licenses/by/4.0/"}}"""
-            val ids = arrayOf("Nosferatu_unlicensed_transfer", "by_sa", "by", "PhantasmagoriaTheater-Nosferatu1922909")
+            archive.metadataBodies["reserved"] =
+                """{"metadata":{"mediatype":"movies","licenseurl":"All rights reserved"}}"""
+            val ids = arrayOf("Nosferatu_unlicensed_transfer", "by_sa", "by", "reserved", "PhantasmagoriaTheater-Nosferatu1922909")
             val reader = ItemReader(archive.http())
 
             suspend fun admitted(level: LicenceLevel): Pair<List<String>, Int> {
@@ -126,7 +128,7 @@ class ItemReaderTest {
             assertEquals(listOf("by", "PhantasmagoriaTheater-Nosferatu1922909") to 0, admitted(LicenceLevel.PUBLIC_DOMAIN_AND_CC_BY))
             assertEquals(listOf("by_sa", "by", "PhantasmagoriaTheater-Nosferatu1922909") to 0, admitted(LicenceLevel.CREATIVE_COMMONS))
             assertEquals(
-                listOf("Nosferatu_unlicensed_transfer", "by_sa", "by", "PhantasmagoriaTheater-Nosferatu1922909") to 0,
+                listOf("Nosferatu_unlicensed_transfer", "by_sa", "by", "reserved", "PhantasmagoriaTheater-Nosferatu1922909") to 0,
                 admitted(LicenceLevel.ANY),
             )
             assertEquals(
@@ -140,12 +142,14 @@ class ItemReaderTest {
         }
 
     @Test
-    fun `a dark item stays out at every level`() =
+    fun `a dark or access-restricted item stays out at every level, whatever its licence`() =
         runTest {
+            archive.metadataBodies["restricted"] =
+                """{"metadata":{"mediatype":"movies","licenseurl":"All rights reserved","access-restricted-item":"true"}}"""
             LicenceLevel.entries.forEach { level ->
                 assertEquals(
                     emptyList<LicensedItem>(),
-                    ItemReader(archive.http()).readEach(found(Route.WIKIDATA, "Nosferatu_dark_item"), level).toList(),
+                    ItemReader(archive.http()).readEach(found(Route.WIKIDATA, "Nosferatu_dark_item", "restricted"), level).toList(),
                 )
             }
         }

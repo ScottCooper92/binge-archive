@@ -30,7 +30,7 @@ sealed interface StatusUiState {
         val reported: List<String>,
         /** The user's Sources settings, as saved. */
         val sources: SourceSettings = SourceSettings.DEFAULT,
-        /** Whether "Any, including no licence" was picked and waits on its confirm. Nothing is saved until then. */
+        /** Whether "Any, whatever the licence" was picked and waits on its confirm. Nothing is saved until then. */
         val confirmingAnyLicence: Boolean = false,
     ) : StatusUiState
 

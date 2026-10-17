@@ -6,7 +6,10 @@ package io.github.scottcooper92.binge.archive.resolve
  */
 data class Licence(
     val kind: Kind,
-    /** For a Creative Commons licence with terms, the version and any jurisdiction: "4.0" or "3.0 US". */
+    /**
+     * For a Creative Commons licence with terms, the version and any jurisdiction: "4.0" or "3.0 US".
+     * For [Kind.RESTRICTED] and [Kind.UNKNOWN], the item's own licence text, whitespace collapsed.
+     */
     val detail: String = "",
 ) {
     enum class Kind(
@@ -25,6 +28,12 @@ data class Licence(
 
         /** The item names no licence at all. Only [LicenceLevel.ANY] admits it. */
         NONE_STATED,
+
+        /** The item's licence text reserves the rights: "All rights reserved", "©". Only [LicenceLevel.ANY] admits it. */
+        RESTRICTED,
+
+        /** Licence text or a URL this app does not recognise. Only [LicenceLevel.ANY] admits it. */
+        UNKNOWN,
     }
 }
 
@@ -42,9 +51,16 @@ enum class LicenceLevel(
     PUBLIC_DOMAIN_AND_CC_BY(PUBLIC_DOMAIN_KINDS + Licence.Kind.CC_BY),
 
     /** Public domain and every Creative Commons licence. */
-    CREATIVE_COMMONS(Licence.Kind.entries.toSet() - Licence.Kind.NONE_STATED),
+    CREATIVE_COMMONS(
+        Licence.Kind.entries
+            .filter { it.code.isNotEmpty() }
+            .toSet() + PUBLIC_DOMAIN_KINDS,
+    ),
 
-    /** Everything above, and items that state no licence. Chosen only through a confirm. */
+    /**
+     * Every item, whatever its licence: none stated, unrecognised or restrictive. Chosen only through a
+     * confirm. Restricted and dark items still stay out: that is the Archive's access control, not a licence.
+     */
     ANY(Licence.Kind.entries.toSet()),
     ;
 
@@ -70,21 +86,22 @@ object LicenceAllowlist {
             .filter { it.code.isNotEmpty() }
             .associateBy { it.code.lowercase() }
 
-    /** The licence [licenseUrl] names, when [level] admits it; otherwise null. */
-    fun match(
-        licenseUrl: String?,
-        level: LicenceLevel = LicenceLevel.DEFAULT,
-    ): Licence? = identify(licenseUrl)?.takeIf { level.admits(it.kind) }
-
     /**
-     * The licence a Creative Commons URL names, whatever the level. A missing or blank URL is
-     * [Licence.Kind.NONE_STATED]. The URL is matched whole, after only cosmetic differences are
-     * removed: the scheme, `www.`, a trailing slash, and a `deed.xx` or `legalcode` page. Any other
-     * URL, or text that is not a Creative Commons URL, is null: no level admits it.
+     * What an item's licence field says, whatever the level; [LicenceLevel.admits] decides whether it
+     * may be returned. A missing or blank field is [Licence.Kind.NONE_STATED]. A Creative Commons URL
+     * is matched whole, after only cosmetic differences are removed: the scheme, `www.`, a trailing
+     * slash, and a `deed.xx` or `legalcode` page. Text that reserves the rights is
+     * [Licence.Kind.RESTRICTED]; anything else is [Licence.Kind.UNKNOWN]. Both keep the text.
      */
-    fun identify(licenseUrl: String?): Licence? {
+    fun identify(licenseUrl: String?): Licence {
         if (licenseUrl.isNullOrBlank()) return Licence(Licence.Kind.NONE_STATED)
-        val path = normalise(licenseUrl) ?: return null
+        val recognised = normalise(licenseUrl)?.let(::recognise)
+        if (recognised != null) return recognised
+        val text = licenseUrl.trim().replace(whitespace, " ")
+        return Licence(if (restrictive.containsMatchIn(text)) Licence.Kind.RESTRICTED else Licence.Kind.UNKNOWN, text)
+    }
+
+    private fun recognise(path: String): Licence? {
         val ccMatch = creativeCommons.matchEntire(path)
         return when {
             publicDomainMark.matches(path) -> Licence(Licence.Kind.PUBLIC_DOMAIN_MARK)
@@ -119,6 +136,11 @@ object LicenceAllowlist {
         val detail = if (jurisdiction.isEmpty()) version else "$version ${jurisdiction.uppercase()}"
         return Licence(kind, detail)
     }
+
+    private val whitespace = Regex("\\s+")
+
+    /** Words that reserve the rights, as the Archive's free-text licence fields put it. */
+    private val restrictive = Regex("all rights reserved|©|\\(c\\)\\s*\\d{4}|copyright\\s+(?:\\(c\\)\\s*)?\\d{4}", RegexOption.IGNORE_CASE)
 
     private const val HOST = "creativecommons.org/"
 }

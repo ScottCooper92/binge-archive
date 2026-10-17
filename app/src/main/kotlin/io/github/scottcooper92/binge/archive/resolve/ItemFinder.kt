@@ -41,8 +41,9 @@ data class Found(
  * 2. IMDb: Archive items tagged with the film's IMDb id (P345).
  * 3. Title and year: an Archive title search. Its matches are loose, so a match counts as found
  *    only if a video file runs within 8% of the Wikidata runtime, checked before any licence check.
- *    With no runtime, or with title matches off in the user's settings, this route is skipped. If no match qualifies and any failed to load, the find
- *    fails with an `IOException`: the failed one might have been the film.
+ *    With no runtime, or with title matches off in the user's settings, this route is skipped.
+ *    If no match qualifies and any failed to load, the find fails with an `IOException`: the
+ *    failed one might have been the film.
  *
  * Wikidata is asked first even for a film the index knows, since only it gives the title, year and
  * runtime. When the query fails, the index's Archive ids stand in: its Wikidata ids as route 1, else
