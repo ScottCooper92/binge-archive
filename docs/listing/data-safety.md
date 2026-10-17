@@ -28,8 +28,8 @@ here once it is known.
 ## On-device data, for completeness
 
 Not asked by the form, but `privacy.md`'s reader will want it: the public film index; the last ten
-films resolved; copies the user reported (kept 30 days). The last two can be cleared on the app's
-screen. Android's backup and device transfer copy none of it (`allowBackup="false"`, and
+films resolved; copies the user reported (each offered last for 30 days, and kept until the user
+clears it). The last two can be cleared on the app's screen. Android's backup and device transfer copy none of it (`allowBackup="false"`, and
 `data_extraction_rules.xml` excludes every domain from both).
 
 ## Permissions declared
