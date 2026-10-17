@@ -13,6 +13,7 @@ import com.binge.designsystem.LocalIsSinglePaneNav
 import com.binge.designsystem.PaneContent
 import com.binge.designsystem.PaneEdge
 import com.binge.designsystem.template.BingeScreenScaffold
+import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import io.github.scottcooper92.binge.archive.R
@@ -63,7 +64,7 @@ fun SourcesScreen(
     actions: StatusActions,
     modifier: Modifier = Modifier,
 ) {
-    BingeScreenScaffold(title = stringResource(R.string.settings_title), modifier = modifier) { padding ->
+    BingeScreenScaffold(title = stringResource(R.string.settings_title), modifier = modifier, bar = ScreenBar.Small) { padding ->
         ScreenBody(padding) { _ ->
             LazyColumn(
                 contentPadding = padding.screenListPadding(),

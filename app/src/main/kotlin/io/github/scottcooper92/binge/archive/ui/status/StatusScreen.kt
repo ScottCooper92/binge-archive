@@ -36,6 +36,7 @@ import com.binge.designsystem.component.bingeChoiceItem
 import com.binge.designsystem.formatRelativeOrAbsolute
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.ErrorScreen
+import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import io.github.scottcooper92.binge.archive.R
@@ -58,7 +59,7 @@ fun StatusScreen(
     now: Long = System.currentTimeMillis(),
     selected: StatusDetail? = null,
 ) {
-    BingeScreenScaffold(title = stringResource(R.string.app_label), modifier = modifier) { padding ->
+    BingeScreenScaffold(title = stringResource(R.string.app_label), modifier = modifier, bar = ScreenBar.Small) { padding ->
         ScreenBody(padding) { _ ->
             when (state) {
                 StatusUiState.Loading ->

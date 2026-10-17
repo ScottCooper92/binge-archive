@@ -3,6 +3,7 @@ package io.github.scottcooper92.binge.archive.ui.tv
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.outlined.ClearAll
@@ -202,6 +203,8 @@ private fun <T> TvSettingGroup(
         choices = choices.map { it.value to stringResource(it.label) },
         selected = selected,
         onSelect = onSelect,
+        // The group sizes itself to a text field; the rows above it span the column, so it does too.
+        modifier = Modifier.fillMaxWidth(),
         choiceIcon = { value -> choices.first { it.value == value }.icon },
     )
 }

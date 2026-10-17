@@ -16,6 +16,7 @@ import com.binge.designsystem.CenteredContent
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.template.BingeScreenScaffold
+import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import io.github.scottcooper92.binge.archive.R
@@ -27,7 +28,12 @@ fun LicenceScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    BingeScreenScaffold(title = stringResource(R.string.licences_title), onBack = onBack, modifier = modifier) { padding ->
+    BingeScreenScaffold(
+        title = stringResource(R.string.licences_title),
+        onBack = onBack,
+        modifier = modifier,
+        bar = ScreenBar.Small,
+    ) { padding ->
         ScreenBody(padding) { _ ->
             CenteredContent { capped ->
                 LazyColumn(
