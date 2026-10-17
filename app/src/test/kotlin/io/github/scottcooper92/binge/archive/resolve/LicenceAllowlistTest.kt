@@ -5,7 +5,7 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class LicenceAllowlistTest {
-    private fun label(url: String?) = LicenceAllowlist.match(url)?.label
+    private fun label(url: String?) = LicenceAllowlist.match(url)?.let(testStrings::licenceName)
 
     @Test
     fun `the four allowed licences, each with its label`() {

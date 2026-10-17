@@ -18,6 +18,7 @@ import io.github.scottcooper92.binge.archive.resolve.LogcatCoverageLog
 import io.github.scottcooper92.binge.archive.resolve.Resolver
 import io.github.scottcooper92.binge.archive.resolve.ResolverHttp
 import io.github.scottcooper92.binge.archive.resolve.SourceMapper
+import io.github.scottcooper92.binge.archive.resolve.SourceStrings
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import okhttp3.OkHttpClient
@@ -46,7 +47,14 @@ class AppGraph(
     /** Resolves a title to sources: the index, then Wikidata and the Archive. */
     val resolver: Resolver by lazy {
         val http = ResolverHttp(http)
-        Resolver(index, ItemFinder(http), ItemReader(http), SourceMapper(), LogcatCoverageLog, deranked = reports::deranked)
+        Resolver(
+            index,
+            ItemFinder(http),
+            ItemReader(http),
+            SourceMapper(SourceStrings.from(appContext)),
+            LogcatCoverageLog,
+            deranked = reports::deranked,
+        )
     }
 
     /** Builds the workers this app schedules, with their collaborators from this graph. */

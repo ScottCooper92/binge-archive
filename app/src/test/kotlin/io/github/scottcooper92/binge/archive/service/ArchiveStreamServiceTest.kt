@@ -29,6 +29,7 @@ import io.grpc.StatusException
 import io.grpc.inprocess.InProcessChannelBuilder
 import io.grpc.inprocess.InProcessServerBuilder
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
@@ -69,6 +70,11 @@ class ArchiveStreamServiceTest {
             override fun locale() = "en-GB"
         }
 
+    /** A named thread, so a test can see the Service's work leave the calling thread. */
+    private val ioExecutor =
+        java.util.concurrent.Executors
+            .newSingleThreadExecutor { Thread(it, "archive-io") }
+
     private val name = InProcessServerBuilder.generateName()
     private val server: Server =
         InProcessServerBuilder
@@ -81,6 +87,7 @@ class ArchiveStreamServiceTest {
                     reports = reports,
                     versionName = "1.2.3",
                     errors = ArchiveErrors(messages),
+                    io = ioExecutor.asCoroutineDispatcher(),
                 ),
             ).build()
             .start()
@@ -93,6 +100,7 @@ class ArchiveStreamServiceTest {
         server.shutdownNow()
         indexDatabase.close()
         reportDatabase.close()
+        ioExecutor.shutdownNow()
     }
 
     private fun source(id: String) = StreamSource.newBuilder().setId(id).build()
@@ -143,6 +151,45 @@ class ArchiveStreamServiceTest {
             outcome = { _, _ -> ResolveOutcome.Sources(flowOf(source("a/1.mp4"), source("a/2.mp4"))) }
 
             assertEquals(listOf("a/1.mp4", "a/2.mp4"), stub.resolve(resolveRequest(movie(10331))).toList().map { it.source.id })
+        }
+
+    @Test
+    fun `subtitles are sent, and the handshake declares them`() =
+        runBlocking {
+            val withTrack =
+                StreamSource
+                    .newBuilder()
+                    .setId("a/1.mp4")
+                    .addSubtitles(
+                        com.binge.companion.contracts.stream.v1.SubtitleTrack
+                            .newBuilder()
+                            .setUrl("https://archive.org/download/a/1.srt"),
+                    ).build()
+            outcome = { _, _ -> ResolveOutcome.Sources(flowOf(withTrack)) }
+
+            assertEquals(
+                1,
+                stub
+                    .resolve(resolveRequest(movie(10331)))
+                    .toList()
+                    .single()
+                    .source.subtitlesCount,
+            )
+            assertTrue(Capability.CAPABILITY_SUBTITLES in stub.handshake(HandshakeRequest.getDefaultInstance()).capabilitiesList)
+        }
+
+    @Test
+    fun `the resolve runs on the io dispatcher, not the calling thread`() =
+        runBlocking {
+            var thread = ""
+            outcome = { _, _ ->
+                thread = Thread.currentThread().name.substringBefore(" @")
+                ResolveOutcome.Sources(emptyFlow())
+            }
+
+            stub.resolve(resolveRequest(movie(10331))).toList()
+
+            assertEquals("archive-io", thread)
         }
 
     @Test

@@ -19,10 +19,13 @@ import io.github.scottcooper92.binge.archive.resolve.TitleResolver
 import io.github.scottcooper92.binge.archive.resolve.unusableRequest
 import io.grpc.Status
 import io.grpc.StatusException
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 /**
  * STREAM v1, served from this app.
@@ -41,6 +44,8 @@ class ArchiveStreamService(
     private val reports: SourceReports,
     private val versionName: String,
     private val errors: ArchiveErrors,
+    /** Where every call runs: never a Binder thread, since a resolve reads response bodies and the index. */
+    private val io: CoroutineDispatcher = Dispatchers.IO,
 ) : StreamServiceGrpcKt.StreamServiceCoroutineImplBase() {
     override suspend fun handshake(request: HandshakeRequest): HandshakeResponse =
         HandshakeResponse
@@ -50,10 +55,15 @@ class ArchiveStreamService(
             .setCompanionVersionName(versionName)
             .build()
 
+    /**
+     * The resolve runs on [io]. The sources flow is not moved there with `flowOn`: its buffer would
+     * drop a source found just before a failure, and the contract has the host keep every source it
+     * received. What blocks inside it, a response body's read, moves to `io` itself in `ResolverHttp`.
+     */
     override fun resolve(request: ResolveRequest): Flow<ResolveResponse> =
         flow {
             val episode = if (request.hasEpisode()) request.episode else null
-            when (val outcome = resolver.resolve(request.media, episode)) {
+            when (val outcome = withContext(io) { resolver.resolve(request.media, episode) }) {
                 is ResolveOutcome.Sources -> outcome.sources.collect { emit(it) }
                 else -> throw errors.of(outcome)
             }
@@ -64,7 +74,9 @@ class ArchiveStreamService(
      * The index's answer: a film it knows may have sources. A request `Resolve` would refuse is
      * refused the same way, and a valid series is `NOT_FOUND`, as `Resolve` answers it.
      */
-    override suspend fun probe(request: ProbeRequest): ProbeResponse {
+    override suspend fun probe(request: ProbeRequest): ProbeResponse = withContext(io) { probeOnIo(request) }
+
+    private suspend fun probeOnIo(request: ProbeRequest): ProbeResponse {
         CAPABILITIES.requireDeclared(Capability.CAPABILITY_PROBE)
         val media = request.media
         val refusal =
@@ -81,7 +93,9 @@ class ArchiveStreamService(
      * `<identifier>/<file name>`; one in another shape, or naming an item the index has never seen,
      * was not issued here and is `INVALID_ARGUMENT`.
      */
-    override suspend fun reportSource(request: ReportSourceRequest): ReportSourceResponse {
+    override suspend fun reportSource(request: ReportSourceRequest): ReportSourceResponse = withContext(io) { reportOnIo(request) }
+
+    private suspend fun reportOnIo(request: ReportSourceRequest): ReportSourceResponse {
         CAPABILITIES.requireDeclared(Capability.CAPABILITY_REPORT_SOURCE)
         val identifier = request.sourceId.substringBefore('/', missingDelimiterValue = "")
         val fileName = request.sourceId.substringAfter('/', missingDelimiterValue = "")

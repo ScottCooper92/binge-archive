@@ -6,7 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SourceMapperTest {
-    private val mapper = SourceMapper(clock = { 1_000_000L })
+    private val mapper = SourceMapper(testStrings, clock = { 1_000_000L })
     private val notld = WikidataTitle.parse(resolveFixture("wikidata-10331.tsv"))
 
     private fun item(name: String) = ArchiveMetadata.parse(name, resolveFixture("metadata-$name.json"))
@@ -14,7 +14,7 @@ class SourceMapperTest {
     private fun licensed(
         item: ArchiveItem,
         downloads: Long = 0,
-    ) = LicensedItem(item, Licence("Public domain (US)"), downloads)
+    ) = LicensedItem(item, Licence(Licence.Kind.PUBLIC_DOMAIN_US), downloads)
 
     @Test
     fun `Night of the Living Dead maps to its 1080p, 720p and SD h264 encodes`() {
@@ -127,7 +127,7 @@ class SourceMapperTest {
 
     @Test
     fun `a long title is shortened so the label fits 120 characters`() {
-        val label = SourceMapper.label("A".repeat(200), 1922, Licence("CC BY 4.0"))
+        val label = testStrings.label("A".repeat(200), 1922, Licence(Licence.Kind.CC_BY, "4.0"), SourceMapper.MAX_LABEL)
 
         assertEquals(120, label.length)
         assertTrue(label.endsWith("… (1922) · CC BY 4.0"))

@@ -1,7 +1,10 @@
 package io.github.scottcooper92.binge.archive.resolve
 
 import io.github.scottcooper92.binge.archive.index.IndexFetcher
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.FormBody
@@ -25,6 +28,8 @@ class ResolverHttp(
     private val wikidataEndpoint: HttpUrl = IndexFetcher.WIKIDATA_SPARQL.toHttpUrl(),
     private val archiveSearch: HttpUrl = IndexFetcher.ARCHIVE_SEARCH.toHttpUrl(),
     private val archiveMetadata: HttpUrl = ARCHIVE_METADATA.toHttpUrl(),
+    /** Where a response body is read: the read blocks, so never the caller's thread. */
+    private val io: CoroutineDispatcher = Dispatchers.IO,
 ) {
     suspend fun sparql(query: String): String =
         body(
@@ -60,7 +65,7 @@ class ResolverHttp(
     private suspend fun body(request: Request): String =
         client.newCall(request).await().use { response ->
             if (!response.isSuccessful) throw IOException("HTTP ${response.code} from ${request.url.host}")
-            response.body.string()
+            withContext(io) { response.body.string() }
         }
 
     private suspend fun Call.await(): Response =
