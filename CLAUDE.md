@@ -248,9 +248,13 @@ where to confirm the list.
 - `checkTranslationStaleness`: a reworded English string whose Spanish was not re-read. Re-read it,
   then `./gradlew updateTranslationHashes` and commit `translation-hashes.txt`.
 - `koverVerify`: line coverage below **95%** in `:app` or in `:index`. The floors were measured
-  (98.8% in each when the index landed), not inherited. Excluded: generated code (Room's, BuildConfig),
-  the Activity, the Application and `AppGraph` (wiring), composables, and `:index`'s `SeedMain` (the
-  build's entry point, covered through what it calls). Nothing is excluded for merely lacking tests.
+  (98.8% in each when the index landed), not inherited. Excluded: generated code (Room's DAOs and
+  databases with their `$DefaultImpls`, BuildConfig), `MainActivity`, the Application and `AppGraph`
+  (wiring), composables with their `ComposableSingletons`, the frames' `PreviewData`, and `:index`'s
+  `SeedMain` (the build's entry point, covered through what it calls). `ArchiveCompanionService` is
+  excluded too: it only hands the SDK objects from the graph, and what they choose is tested through
+  `ArchiveStreamService` and `selectHostPolicy`. `SettingsHandOffActivity` is measured. Nothing is
+  excluded for merely lacking tests.
   Raise the floors as the code grows; never lower them.
 - `validateDebugScreenshotTest`: a `@PreviewTest` frame that no longer renders like its committed
   PNG. `app/build.gradle.kts` wires it into `check` by hand.

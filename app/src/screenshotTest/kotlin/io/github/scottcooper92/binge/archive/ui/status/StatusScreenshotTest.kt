@@ -37,6 +37,11 @@ class StatusScreenshotTest {
     @PreviewTest
     @ArchiveScreenStatePreview
     @Composable
+    fun refreshing() = StatusScreen(previewRefreshing, StatusActions(), now = PREVIEW_NOW)
+
+    @PreviewTest
+    @ArchiveScreenStatePreview
+    @Composable
     fun loading() = StatusScreen(StatusUiState.Loading, StatusActions(), now = PREVIEW_NOW)
 
     @PreviewTest

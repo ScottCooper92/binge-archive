@@ -32,3 +32,5 @@ val previewEmpty =
     )
 
 val previewFailedRefreshing = previewReady.copy(lastRefreshFailed = true, refreshing = true, recent = emptyList(), reported = emptyList())
+
+val previewRefreshing = previewReady.copy(refreshing = true)
