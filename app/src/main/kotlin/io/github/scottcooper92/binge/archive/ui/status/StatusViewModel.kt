@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -27,10 +28,12 @@ class StatusViewModel(
 ) : ViewModel() {
     private val attempts = MutableStateFlow(0)
 
+    // Each attempt starts at Loading, so a retry that fails again visibly lands on Error again
+    // rather than being conflated into the Error the flow already holds.
     @OptIn(ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<StatusUiState> =
         attempts
-            .flatMapLatest { readyStates() }
+            .flatMapLatest { readyStates().onStart { emit(StatusUiState.Loading) } }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), StatusUiState.Loading)
 
     fun refreshNow() = refresher.refreshNow()
