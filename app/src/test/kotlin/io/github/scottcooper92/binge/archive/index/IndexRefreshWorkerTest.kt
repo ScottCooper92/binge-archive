@@ -33,6 +33,14 @@ class IndexRefreshWorkerTest {
         database.close()
     }
 
+    /** Keeps the seed's Archive items, so the shrink guard sees a normal answer. */
+    private val fresh =
+        IndexSnapshot(
+            links = listOf(WikidataLink(LinkedMediaType.MOVIE, 42, "fresh", true)),
+            archiveItems = sampleSnapshot.archiveItems,
+            imdbLinks = emptyList(),
+        )
+
     private fun worker(
         prune: suspend () -> Unit = {},
         fetch: () -> IndexSnapshot,
@@ -51,7 +59,6 @@ class IndexRefreshWorkerTest {
     fun `a successful fetch replaces the seed`() =
         runTest {
             repository.ensureSeeded()
-            val fresh = IndexSnapshot(listOf(WikidataLink(LinkedMediaType.MOVIE, 42, "fresh", true)), sampleSnapshot.archiveItems, emptyList())
 
             assertEquals(ListenableWorker.Result.success(), worker { fresh }.doWork())
 
@@ -77,7 +84,6 @@ class IndexRefreshWorkerTest {
     fun `each refresh prunes, and a failing prune does not stop it`() =
         runTest {
             var pruned = 0
-            val fresh = IndexSnapshot(listOf(WikidataLink(LinkedMediaType.MOVIE, 42, "fresh", true)), emptyList(), emptyList())
 
             val result = worker(prune = { pruned++ }) { fresh }.doWork()
             val afterFailure = worker(prune = { error("db closed") }) { fresh }.doWork()
