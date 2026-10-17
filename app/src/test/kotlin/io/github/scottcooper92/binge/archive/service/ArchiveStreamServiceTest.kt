@@ -322,7 +322,7 @@ class ArchiveStreamServiceTest {
     }
 
     @Test
-    fun `a report against an item the index knows is recorded and pushes it down`() =
+    fun `a report against an indexed item is recorded and pushes it down`() =
         runBlocking {
             stub.reportSource(
                 ReportSourceRequest
@@ -343,8 +343,22 @@ class ArchiveStreamServiceTest {
         }
 
     @Test
+    fun `a report against a well-formed id whose item is not in the index is recorded and deranked`() =
+        runBlocking {
+            stub.reportSource(
+                ReportSourceRequest
+                    .newBuilder()
+                    .setSourceId("found_by_title_route/a.mp4")
+                    .setProblem(SourceProblem.SOURCE_PROBLEM_UNPLAYABLE)
+                    .build(),
+            )
+
+            assertEquals(setOf("found_by_title_route"), reports.deranked())
+        }
+
+    @Test
     fun `a source id this companion never issued is INVALID_ARGUMENT`() {
-        listOf("", "no-slash", "/name.mp4", "item/", "never_seen_item/a.mp4").forEach { id ->
+        listOf("", "no-slash", "/name.mp4", "item/", "bad id/a.mp4", "-lead/a.mp4").forEach { id ->
             val failure = status { stub.reportSource(ReportSourceRequest.newBuilder().setSourceId(id).build()) }
             assertEquals(id, Status.Code.INVALID_ARGUMENT, failure.status.code)
         }
