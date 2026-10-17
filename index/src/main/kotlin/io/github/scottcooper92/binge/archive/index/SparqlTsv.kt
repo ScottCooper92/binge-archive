@@ -10,7 +10,7 @@ import java.io.IOException
  * Each cell is an RDF term. A literal is quoted, `"10331"`, and may carry a datatype,
  * `"true"^^<…#boolean>`, or a language tag, `"x"@en`. Only the quoted value is kept.
  */
-internal object SparqlTsv {
+object SparqlTsv {
     fun parse(tsv: String): List<Map<String, String>> {
         val lines = tsv.lineSequence().filter { it.isNotBlank() }.toList()
         if (lines.isEmpty()) throw IOException("Empty SPARQL response")

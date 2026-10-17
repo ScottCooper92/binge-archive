@@ -55,4 +55,5 @@ internal object WikidataParsers {
 /** A TMDB id is a positive integer. Wikidata holds the odd malformed value; those are skipped. */
 internal fun String.toTmdbId(): Int? = toIntOrNull()?.takeIf { it > 0 }
 
-internal fun String.isImdbId(): Boolean = matches(Regex("tt\\d{7,}"))
+/** An IMDb title id: `tt` and at least seven digits. */
+fun String.isImdbId(): Boolean = matches(Regex("tt\\d{7,}"))

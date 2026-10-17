@@ -18,7 +18,7 @@ wire format is a PR against binge-companions.
 The plan is binge-companions' epic
 [#141](https://github.com/ScottCooper92/binge-companions/issues/141) and its phases there,
 #142 to #149.
-Status is pre-alpha: the on-device index is in; the resolver and the Service are still to come.
+Status is pre-alpha: the on-device index and the resolver are in; the Service is still to come.
 
 The contracts, the SDK and the design system are consumed as source. `binge-companions/` and
 `design-system/` are git submodules, included as composite builds in `settings.gradle.kts`.
@@ -108,6 +108,38 @@ Rules that hold it together:
 - The status screen's freshness is `refresh_log`'s last success (`IndexRepository.lastSuccess()`).
 - The Room schema is exported to `app/schemas` and committed. The database falls back to a
   destructive migration: the index is rebuilt weekly and holds nothing anyone owns.
+
+## The resolver
+
+`Resolver.resolve(mediaId, episode)` (package `resolve`) answers a `ResolveOutcome`, which the Service
+maps to the contract: `Sources` (a flow, possibly empty), `NotFound`, `NotAFilm` or `Invalid`. A
+network failure is an `IOException`, thrown out of `resolve()` itself (the finder's Wikidata and
+search calls, and the title route's loads) or out of the flow. The Service maps both to `UNAVAILABLE`.
+
+1. **The request.** An unusable `MediaId` or `EpisodeRef` is `Invalid` before anything is looked up.
+2. **Series and the index.** A valid series is `NotFound` (v1 carries none). A movie id the index
+   knows is not a film is `NotAFilm`. A film the index does not know goes on to the routes: it is
+   `NotFound` only if none of them finds an Archive item.
+3. **`ItemFinder`.** Routes in a fixed order, stopping at the first that finds items: the Wikidata
+   item's Archive ids, then Archive items tagged with its IMDb id, then a title-and-year search
+   (only with a Wikidata runtime to check against). At most five candidates, best-downloaded first.
+   A title match counts as found only if a video file runs within 8% of the runtime, checked
+   before any licence. If none qualifies and any failed to load, the resolve fails, never
+   `NotFound`.
+4. **`ItemReader`.** Reads each candidate's metadata. It drops items with no allowlisted licence,
+   restricted or dark items, non-`movies` items, and items that fail to load. If none is admitted
+   and any failed to load, the resolve fails rather than answering empty.
+5. **`SourceMapper`.** Video files only (`VideoFormats`). With a runtime, a file under half of it is
+   dropped: a reel, a trailer or an extra is not the film. One source per resolution class per
+   item, preferring h.264 in MP4, then any MP4, then height, length and size. The label is
+   "Title (year) · licence". SubRip and WebVTT become subtitle tracks, at most ten. Items go in
+   download order, at most fifty sources. URLs are `https://archive.org/download/…`, with a nominal
+   24-hour expiry.
+
+Every gap is a `CoverageMiss` (route and reason) for binge-companions#148: a film not in the
+catalogue, one the routes found but the index did not know, and a resolve that ends with nothing.
+`LogcatCoverageLog` writes them to logcat on the device and nowhere else.
+Every HTTP call is cancellable: when the host cancels, the call is cancelled with it.
 
 ## Talking to Wikidata and the Archive
 

@@ -10,6 +10,13 @@ import io.github.scottcooper92.binge.archive.index.IndexFetcher
 import io.github.scottcooper92.binge.archive.index.IndexRefreshWorker
 import io.github.scottcooper92.binge.archive.index.IndexRepository
 import io.github.scottcooper92.binge.archive.index.readSeed
+import io.github.scottcooper92.binge.archive.resolve.ItemFinder
+import io.github.scottcooper92.binge.archive.resolve.ItemReader
+import io.github.scottcooper92.binge.archive.resolve.LogcatCoverageLog
+import io.github.scottcooper92.binge.archive.resolve.Resolver
+import io.github.scottcooper92.binge.archive.resolve.ResolverHttp
+import io.github.scottcooper92.binge.archive.resolve.SourceMapper
+import io.github.scottcooper92.binge.archive.resolve.SourceStrings
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import okhttp3.OkHttpClient
@@ -31,6 +38,12 @@ class AppGraph(
     private val database: IndexDatabase by lazy { IndexDatabase.open(appContext) }
 
     val index: IndexRepository by lazy { IndexRepository(database.indexDao(), seed = { appContext.assets.readSeed() }) }
+
+    /** Resolves a title to sources: the index, then Wikidata and the Archive. */
+    val resolver: Resolver by lazy {
+        val http = ResolverHttp(http)
+        Resolver(index, ItemFinder(http), ItemReader(http), SourceMapper(SourceStrings.from(appContext)), LogcatCoverageLog)
+    }
 
     /** Builds the workers this app schedules, with their collaborators from this graph. */
     val workerFactory: WorkerFactory =
