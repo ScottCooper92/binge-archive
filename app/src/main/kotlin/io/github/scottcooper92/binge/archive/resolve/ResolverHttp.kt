@@ -73,11 +73,14 @@ class ResolverHttp(
     private suspend fun body(
         request: Request,
         callTimeoutMillis: Long? = null,
-    ): String =
-        client.newCall(request).also { call -> callTimeoutMillis?.let { call.timeout().timeout(it, TimeUnit.MILLISECONDS) } }.await().use { response ->
+    ): String {
+        val call = client.newCall(request)
+        if (callTimeoutMillis != null) call.timeout().timeout(callTimeoutMillis, TimeUnit.MILLISECONDS)
+        return call.await().use { response ->
             if (!response.isSuccessful) throw IOException("HTTP ${response.code} from ${request.url.host}")
             withContext(io) { response.body.string() }
         }
+    }
 
     private suspend fun Call.await(): Response =
         suspendCancellableCoroutine { continuation ->
