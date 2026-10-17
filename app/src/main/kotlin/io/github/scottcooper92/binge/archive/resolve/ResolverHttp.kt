@@ -5,7 +5,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.FormBody
@@ -15,6 +14,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.io.IOException
+import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -34,18 +34,20 @@ class ResolverHttp(
     /** The Wikidata query's own budget: well inside the host's 10 s deadline, so the index fallback has time to run. */
     private val sparqlBudgetMillis: Long = SPARQL_BUDGET_MILLIS,
 ) {
-    /** Running out of [sparqlBudgetMillis] is an [IOException], like any other Wikidata failure. */
+    /**
+     * Running out of [sparqlBudgetMillis] is an [IOException], like any other Wikidata failure. The budget is
+     * OkHttp's call timeout, which spans connecting, waiting and reading the body, and runs on the wall clock.
+     */
     suspend fun sparql(query: String): String =
-        withTimeoutOrNull(sparqlBudgetMillis) {
-            body(
-                Request
-                    .Builder()
-                    .url(wikidataEndpoint)
-                    .header("Accept", "text/tab-separated-values")
-                    .post(FormBody.Builder().add("query", query).build())
-                    .build(),
-            )
-        } ?: throw IOException("Wikidata did not answer within $sparqlBudgetMillis ms")
+        body(
+            Request
+                .Builder()
+                .url(wikidataEndpoint)
+                .header("Accept", "text/tab-separated-values")
+                .post(FormBody.Builder().add("query", query).build())
+                .build(),
+            callTimeoutMillis = sparqlBudgetMillis,
+        )
 
     /** An advancedsearch query, best-downloaded first, returning identifier and downloads. */
     suspend fun search(
@@ -68,8 +70,11 @@ class ResolverHttp(
     suspend fun metadata(identifier: String): String =
         body(Request.Builder().url(archiveMetadata.newBuilder().addPathSegment(identifier).build()).build())
 
-    private suspend fun body(request: Request): String =
-        client.newCall(request).await().use { response ->
+    private suspend fun body(
+        request: Request,
+        callTimeoutMillis: Long? = null,
+    ): String =
+        client.newCall(request).also { call -> callTimeoutMillis?.let { call.timeout().timeout(it, TimeUnit.MILLISECONDS) } }.await().use { response ->
             if (!response.isSuccessful) throw IOException("HTTP ${response.code} from ${request.url.host}")
             withContext(io) { response.body.string() }
         }

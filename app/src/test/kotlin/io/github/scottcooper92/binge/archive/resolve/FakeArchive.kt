@@ -69,12 +69,13 @@ internal class FakeArchive(
         return MockResponse(body = body)
     }
 
-    fun http(): ResolverHttp =
+    fun http(sparqlBudgetMillis: Long = ResolverHttp.SPARQL_BUDGET_MILLIS): ResolverHttp =
         ResolverHttp(
             client = ArchiveHttp.client("test"),
             wikidataEndpoint = server.url("/sparql"),
             archiveSearch = server.url("/search"),
             archiveMetadata = server.url("/metadata"),
+            sparqlBudgetMillis = sparqlBudgetMillis,
         )
 
     override fun close() {
