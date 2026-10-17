@@ -1,9 +1,11 @@
 package io.github.scottcooper92.binge.archive.resolve
 
+import android.util.Log
 import com.binge.companion.contracts.stream.v1.StreamSource
 import com.binge.companion.contracts.v1.EpisodeRef
 import com.binge.companion.contracts.v1.MediaId
 import com.binge.companion.contracts.v1.MediaType
+import com.binge.companion.sdk.attempt
 import io.github.scottcooper92.binge.archive.index.IndexRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
@@ -101,7 +103,7 @@ class Resolver(
         found: Found,
     ): Flow<StreamSource> =
         flow {
-            val derankedIds = deranked()
+            val derankedIds = attempt { deranked() }.onFailure { bookkeepingFailed("deranking", it) }.getOrDefault(emptySet())
             val expiresAt = mapper.expiresAt()
             val heldBack = mutableListOf<LicensedItem>()
             var items = 0
@@ -110,14 +112,14 @@ class Resolver(
             suspend fun send(licensed: LicensedItem) {
                 for (source in mapper.sources(licensed, found.facts, expiresAt)) {
                     if (sent == SourceMapper.MAX_SOURCES) return
-                    if (sent ==
-                        0
-                    ) {
-                        recordResolved(
-                            tmdbId,
-                            found.facts.title ?: licensed.item.title ?: licensed.item.identifier,
-                            licensed.item.identifier,
-                        )
+                    if (sent == 0) {
+                        attempt {
+                            recordResolved(
+                                tmdbId,
+                                found.facts.title ?: licensed.item.title ?: licensed.item.identifier,
+                                licensed.item.identifier,
+                            )
+                        }.onFailure { bookkeepingFailed("recording the title", it) }
                     }
                     emit(source)
                     sent++
@@ -134,6 +136,16 @@ class Resolver(
                 sent == 0 -> coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.NO_PLAYABLE_FILE))
             }
         }
+}
+
+private const val TAG = "ArchiveResolver"
+
+/** Deranking and the recent-titles list are the device's own: when they fail, the sources still go out. */
+private fun bookkeepingFailed(
+    what: String,
+    cause: Throwable,
+) {
+    Log.w(TAG, "Skipped $what: the device records failed", cause)
 }
 
 /**
