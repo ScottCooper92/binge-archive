@@ -93,19 +93,18 @@ class ResolverTest {
         }
 
     private fun resolverWith(
+        http: ResolverHttp = archive.http(),
         deranked: suspend () -> Set<String> = { emptySet() },
         recordResolved: suspend (Int, String, String) -> Unit = { _, _, _ -> },
-    ) = archive.http().let { http ->
-        Resolver(
-            IndexRepository(database.indexDao(), seed = { seed }),
-            ItemFinder(http),
-            ItemReader(http),
-            SourceMapper(testStrings),
-            misses::add,
-            deranked = deranked,
-            recordResolved = recordResolved,
-        )
-    }
+    ) = Resolver(
+        IndexRepository(database.indexDao(), seed = { seed }),
+        ItemFinder(http),
+        ItemReader(http),
+        SourceMapper(testStrings),
+        misses::add,
+        deranked = deranked,
+        recordResolved = recordResolved,
+    )
 
     @Test
     fun `a failing deranking lookup still sends the sources`() =
@@ -372,8 +371,10 @@ class ResolverTest {
         runTest {
             archive.sparqlDelaySeconds = 30
             archive.search = { resolveFixture("search-downloads-10331.json") }
+            // The production budget is 4 s; a short one keeps the stall out of the test's wall time.
+            val stalled = resolverWith(http = archive.http(sparqlBudgetMillis = 300))
 
-            val sources = sources(resolver.resolve(movie(10331), episode = null)).toList()
+            val sources = sources(stalled.resolve(movie(10331), episode = null)).toList()
 
             assertEquals(3, sources.size)
             assertTrue(sources.all { it.id.startsWith("Night.Of.The.Living.Dead_1080p/") })
