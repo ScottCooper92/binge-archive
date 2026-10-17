@@ -26,9 +26,13 @@ prefix that admits a non-commercial or no-derivatives licence, say), or adds any
 that skips the check is a finding, whatever the PR says it is for. This is the single most important
 thing to read for.
 
-**The three `Resolve` answers stay distinct.** A known film with no licit copy completes empty. An
-unknown TMDB id is `NOT_FOUND`. A known id that is not a film is `INVALID_ARGUMENT`. Collapsing two
-of them, or mapping a network failure onto one of them, is a finding.
+**`Resolve`'s four answers stay distinct, as `stream.proto` defines them.** Sources; OK and empty
+("a known title with no licit source"); `NOT_FOUND` ("the title is not in this integration's
+catalogue"); and `INVALID_ARGUMENT` ("a bad request", including "a `MediaId` whose type the
+integration knows is wrong"). A film missing from the index is not `NOT_FOUND` until the network
+routes have also found nothing, and a valid series is `NOT_FOUND`, not empty. Collapsing two answers,
+paraphrasing the proto into a different rule, or mapping a network failure onto one of them is a
+finding.
 
 **Nothing leaves the device but the two lookups.** The app talks to Wikidata and the Internet
 Archive. A new host, an analytics or crash SDK, or a coverage-miss log that is sent anywhere is a
