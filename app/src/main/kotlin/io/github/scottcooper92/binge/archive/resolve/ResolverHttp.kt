@@ -14,6 +14,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.io.IOException
+import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -30,7 +31,13 @@ class ResolverHttp(
     private val archiveMetadata: HttpUrl = ARCHIVE_METADATA.toHttpUrl(),
     /** Where a response body is read: the read blocks, so never the caller's thread. */
     private val io: CoroutineDispatcher = Dispatchers.IO,
+    /** The Wikidata query's own budget: well inside the host's 10 s deadline, so the index fallback has time to run. */
+    private val sparqlBudgetMillis: Long = SPARQL_BUDGET_MILLIS,
 ) {
+    /**
+     * Running out of [sparqlBudgetMillis] is an [IOException], like any other Wikidata failure. The budget is
+     * OkHttp's call timeout, which spans connecting, waiting and reading the body, and runs on the wall clock.
+     */
     suspend fun sparql(query: String): String =
         body(
             Request
@@ -39,6 +46,7 @@ class ResolverHttp(
                 .header("Accept", "text/tab-separated-values")
                 .post(FormBody.Builder().add("query", query).build())
                 .build(),
+            callTimeoutMillis = sparqlBudgetMillis,
         )
 
     /** An advancedsearch query, best-downloaded first, returning identifier and downloads. */
@@ -62,11 +70,17 @@ class ResolverHttp(
     suspend fun metadata(identifier: String): String =
         body(Request.Builder().url(archiveMetadata.newBuilder().addPathSegment(identifier).build()).build())
 
-    private suspend fun body(request: Request): String =
-        client.newCall(request).await().use { response ->
+    private suspend fun body(
+        request: Request,
+        callTimeoutMillis: Long? = null,
+    ): String {
+        val call = client.newCall(request)
+        if (callTimeoutMillis != null) call.timeout().timeout(callTimeoutMillis, TimeUnit.MILLISECONDS)
+        return call.await().use { response ->
             if (!response.isSuccessful) throw IOException("HTTP ${response.code} from ${request.url.host}")
             withContext(io) { response.body.string() }
         }
+    }
 
     private suspend fun Call.await(): Response =
         suspendCancellableCoroutine { continuation ->
@@ -91,6 +105,8 @@ class ResolverHttp(
         }
 
     companion object {
+        /** About 4 s: the resolver's Wikidata budget. The weekly refresh keeps the shared client's 20 s read timeout. */
+        const val SPARQL_BUDGET_MILLIS = 4_000L
         const val ARCHIVE_METADATA = "https://archive.org/metadata"
         const val ARCHIVE_DOWNLOAD = "https://archive.org/download"
     }
