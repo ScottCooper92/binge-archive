@@ -6,11 +6,12 @@ import java.io.IOException
 internal object WikidataParsers {
     /**
      * Folds the link query's rows, one per class, into one link per TMDB id and Archive identifier.
-     * A film link is a film when any of its classes is in [filmClasses]; a series never is.
+     * A film link is a film unless every one of its classes is in [nonFilmClasses]; a link with no
+     * class at all is one too. A series never is.
      */
     fun links(
         tsv: String,
-        filmClasses: Set<String>,
+        nonFilmClasses: Set<String>,
     ): List<WikidataLink> {
         val links = LinkedHashMap<Triple<LinkedMediaType, Int, String>, Boolean>()
         SparqlTsv.parse(tsv).forEach { row ->
@@ -23,17 +24,17 @@ internal object WikidataParsers {
             val tmdbId = row["tmdb"]?.toTmdbId() ?: return@forEach
             val archiveId = row["ia"]?.takeIf { it.isNotBlank() } ?: return@forEach
             val key = Triple(type, tmdbId, archiveId)
-            val isFilm = type == LinkedMediaType.MOVIE && row["class"] in filmClasses
+            val isFilm = type == LinkedMediaType.MOVIE && row["class"] !in nonFilmClasses
             links[key] = links[key] == true || isFilm
         }
         return links.map { (key, isFilm) -> WikidataLink(key.first, key.second, key.third, isFilm) }
     }
 
-    /** The classes the film-class query marks as a kind of film. */
-    fun filmClasses(tsv: String): Set<String> =
+    /** The classes the non-film-class query marks as a known non-film kind. */
+    fun nonFilmClasses(tsv: String): Set<String> =
         SparqlTsv
             .parse(tsv)
-            .filter { it["film"].toBoolean() }
+            .filter { it["nonFilm"].toBoolean() }
             .mapNotNull { it["class"]?.takeIf(String::isNotBlank) }
             .toSet()
 
@@ -41,7 +42,7 @@ internal object WikidataParsers {
         SparqlTsv.parse(tsv).mapNotNull { row ->
             val imdbId = row["imdb"]?.takeIf { it.isImdbId() } ?: return@mapNotNull null
             val tmdbId = row["tmdb"]?.toTmdbId() ?: return@mapNotNull null
-            ImdbTmdbLink(imdbId, tmdbId, isFilm = row["film"].toBoolean())
+            ImdbTmdbLink(imdbId, tmdbId, isFilm = !row["nonFilm"].toBoolean())
         }
 
     fun checkNotEmpty(links: List<WikidataLink>): List<WikidataLink> {

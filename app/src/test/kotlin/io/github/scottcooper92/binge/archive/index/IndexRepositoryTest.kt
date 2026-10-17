@@ -53,7 +53,7 @@ class IndexRepositoryTest {
         }
 
     @Test
-    fun `a series and a TMDB movie id that is not a film are known, and not films`() =
+    fun `a series and a TMDB movie id of a known non-film kind are known, and not films`() =
         runTest {
             val index = repository()
 
@@ -61,8 +61,15 @@ class IndexRepositoryTest {
                 IndexHit(isFilm = false, wikidataArchiveIds = listOf("The_Prisoner"), imdbArchiveIds = emptyList()),
                 index.lookup(series(894)),
             )
-            assertFalse(checkNotNull(index.lookup(movie(34372))).isFilm)
+            assertFalse(checkNotNull(index.lookup(movie(146742))).isFilm)
             assertNull(index.lookup(series(653)))
+        }
+
+    @Test
+    fun `a movie Wikidata classes as no known non-film kind is a film`() =
+        runTest {
+            // The Execution of Mary Stuart (1895) is only a "video" on Wikidata, and a film all the same (#26).
+            assertTrue(checkNotNull(repository().lookup(movie(34372))).isFilm)
         }
 
     @Test
@@ -95,7 +102,7 @@ class IndexRepositoryTest {
             assertEquals(1, seedLoads)
             val log = checkNotNull(index.lastSuccess().first())
             assertEquals(RefreshSource.SEED, log.source)
-            assertEquals(5, log.linkCount)
+            assertEquals(6, log.linkCount)
             assertEquals(3, log.archiveItemCount)
         }
 
@@ -163,20 +170,21 @@ class IndexRepositoryTest {
     fun `the film count and the latest refresh are read for the status screen`() =
         runTest {
             val index = repository()
-            // 653, 10331 and 2973 (through its IMDb id), plus the 10331 the IMDb route also reaches: three films.
-            assertEquals(3, index.filmCount().first())
+            // 653, 10331, 34372 and 2973 (through its IMDb id), plus the 10331 the IMDb route also reaches:
+            // four films. 146742, a television series episode, is not one.
+            assertEquals(4, index.filmCount().first())
 
             now = 2_000L
             index.recordFailure("offline")
 
-            assertEquals(3, index.filmCount().first())
+            assertEquals(4, index.filmCount().first())
             assertFalse(checkNotNull(index.latestRefresh().first()).succeeded)
         }
 
     @Test
     fun `each status screen read loads the seed first, on a fresh install`() =
         runTest {
-            assertEquals(3, repository().filmCount().first())
+            assertEquals(4, repository().filmCount().first())
         }
 
     @Test

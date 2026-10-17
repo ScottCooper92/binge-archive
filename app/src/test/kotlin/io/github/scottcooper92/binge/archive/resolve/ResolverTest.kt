@@ -40,7 +40,8 @@ class ResolverTest {
                 listOf(
                     WikidataLink(LinkedMediaType.MOVIE, 10331, "Night.Of.The.Living.Dead_1080p", isFilm = true),
                     WikidataLink(LinkedMediaType.MOVIE, 653, "Nosferatu_DVD_quality", isFilm = true),
-                    WikidataLink(LinkedMediaType.MOVIE, 34372, "Execution_of_Mary_1895", isFilm = false),
+                    WikidataLink(LinkedMediaType.MOVIE, 34372, "Execution_of_Mary_1895", isFilm = true),
+                    WikidataLink(LinkedMediaType.MOVIE, 146742, "silent-a-w-o-l-", isFilm = false),
                     WikidataLink(LinkedMediaType.TV, 894, "The_Prisoner", isFilm = false),
                 ),
             archiveItems = emptyList(),
@@ -227,9 +228,18 @@ class ResolverTest {
         }
 
     @Test
-    fun `an id the index knows that is not a film is an invalid argument`() =
+    fun `an id the index knows is a known non-film kind is an invalid argument`() =
         runTest {
-            assertEquals(ResolveOutcome.NotAFilm, resolver.resolve(movie(34372), episode = null))
+            assertEquals(ResolveOutcome.NotAFilm, resolver.resolve(movie(146742), episode = null))
+        }
+
+    @Test
+    fun `a movie Wikidata classes as no known non-film kind goes on to the routes`() =
+        runTest {
+            archive.sparql = { "?ia\t?imdb\t?title\t?date\t?amount\t?unit\n" }
+
+            assertEquals(emptyList<Any>(), sources(resolver.resolve(movie(34372), episode = null)).toList())
+            assertEquals(listOf(CoverageMiss(34372, null, CoverageMiss.Reason.NO_ITEMS)), misses)
         }
 
     @Test

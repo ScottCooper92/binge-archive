@@ -16,7 +16,8 @@ import kotlinx.coroutines.flow.flow
  * - [NotFound]: `NOT_FOUND`, a title not in the catalogue. For a film, that is one neither the
  *   index nor any network route can place on the Archive. A valid series is always this: v1
  *   carries no series.
- * - [NotAFilm]: `INVALID_ARGUMENT`, a movie id the index knows is not a film.
+ * - [NotAFilm]: `INVALID_ARGUMENT`, a movie id the index knows is a known non-film kind (a series,
+ *   an episode, a literary work…). Anything else Wikidata calls it goes on to the routes.
  * - [Invalid]: `INVALID_ARGUMENT`, a request the contract calls unusable.
  *
  * A network failure is an `IOException`, out of [Resolver.resolve] or out of the flow, which the

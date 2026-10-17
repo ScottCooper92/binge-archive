@@ -85,9 +85,15 @@ check, is never a fix for a test or a coverage gap. It is a decision for the mai
 public sources, refreshed weekly:
 
 - **Wikidata links**: items with a TMDB id (movie P4947 or series P4983) and an Internet Archive
-  identifier (P724), with whether each is a film (an instance of a subclass of Q11424).
+  identifier (P724), with whether each is a known non-film (see below).
 - **Archive IMDb externals**: Archive `movies` items tagged `urn:imdb:…`, with the TMDB id Wikidata
-  gives for that IMDb id.
+  gives for that IMDb id, and the same non-film flag.
+
+**Not a film** is a known non-film kind, never "not called a film". A TMDB movie is not a film
+only when it has classes (P31) and every one is a subclass of television series, television series
+episode, miniseries, literary work or film series, and not also of film (Q11424). Anything else may
+be a film and goes on to the routes: a television special, a "video", a serial, an item with no
+class at all (#26). The status screen's "films linked" counts by the same rule.
 
 The code is split in two:
 
@@ -122,7 +128,7 @@ search calls, and the title route's loads) or out of the flow. The Service maps 
 
 1. **The request.** An unusable `MediaId` or `EpisodeRef` is `Invalid` before anything is looked up.
 2. **Series and the index.** A valid series is `NotFound` (v1 carries none). A movie id the index
-   knows is not a film is `NotAFilm`. A film the index does not know goes on to the routes: it is
+   knows is a known non-film kind (see The index) is `NotAFilm`. A film the index does not know goes on to the routes: it is
    `NotFound` only if none of them finds an Archive item.
 3. **`ItemFinder`.** Routes in a fixed order, stopping at the first that finds items: the Wikidata
    item's Archive ids, then Archive items tagged with its IMDb id, then a title-and-year search

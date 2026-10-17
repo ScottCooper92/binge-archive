@@ -9,13 +9,16 @@ import java.io.IOException
  *
  * Plain tab-separated lines after a version header, one record per line:
  *
- *     L <movie|tv> <tmdb id> <archive id> <1|0 is a film>
+ *     L <movie|tv> <tmdb id> <archive id> <1|0 may be a film>
  *     A <archive id> <imdb id>
- *     I <imdb id> <tmdb id> <1|0 is a film>
+ *     I <imdb id> <tmdb id> <1|0 may be a film>
+ *
+ * v2 changed what the flag means, not the layout: 0 is now a known non-film kind, where in v1 it
+ * was anything not a subclass of film. A v1 seed is refused rather than read with the old meaning.
  */
 object SeedFormat {
     const val ASSET_PATH = "index/seed.tsv"
-    private const val HEADER = "# binge-archive index seed v1"
+    private const val HEADER = "# binge-archive index seed v2"
 
     fun write(
         snapshot: IndexSnapshot,
@@ -29,7 +32,7 @@ object SeedFormat {
 
     fun read(reader: BufferedReader): IndexSnapshot {
         val lines = reader.lineSequence().iterator()
-        if (!lines.hasNext() || lines.next() != HEADER) throw IOException("Not a v1 index seed")
+        if (!lines.hasNext() || lines.next() != HEADER) throw IOException("Not a v2 index seed")
         val links = mutableListOf<WikidataLink>()
         val archiveItems = mutableListOf<ArchiveImdbItem>()
         val imdbLinks = mutableListOf<ImdbTmdbLink>()

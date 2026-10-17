@@ -6,8 +6,9 @@ enum class LinkedMediaType { MOVIE, TV }
 /**
  * A Wikidata item that carries both a TMDB id and an Internet Archive identifier.
  *
- * [isFilm] is whether the item is a film (an instance of a subclass of Wikidata's "film"). A TMDB
- * movie id can belong to something that is not one, and the resolver answers those differently.
+ * [isFilm] is false for a series, and for a TMDB movie id whose every Wikidata class is a known
+ * non-film kind (see [WikidataQueries]); the resolver answers those differently. Any other movie,
+ * one with no class at all included, may be a film and is true.
  */
 data class WikidataLink(
     val mediaType: LinkedMediaType,
@@ -22,7 +23,10 @@ data class ArchiveImdbItem(
     val imdbId: String,
 )
 
-/** The TMDB movie id Wikidata gives for an IMDb id, so an [ArchiveImdbItem] can be found by TMDB id. */
+/**
+ * The TMDB movie id Wikidata gives for an IMDb id, so an [ArchiveImdbItem] can be found by TMDB id.
+ * [isFilm] follows the same rule as [WikidataLink.isFilm].
+ */
 data class ImdbTmdbLink(
     val imdbId: String,
     val tmdbId: Int,

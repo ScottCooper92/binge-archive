@@ -216,7 +216,7 @@ class ArchiveStreamServiceTest {
     @Test
     fun `D, a bad request and a non-film are INVALID_ARGUMENT`() {
         outcome = { _, _ -> ResolveOutcome.NotAFilm }
-        assertEquals(Status.Code.INVALID_ARGUMENT, status { stub.resolve(resolveRequest(movie(34372))).toList() }.status.code)
+        assertEquals(Status.Code.INVALID_ARGUMENT, status { stub.resolve(resolveRequest(movie(146742))).toList() }.status.code)
 
         outcome = { _, _ -> ResolveOutcome.Invalid("a movie takes no episode") }
         val failure = status { stub.resolve(resolveRequest(movie(1), episode)).toList() }
@@ -302,12 +302,14 @@ class ArchiveStreamServiceTest {
         runBlocking {
             assertTrue(stub.probe(probeRequest(movie(10331))).mayHaveSources)
             assertTrue(stub.probe(probeRequest(movie(2973))).mayHaveSources)
+            // Only a "video" on Wikidata, not a known non-film kind, so Probe does not refuse it (#26).
+            assertTrue(stub.probe(probeRequest(movie(34372))).mayHaveSources)
             assertFalse(stub.probe(probeRequest(movie(1))).mayHaveSources)
         }
 
     @Test
     fun `Probe refuses what Resolve refuses, and a series is NOT_FOUND`() {
-        assertEquals(Status.Code.INVALID_ARGUMENT, status { stub.probe(probeRequest(movie(34372))) }.status.code)
+        assertEquals(Status.Code.INVALID_ARGUMENT, status { stub.probe(probeRequest(movie(146742))) }.status.code)
         assertEquals(Status.Code.INVALID_ARGUMENT, status { stub.probe(probeRequest(movie(0))) }.status.code)
         assertEquals(Status.Code.INVALID_ARGUMENT, status { stub.probe(probeRequest(movie(10331), episode)) }.status.code)
         assertEquals(Status.Code.INVALID_ARGUMENT, status { stub.probe(probeRequest(series(894))) }.status.code)

@@ -33,8 +33,8 @@ class IndexFetcherTest {
                                 .code(archiveStatus)
                                 .body(fixture("archive-imdb-search.json"))
                                 .build()
-                        body.contains("VALUES") -> MockResponse(body = fixture("wikidata-imdb.tsv"))
-                        body.contains("DISTINCT") -> MockResponse(body = fixture("wikidata-film-classes.tsv"))
+                        body.contains("P345") -> MockResponse(body = fixture("wikidata-imdb.tsv"))
+                        body.contains("DISTINCT") -> MockResponse(body = fixture("wikidata-non-film-classes.tsv"))
                         else -> MockResponse(body = linksBody)
                     }
                 }
@@ -58,9 +58,9 @@ class IndexFetcherTest {
     fun `a refresh fetches the links, the Archive's IMDb items and their TMDB ids`() {
         val snapshot = fetcher().fetch()
 
-        assertEquals(5, snapshot.links.size)
+        assertEquals(7, snapshot.links.size)
         assertEquals(
-            setOf(653, 10331),
+            setOf(34372, 653, 10331, 490096),
             snapshot.links
                 .filter { it.isFilm }
                 .map { it.tmdbId }
@@ -80,7 +80,7 @@ class IndexFetcherTest {
                     it.body
                         ?.utf8()
                         .orEmpty()
-                        .contains("VALUES")
+                        .contains("P345")
                 }.body!!
                 .utf8()
         listOf("tt0014646", "tt0048123", "tt0057427").forEach { assertTrue(it, join.contains(it)) }

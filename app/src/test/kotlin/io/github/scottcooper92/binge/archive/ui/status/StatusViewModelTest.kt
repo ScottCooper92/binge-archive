@@ -72,7 +72,7 @@ class StatusViewModelTest {
 
             val ready = StatusViewModel(index, records, FakeRefresher(MutableStateFlow(true))).ready()
 
-            assertEquals(3, ready.filmCount)
+            assertEquals(4, ready.filmCount)
             assertEquals(5_000L, ready.lastRefreshedAt)
             assertTrue(ready.lastRefreshFailed)
             assertTrue(ready.refreshing)
