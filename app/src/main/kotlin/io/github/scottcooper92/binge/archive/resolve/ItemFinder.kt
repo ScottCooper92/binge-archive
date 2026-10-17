@@ -1,5 +1,6 @@
 package io.github.scottcooper92.binge.archive.resolve
 
+import android.util.Log
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -37,14 +38,24 @@ data class Found(
  *    only if a video file runs within 8% of the Wikidata runtime, checked before any licence check.
  *    With no runtime, this route is skipped. If no match qualifies and any failed to load, the find
  *    fails with an `IOException`: the failed one might have been the film.
+ *
+ * On the Wikidata route the search only orders the candidates. If it fails, they keep Wikidata's
+ * order, the failure goes to [log], and the find goes on.
  */
 class ItemFinder(
     private val http: ResolverHttp,
+    private val log: (String, IOException) -> Unit = { message, e -> Log.w(TAG, message, e) },
 ) {
     suspend fun find(tmdbId: Int): Found {
         val facts = WikidataTitle.parse(http.sparql(WikidataTitle.query(tmdbId)))
         if (facts.archiveIds.isNotEmpty()) {
-            val downloads = downloads(facts.archiveIds)
+            val downloads =
+                try {
+                    downloads(facts.archiveIds)
+                } catch (e: IOException) {
+                    log("Download counts unavailable; keeping Wikidata's order", e)
+                    emptyMap()
+                }
             val candidates = facts.archiveIds.map { Candidate(it, downloads[it] ?: 0) }.sortedByDescending { it.downloads }
             return Found(Route.WIKIDATA, candidates.take(MAX_CANDIDATES), facts)
         }
@@ -92,6 +103,8 @@ class ItemFinder(
     private suspend fun search(query: String): List<Candidate> = parseSearch(http.search(query, rows = MAX_CANDIDATES))
 
     companion object {
+        private const val TAG = "ArchiveFinder"
+
         /** At most this many items are read for one resolve. */
         const val MAX_CANDIDATES = 5
 
