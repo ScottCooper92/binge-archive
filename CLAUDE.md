@@ -172,8 +172,8 @@ query (step 3): they keep the index's order.
 4. **`ItemReader`.** Reads every candidate's metadata in parallel, and hands on each admitted item
    as soon as it and the candidates ahead of it are read: a slow item holds back only those after
    it. It drops items whose licence the user's level does not admit, restricted or dark items,
-   non-`movies` items, and items that fail to load. If none is admitted and any failed to load, the resolve fails rather
-   than answering empty.
+   non-`movies` items, and items that fail to load. If none is admitted and any failed to load, the
+   resolve fails rather than answering empty.
 5. **`SourceMapper`.** Video files only (`VideoFormats`). With a runtime, a file under half of it is
    dropped: a reel, a trailer or an extra is not the film. One source per resolution class per
    item, preferring h.264 in MP4, then any MP4, then height, length and size. The label is
