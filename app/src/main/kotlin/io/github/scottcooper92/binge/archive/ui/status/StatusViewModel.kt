@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
  * The status screen's one state stream: the index's size and freshness, a pending refresh, this
  * device's recently resolved titles and reports, and the Sources settings.
  *
- * Each setting is saved as it is made. "Any, including no licence" is the exception: picking it only
+ * Each setting is saved as it is made. "Any, whatever the licence" is the exception: picking it only
  * asks, and it is saved when the user confirms.
  */
 class StatusViewModel(

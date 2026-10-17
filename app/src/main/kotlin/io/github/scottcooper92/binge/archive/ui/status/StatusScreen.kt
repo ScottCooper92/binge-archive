@@ -104,7 +104,7 @@ private fun aboutRows(actions: StatusActions): List<ListItem> =
     )
 
 /**
- * The Sources settings, saved as made. "Any, including no licence" asks first, on [AnyLicenceConfirm],
+ * The Sources settings, saved as made. "Any, whatever the licence" asks first, on [AnyLicenceConfirm],
  * shown while [StatusUiState.Ready.confirmingAnyLicence].
  */
 @Composable
@@ -125,7 +125,7 @@ fun SourceSettingsGroup(
     ItemGroup(title = stringResource(R.string.settings_title), rows = sourceSettingRows(state, actions))
 }
 
-/** The confirm "Any, including no licence" asks, without its modal window, for a frame. */
+/** The confirm "Any, whatever the licence" asks, without its modal window, for a frame. */
 @Composable
 fun AnyLicenceConfirm(actions: StatusActions) {
     BingeConfirmDialogContent(

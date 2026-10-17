@@ -32,12 +32,12 @@
     <string name="settings_licences_public_domain">Solo dominio público</string>
     <string name="settings_licences_default">Dominio público y CC BY</string>
     <string name="settings_licences_creative_commons">Cualquier licencia Creative Commons</string>
-    <string name="settings_licences_any">Cualquiera, incluso sin licencia</string>
+    <string name="settings_licences_any">Cualquiera, sea cual sea la licencia</string>
     <string name="settings_quality">Calidad mínima</string>
     <string name="settings_quality_any">Cualquiera</string>
     <string name="settings_subtitles">Solo copias con subtítulos en mi idioma</string>
-    <string name="settings_any_title">¿Incluir obras sin licencia?</string>
-    <string name="settings_any_message">Puede que las obras sin licencia indicada no tengan permiso para verse. Puedes volver a cambiarlo cuando quieras.</string>
+    <string name="settings_any_title">¿Incluir copias sea cual sea su licencia?</string>
+    <string name="settings_any_message">Puede que estas copias no tengan permiso para verse. Algunas no indican licencia y otras se reservan todos los derechos. Puedes volver a cambiarlo cuando quieras.</string>
     <string name="settings_any_confirm">Incluirlas</string>
     <string name="status_recent_title">Resueltas hace poco</string>
     <string name="status_recent_empty">Nada todavía. Abre una película en Binge.</string>

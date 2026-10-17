@@ -46,7 +46,7 @@ import com.binge.designsystem.R as DesR
 
 /**
  * The television's status screen: the same sections as the phone's, in two panes. The Sources settings
- * apply in place as the user presses OK; "Any, including no licence" asks first, focus on Cancel. A television
+ * apply in place as the user presses OK; "Any, whatever the licence" asks first, focus on Cancel. A television
  * usually has no browser, so the source and title rows say where they point rather than opening it.
  */
 @Composable
@@ -206,7 +206,7 @@ private fun <T> TvSettingGroup(
     )
 }
 
-/** The confirm "Any, including no licence" asks, without its window, as it first shows: focus on Cancel. */
+/** The confirm "Any, whatever the licence" asks, without its window, as it first shows: focus on Cancel. */
 @Composable
 fun TvAnyLicenceConfirm(actions: StatusActions) {
     TvConfirmDialogContent(

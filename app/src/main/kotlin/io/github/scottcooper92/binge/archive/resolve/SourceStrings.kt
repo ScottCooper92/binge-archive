@@ -27,6 +27,9 @@ class SourceStrings(
             Licence.Kind.PUBLIC_DOMAIN_US -> publicDomainUs
             Licence.Kind.CC0 -> cc0
             Licence.Kind.NONE_STATED -> noneStated
+            // The item's own words, which no translation can name: shortened, so the label keeps room for the title.
+            Licence.Kind.RESTRICTED, Licence.Kind.UNKNOWN ->
+                if (licence.detail.length <= MAX_OWN_TEXT) licence.detail else licence.detail.take(MAX_OWN_TEXT - 1).trimEnd() + "…"
             else -> creativeCommons.format(Locale.ROOT, licence.kind.code, licence.detail)
         }
 
@@ -54,6 +57,9 @@ class SourceStrings(
     }
 
     companion object {
+        /** The most of an item's own licence text a label shows, ellipsis included. */
+        const val MAX_OWN_TEXT = 40
+
         fun from(context: Context): SourceStrings =
             SourceStrings(
                 publicDomainMark = context.getString(R.string.licence_public_domain),
