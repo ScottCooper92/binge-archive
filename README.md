@@ -6,7 +6,7 @@ let you narrow that, or widen it, and only your own choice ever widens it.
 
 ## For the person watching
 
-Install it beside Binge, on a phone or an Android TV. Open a film in Binge. If the Internet Archive
+Install it beside Binge, on a phone or an Android TV. Open a film in Binge. By default, if the Internet Archive
 holds an openly licensed copy, Binge offers it to play, and names the licence on the row.
 
 - **Films only.** Series find nothing for now.
