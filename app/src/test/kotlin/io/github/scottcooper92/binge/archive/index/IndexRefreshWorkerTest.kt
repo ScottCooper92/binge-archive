@@ -36,17 +36,16 @@ class IndexRefreshWorkerTest {
     private fun worker(
         prune: suspend () -> Unit = {},
         fetch: () -> IndexSnapshot,
-    ) =
-        TestListenableWorkerBuilder<IndexRefreshWorker>(context)
-            .setWorkerFactory(
-                object : WorkerFactory() {
-                    override fun createWorker(
-                        appContext: Context,
-                        workerClassName: String,
-                        workerParameters: WorkerParameters,
-                    ): ListenableWorker = IndexRefreshWorker(appContext, workerParameters, repository, fetch, Dispatchers.Unconfined, prune)
-                },
-            ).build()
+    ) = TestListenableWorkerBuilder<IndexRefreshWorker>(context)
+        .setWorkerFactory(
+            object : WorkerFactory() {
+                override fun createWorker(
+                    appContext: Context,
+                    workerClassName: String,
+                    workerParameters: WorkerParameters,
+                ): ListenableWorker = IndexRefreshWorker(appContext, workerParameters, repository, fetch, Dispatchers.Unconfined, prune)
+            },
+        ).build()
 
     @Test
     fun `a successful fetch replaces the seed`() =
