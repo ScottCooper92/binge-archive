@@ -1,0 +1,268 @@
+name: CI
+
+# The gate for this repository, and the trigger for every bot in this directory:
+# bot-review fires on a successful run of this workflow, author-ci-fix on a failed
+# one, and author-conflicts on one completing against main. They match it by NAME,
+# so renaming this workflow silently unhooks all three.
+#
+# Four jobs in parallel, then `build`. `./gradlew build` runs every check `CLAUDE.md` lists under
+# Gates, because the plugins wire themselves into `check` (or `app/build.gradle.kts` does it by
+# hand) and `build` depends on `check`. The screenshot validation, R8, the unit tests and
+# lint/detekt each take minutes, so three of the slowest pieces run as jobs of their own (`tests`, `screenshots`,
+# `release`), and `checks` runs `build` with exactly those tasks excluded. Excluding, not listing:
+# a gate added to `check` later lands in `checks` without anyone touching this file.
+#
+# `build` is the job branch protection requires, and the one the bots read through this workflow's
+# conclusion. It runs after the four and `submodule-pins`, passes only if all of them passed (the pin
+# check passes by being skipped outside a PR), and folds the four's report artifacts back into the one
+# `build-reports` artifact author-ci-fix downloads.
+#
+# Deliberately NO paths-ignore. bot-review requires a
+# SUCCESSFUL run of this workflow against the head, so a skipped run means a PR that
+# is never reviewed. .ai/ holds the rules the bots themselves read, so a docs filter
+# would bypass review on exactly the changes that most need it.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    # `ready_for_review` is not in the default set, and without it a PR opened as a
+    # draft and later promoted never gets a first run — so bot-review, which only
+    # fires on a run of this workflow completing, never sees it either.
+    types: [opened, synchronize, reopened, ready_for_review]
+  # A canary for what can turn the build red with no commit here: a runner image or Android
+  # SDK update, a toolchain drift. Without it the next PR to run takes the blame. It builds
+  # main, and the three bots skip it (see their `if:`) because there is no PR for them to act
+  # on. Scheduled workflows only run on the default branch.
+  schedule:
+    - cron: '0 4 * * *'
+
+# Per-ref group: a new commit on the same branch/PR cancels its superseded run. The event
+# name keeps the nightly run, which shares main's ref, from cancelling or being cancelled
+# by a push.
+concurrency:
+  group: ci-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # A submodule pin can be a commit that only exists on an unmerged branch of its own repo, which is
+  # deliberate while `hold` gates the merge on it and a trap once `hold` comes off. binge-ci's shared
+  # workflow fails a PR whose pin is not an ancestor of its submodule's default branch, unless the PR
+  # carries `hold`. It does nothing outside a pull request, and `build` needs it so a red pin fails
+  # the gate rather than reporting beside it. The caller grants `pull-requests: read`, which the
+  # shared workflow reads the label with: a reusable workflow cannot hold more than its caller.
+  submodule-pins:
+    if: github.event.pull_request.draft == false
+    permissions:
+      contents: read
+      pull-requests: read
+    uses: ScottCooper92/binge-ci/.github/workflows/submodule-pins.yml@a802d4ad866837e53971f984980beeb88b937da1 # v1
+
+  # `build` minus what the three jobs below own. Everything else `check` pulls in lands here:
+  # compile, lint, detekt, ktlint, the tv-material gate and the debug assemble.
+  checks:
+    # Skip while a PR is a draft, so a stack can be opened as drafts and promoted one at a time
+    # without each queued run preempting the last. Push events to main always run — `pull_request`
+    # is null there. Every job below carries the same condition, so a draft's `build` reports
+    # "skipped", which author-ci-fix and bot-review both already treat as "not green".
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # The contracts and SDK are a submodule (see settings.gradle.kts); without this the
+      # included build is an empty directory and Gradle fails at settings evaluation. Recursive,
+      # because a submodule can carry its own: binge-companions includes binge-ci's Gradle gates
+      # from a binge-ci submodule, and this build includes binge-companions.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+
+      # JDK 21, matching binge-ci's ci-setup. The JDK runs the build and nothing else:
+      # `jvmTarget` 17 in app/build.gradle.kts decides the bytecode, so this does not move what
+      # runs on a device.
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+
+      # --continue surfaces every failure in one run rather than stopping at the first,
+      # which matters most to author-ci-fix: it gets exactly one repair attempt per
+      # commit, and a log showing only the first of three failures spends that attempt
+      # fixing a third of the problem. Each -x names a task another job runs; -x also drops
+      # whatever only that task needed, which is the point for assembleRelease's R8.
+      - name: Build and lint, less what the other jobs run
+        run: ./gradlew build --continue -x :app:testDebugUnitTest -x :app:koverVerify -x :app:validateDebugScreenshotTest -x :app:assembleRelease
+
+      - name: Upload reports
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: build-reports-checks
+          path: |
+            **/build/reports/lint-results-*.html
+            **/build/reports/ktlint/**
+            **/build/reports/detekt/**
+          if-no-files-found: ignore
+          retention-days: 1
+
+  # The unit tests and the coverage floor read from them.
+  tests:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+
+      - name: Unit tests and coverage
+        run: ./gradlew :app:testDebugUnitTest :app:koverVerify --continue
+
+      - name: Upload reports
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: build-reports-tests
+          path: |
+            **/build/reports/tests/**
+            **/build/reports/kover/**
+          if-no-files-found: ignore
+          retention-days: 1
+
+  # The screenshot frames. The plugin renders in one fork, so this is the longest job and the one
+  # to watch: trimming a preview matrix is the way to shorten it.
+  screenshots:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+
+      - name: Validate screenshots
+        run: ./gradlew :app:validateDebugScreenshotTest --continue
+
+      - name: Upload reports
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: build-reports-screenshots
+          path: |
+            **/build/outputs/screenshotTest-results/**/diffs/**
+          if-no-files-found: ignore
+          retention-days: 1
+
+  # The release build: R8 with this app's keep rules, and lint-vital. A keep rule that no longer
+  # compiles fails here on the PR, not on the next tag.
+  release:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+
+      - name: Assemble the release build
+        run: ./gradlew :app:assembleRelease --continue
+
+      - name: Upload reports
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: build-reports-release
+          path: |
+            **/build/reports/lint-results-*.html
+            **/build/outputs/mapping/**/missing_rules.txt
+          if-no-files-found: ignore
+          retention-days: 1
+
+  # The check branch protection requires, and the job the bots read through this workflow's
+  # conclusion. Green only when every job it needs is green; `always()` so a failure upstream still reaches
+  # the merge step instead of skipping this job, which would read as "not run" rather than red.
+  build:
+    if: ${{ always() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
+    needs: [submodule-pins, checks, tests, screenshots, release]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # The four jobs' reports as the one artifact author-ci-fix downloads by name. Artifact names
+      # must be unique within a run, so each job uploads its own and they are merged here.
+      - name: Merge reports
+        if: ${{ contains(needs.*.result, 'failure') }}
+        uses: actions/upload-artifact/merge@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: build-reports
+          pattern: build-reports-*
+          delete-merged: true
+          retention-days: ${{ github.event_name == 'schedule' && 7 || 1 }}
+        continue-on-error: true
+
+      # The pin check is skipped outside a pull request, so a skip passes for it alone.
+      - name: Fail unless every job passed
+        env:
+          PINS: ${{ needs.submodule-pins.result }}
+          RESULTS: ${{ needs.checks.result }} ${{ needs.tests.result }} ${{ needs.screenshots.result }} ${{ needs.release.result }}
+        run: |
+          echo "submodule-pins: $PINS; checks, tests, screenshots, release: $RESULTS"
+          [ "$PINS" = success ] || [ "$PINS" = skipped ] || exit 1
+          for result in $RESULTS; do
+            [ "$result" = success ] || exit 1
+          done
+
+  # Lints the workflow files, which is where a typo turns into a silent startup_failure. It lives
+  # in this workflow rather than its own so there is still one required check to keep in sync with
+  # branch protection, and it runs on workflow-only diffs because this repo has no paths-ignore.
+  # actionlint cannot see across a `uses:` reference to a reusable workflow, so the callers'
+  # permissions are still proved by running them.
+  actionlint:
+    if: github.event_name != 'schedule' && (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # binge-ci's shared step: a pinned release verified against its published checksum, with
+      # shellcheck at warning severity.
+      - uses: ScottCooper92/binge-ci/.github/actions/actionlint@a802d4ad866837e53971f984980beeb88b937da1 # v1
+
+  # A red nightly has no PR or push to carry it, so without this it is a red mark in the
+  # Actions tab that nothing points at. One issue stays open while the canary is red and
+  # closes itself on the next green run, so an open one means "still broken", not "old".
+  # Anything but success reports: a job that hits its timeout is `cancelled`, not `failure`, and the
+  # nightly has its own concurrency group, so nothing else supersedes it.
+  nightly-report:
+    if: ${{ always() && github.event_name == 'schedule' }}
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - uses: ScottCooper92/binge-ci/.github/actions/nightly-report@a802d4ad866837e53971f984980beeb88b937da1 # v1
+        with:
+          result: ${{ needs.build.result }}
+          title: Nightly CI is failing on main
+          note: >-
+            Nothing was pushed to cause this, so suspect the environment first: a runner image or
+            Android SDK update, or a toolchain drift. The build-reports artifact is kept for seven days.

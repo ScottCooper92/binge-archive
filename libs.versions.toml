@@ -1,0 +1,58 @@
+# The versions binge-seerr builds with, so the two companions move together. Kept small: an entry
+# is added when the code needs it, not before.
+#
+# AGP 9 has built-in Kotlin support and rejects the `org.jetbrains.kotlin.android` plugin being
+# APPLIED, but it compiles with whichever Kotlin Gradle plugin is on the build classpath. Declaring
+# the plugin `apply false` in the root build puts this version there. It must be no older than the
+# Kotlin the included binge-companions build compiles the SDK with, or every SDK class fails as
+# "compiled with an incompatible version of Kotlin".
+[versions]
+agp = "9.4.1"
+kotlin = "2.4.21"
+coreKtx = "1.19.1"
+junit = "4.13.2"
+# The version binge-design-system pins.
+robolectric = "4.16.1"
+# The version binge-design-system pins: a baseline recorded by one renderer has to validate under
+# the other, and these frames are built from that build's components.
+screenshot = "0.0.1-alpha16"
+ktlint = "14.2.0"
+kover = "0.9.11"
+kotlinxCoroutines = "1.11.0"
+composeBom = "2026.08.00"
+# Pinned ahead of the BOM to the version binge-design-system pins: its theme reads material3 APIs
+# the BOM's stable line does not have, and resolution would otherwise pick one of the two silently.
+material3 = "1.5.0-alpha29"
+activityCompose = "1.13.0"
+androidxTestCore = "1.7.0"
+
+[libraries]
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+junit = { module = "junit:junit", version.ref = "junit" }
+# Version-less on purpose: these resolve to projects of the included binge-companions build.
+binge-companion-contracts = { module = "io.github.scottcooper92:binge-companion-contracts" }
+binge-companion-sdk = { module = "io.github.scottcooper92:binge-companion-sdk" }
+# Version-less for the same reason: these resolve to the included binge-design-system build.
+binge-designsystem = { module = "com.binge:designsystem" }
+binge-designsystem-tv = { module = "com.binge:designsystem-tv" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
+compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
+compose-ui = { module = "androidx.compose.ui:ui" }
+compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+# The renderer the screenshot frames run under; version from the BOM.
+compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+compose-material3 = { module = "androidx.compose.material3:material3", version.ref = "material3" }
+activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+androidx-test-core = { module = "androidx.test:core", version.ref = "androidxTestCore" }
+screenshot-validation-api = { module = "com.android.tools.screenshot:screenshot-validation-api", version.ref = "screenshot" }
+compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+screenshot = { id = "com.android.compose.screenshot", version.ref = "screenshot" }

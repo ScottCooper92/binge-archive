@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_label">Binge Archive</string>
+    <string name="home_headline">Free films for Binge</string>
+    <string name="home_body">This app finds public-domain and openly licensed films on the Internet Archive, and Binge plays them. It only returns items with an open licence. Open a film in Binge to see whether a copy is here.</string>
+</resources>

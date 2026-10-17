@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        The only permission. The app reads Wikidata and the Internet Archive and nothing else. It posts
+        no notifications, so it does not ask for that permission either.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!--
+        Both required="false", so one APK serves phones and televisions. Without the touchscreen line
+        Play assumes a touchscreen is required and hides the app from every TV.
+    -->
+    <uses-feature
+        android:name="android.software.leanback"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+
+    <!--
+        No backup: the app keeps an index it can rebuild and no user data, so there is nothing to
+        restore and nothing to leak. The data extraction rules say the same for device transfer.
+
+        The network security config trusts the system's CAs only and refuses cleartext. Both hosts the
+        app talks to serve HTTPS.
+    -->
+    <application
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:banner="@drawable/tv_banner"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="@string/app_label"
+        android:supportsRtl="true"
+        android:networkSecurityConfig="@xml/network_security_config">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Archive">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>

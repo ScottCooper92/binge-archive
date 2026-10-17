@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    System CAs only, and no cleartext. The app talks to two public hosts, Wikidata and the Internet
+    Archive, and both serve HTTPS with public certificates. There is no user-chosen server to reach, so
+    there is no reason to trust a CA the user installed or to allow plain HTTP.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

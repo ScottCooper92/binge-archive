@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        The window before Compose paints: light on a phone in light mode, dark in dark mode
+        (values-night), and black on a television (values-television), so the first frame agrees with
+        the theme each surface wears.
+    -->
+    <style name="Theme.Archive" parent="@android:style/Theme.Material.Light.NoActionBar" />
+</resources>

@@ -1,0 +1,24 @@
+# Build outputs
+build/
+.gradle/
+.kotlin/
+local.properties
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+.DS_Store
+
+# Signing: never commit keystores or their credentials
+keystore.properties
+*.jks
+*.keystore
+# The debug keystore is the one deliberate exception: standard AOSP debug credentials, shared so
+# every machine and CI runner signs debug builds the same way (see app/build.gradle.kts).
+!app/debug.keystore
+
+# Claude Code tooling
+.claude/settings.local.json
+
+# Heap dumps the daemon writes on OutOfMemoryError (gradle.properties asks for them)
+*.hprof
