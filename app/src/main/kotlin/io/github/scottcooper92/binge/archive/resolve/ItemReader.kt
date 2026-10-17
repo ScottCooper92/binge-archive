@@ -17,7 +17,7 @@ data class LicensedItem(
 
 /**
  * Stage 2: reads each candidate's metadata and keeps only what may be returned. An item is dropped
- * when it has no allowlisted licence, is access-restricted or dark, is not a `movies` item, or does
+ * when its licence is not one the user's [LicenceLevel] admits, is access-restricted or dark, is not a `movies` item, or does
  * not load. A title-route candidate must also have a video file within 8% of the film's runtime;
  * [ItemFinder] has already checked that, and [Found.preloaded] carries the metadata it read.
  *
@@ -31,8 +31,15 @@ data class LicensedItem(
 class ItemReader(
     private val http: ResolverHttp,
 ) {
-    /** Each admitted item, in candidate order, as soon as it and every candidate ahead of it are read. */
-    fun readEach(found: Found): Flow<LicensedItem> =
+    /**
+     * Each admitted item, in candidate order, as soon as it and every candidate ahead of it are read.
+     * [onFiltered] is told of each item the default level would admit and [licences] does not.
+     */
+    fun readEach(
+        found: Found,
+        licences: LicenceLevel = LicenceLevel.DEFAULT,
+        onFiltered: () -> Unit = {},
+    ): Flow<LicensedItem> =
         flow {
             coroutineScope {
                 val loads = found.candidates.map { candidate -> candidate to async { load(candidate, found.preloaded) } }
@@ -41,7 +48,7 @@ class ItemReader(
                 for ((candidate, load) in loads) {
                     val result = load.await()
                     result.exceptionOrNull()?.let { if (failure == null) failure = it }
-                    val item = result.getOrNull()?.let { admit(candidate, it, found) } ?: continue
+                    val item = result.getOrNull()?.let { admit(candidate, it, found, licences, onFiltered) } ?: continue
                     admitted++
                     emit(item)
                 }
@@ -58,9 +65,15 @@ class ItemReader(
         candidate: Candidate,
         item: ArchiveItem,
         found: Found,
+        licences: LicenceLevel,
+        onFiltered: () -> Unit,
     ): LicensedItem? {
         if (item.dark || item.accessRestricted || item.mediaType != MOVIES) return null
-        val licence = LicenceAllowlist.match(item.licenseUrl) ?: return null
+        val licence = LicenceAllowlist.identify(item.licenseUrl) ?: return null
+        if (!licences.admits(licence.kind)) {
+            if (LicenceLevel.DEFAULT.admits(licence.kind)) onFiltered()
+            return null
+        }
         if (found.route == Route.TITLE && !runsLike(item, found.facts.runtimeSeconds)) return null
         return LicensedItem(item, licence, candidate.downloads)
     }

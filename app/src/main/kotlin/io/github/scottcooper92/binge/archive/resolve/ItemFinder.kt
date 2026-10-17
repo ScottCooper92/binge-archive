@@ -29,6 +29,8 @@ data class Found(
     val preloaded: Map<String, ArchiveItem> = emptyMap(),
     /** True when Wikidata failed and the candidates are the index's Archive ids instead. */
     val fromIndex: Boolean = false,
+    /** True when the title route would have run and the user's settings turned it off. */
+    val titleSkipped: Boolean = false,
 )
 
 /**
@@ -39,7 +41,7 @@ data class Found(
  * 2. IMDb: Archive items tagged with the film's IMDb id (P345).
  * 3. Title and year: an Archive title search. Its matches are loose, so a match counts as found
  *    only if a video file runs within 8% of the Wikidata runtime, checked before any licence check.
- *    With no runtime, this route is skipped. If no match qualifies and any failed to load, the find
+ *    With no runtime, or with title matches off in the user's settings, this route is skipped. If no match qualifies and any failed to load, the find
  *    fails with an `IOException`: the failed one might have been the film.
  *
  * Wikidata is asked first even for a film the index knows, since only it gives the title, year and
@@ -54,10 +56,14 @@ class ItemFinder(
     private val http: ResolverHttp,
     private val log: (String, IOException) -> Unit = { message, e -> Log.w(TAG, message, e) },
 ) {
-    /** Finds the items for [tmdbId]. [hit] is what the index knows of it, the fallback when Wikidata fails. */
+    /**
+     * Finds the items for [tmdbId]. [hit] is what the index knows of it, the fallback when Wikidata
+     * fails. [titleMatches] is the user's setting for the title route.
+     */
     suspend fun find(
         tmdbId: Int,
         hit: IndexHit? = null,
+        titleMatches: Boolean = true,
     ): Found {
         val facts =
             try {
@@ -70,12 +76,22 @@ class ItemFinder(
             val candidates = search("mediatype:movies AND external-identifier:\"urn:imdb:$imdb\"")
             if (candidates.isNotEmpty()) return Found(Route.IMDB, candidates, facts)
         }
+        return byTitle(facts, titleMatches) ?: Found(null, emptyList(), facts)
+    }
+
+    /**
+     * Route 3, or null when it finds nothing or cannot run: with no title or runtime to check
+     * against. With [titleMatches] off, it does not search, and says it was skipped.
+     */
+    private suspend fun byTitle(
+        facts: TitleFacts,
+        titleMatches: Boolean,
+    ): Found? {
         val title = facts.title
-        if (title != null && facts.runtimeSeconds != null) {
-            val candidates = search(titleQuery(title, facts.year))
-            if (candidates.isNotEmpty()) return confirmed(candidates, facts)
-        }
-        return Found(null, emptyList(), facts)
+        if (title == null || facts.runtimeSeconds == null) return null
+        if (!titleMatches) return Found(null, emptyList(), facts, titleSkipped = true)
+        val candidates = search(titleQuery(title, facts.year))
+        return if (candidates.isEmpty()) null else confirmed(candidates, facts)
     }
 
     /**

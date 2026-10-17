@@ -107,6 +107,50 @@ class ItemReaderTest {
         }
 
     @Test
+    fun `the user's licence level decides which items are admitted`() =
+        runTest {
+            archive.metadataBodies["by_sa"] =
+                """{"metadata":{"mediatype":"movies","licenseurl":"https://creativecommons.org/licenses/by-sa/4.0/"}}"""
+            archive.metadataBodies["by"] =
+                """{"metadata":{"mediatype":"movies","licenseurl":"https://creativecommons.org/licenses/by/4.0/"}}"""
+            val ids = arrayOf("Nosferatu_unlicensed_transfer", "by_sa", "by", "PhantasmagoriaTheater-Nosferatu1922909")
+            val reader = ItemReader(archive.http())
+
+            suspend fun admitted(level: LicenceLevel): Pair<List<String>, Int> {
+                var filtered = 0
+                val items = reader.readEach(found(Route.WIKIDATA, *ids), level) { filtered++ }.toList()
+                return items.map { it.item.identifier } to filtered
+            }
+
+            assertEquals(listOf("PhantasmagoriaTheater-Nosferatu1922909") to 1, admitted(LicenceLevel.PUBLIC_DOMAIN))
+            assertEquals(listOf("by", "PhantasmagoriaTheater-Nosferatu1922909") to 0, admitted(LicenceLevel.PUBLIC_DOMAIN_AND_CC_BY))
+            assertEquals(listOf("by_sa", "by", "PhantasmagoriaTheater-Nosferatu1922909") to 0, admitted(LicenceLevel.CREATIVE_COMMONS))
+            assertEquals(
+                listOf("Nosferatu_unlicensed_transfer", "by_sa", "by", "PhantasmagoriaTheater-Nosferatu1922909") to 0,
+                admitted(LicenceLevel.ANY),
+            )
+            assertEquals(
+                Licence(Licence.Kind.NONE_STATED),
+                reader
+                    .readEach(found(Route.WIKIDATA, "Nosferatu_unlicensed_transfer"), LicenceLevel.ANY)
+                    .toList()
+                    .single()
+                    .licence,
+            )
+        }
+
+    @Test
+    fun `a dark item stays out at every level`() =
+        runTest {
+            LicenceLevel.entries.forEach { level ->
+                assertEquals(
+                    emptyList<LicensedItem>(),
+                    ItemReader(archive.http()).readEach(found(Route.WIKIDATA, "Nosferatu_dark_item"), level).toList(),
+                )
+            }
+        }
+
+    @Test
     fun `no candidates is no items, without a request`() =
         runTest {
             assertEquals(emptyList<LicensedItem>(), ItemReader(archive.http()).readAll(Found(null, emptyList(), TitleFacts.NONE)))

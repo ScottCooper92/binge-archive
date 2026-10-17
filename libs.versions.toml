@@ -34,6 +34,7 @@ kotlinxSerializationJson = "1.11.0"
 ksp = "2.3.11"
 room = "2.8.4"
 workManager = "2.11.2"
+datastore = "1.2.1"
 # Must agree with binge-companions' catalog: the SDK brings grpc-binder at its version, and the
 # in-process transport the tests use has to be the same release.
 grpc = "1.76.3"
@@ -70,6 +71,7 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "workManager" }
 grpc-inprocess = { module = "io.grpc:grpc-inprocess", version.ref = "grpc" }
 work-testing = { module = "androidx.work:work-testing", version.ref = "workManager" }

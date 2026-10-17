@@ -11,6 +11,8 @@ import io.github.scottcooper92.binge.archive.index.WikidataLink
 import io.github.scottcooper92.binge.archive.index.inMemoryIndex
 import io.github.scottcooper92.binge.archive.index.movie
 import io.github.scottcooper92.binge.archive.index.series
+import io.github.scottcooper92.binge.archive.settings.MinimumQuality
+import io.github.scottcooper92.binge.archive.settings.SourceSettings
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -96,15 +98,243 @@ class ResolverTest {
         http: ResolverHttp = archive.http(),
         deranked: suspend () -> Set<String> = { emptySet() },
         recordResolved: suspend (Int, String, String) -> Unit = { _, _, _ -> },
+        settings: SourceSettings = SourceSettings.DEFAULT,
+        deviceLanguage: String = "en",
     ) = Resolver(
         IndexRepository(database.indexDao(), seed = { seed }),
         ItemFinder(http),
         ItemReader(http),
-        SourceMapper(testStrings),
+        SourceMapper(testStrings, deviceLanguage = { deviceLanguage }),
         misses::add,
         deranked = deranked,
         recordResolved = recordResolved,
+        settings = { settings },
     )
+
+    /** A film with a title, year and runtime and no linked Archive item: only the title route can place it. */
+    private fun titleOnlyFilm() {
+        archive.sparql = {
+            "?ia\t?imdb\t?title\t?date\t?amount\t?unit\n" +
+                "\"\"\t\"\"\t\"Nosferatu\"@en\t\"1922-01-01T00:00:00Z\"\t94\t<http://www.wikidata.org/entity/Q7727>\n"
+        }
+        archive.search = { searchResponse("PhantasmagoriaTheater-Nosferatu1922909" to 9L) }
+    }
+
+    @Test
+    fun `the default settings resolve exactly as before`() =
+        runTest {
+            archive.sparql = { resolveFixture("wikidata-10331.tsv") }
+            archive.search = { resolveFixture("search-downloads-10331.json") }
+
+            val defaults = sources(resolverWith(settings = SourceSettings.DEFAULT).resolve(movie(10331), episode = null)).toList()
+            val unset = sources(resolver.resolve(movie(10331), episode = null)).toList()
+
+            assertEquals(unset, defaults)
+            assertEquals(3, defaults.size)
+        }
+
+    @Test
+    fun `title matches on finds a film only the title route can place`() =
+        runTest {
+            titleOnlyFilm()
+
+            val sources = sources(resolverWith().resolve(movie(1), episode = null)).toList()
+
+            assertEquals(listOf("PhantasmagoriaTheater-Nosferatu1922909"), sources.map { it.id.substringBefore('/') }.distinct())
+        }
+
+    @Test
+    fun `title matches off leaves a film only the title route can place not found, and says why`() =
+        runTest {
+            titleOnlyFilm()
+
+            val outcome = resolverWith(settings = SourceSettings(titleMatches = false)).resolve(movie(1), episode = null)
+
+            assertEquals(ResolveOutcome.NotFound, outcome)
+            assertTrue(archive.searches.none { it.contains("title:") })
+            assertEquals(listOf(CoverageMiss(1, Route.TITLE, CoverageMiss.Reason.FILTERED_BY_SETTINGS)), misses)
+        }
+
+    @Test
+    fun `title matches off on a film the index knows is OK and empty`() =
+        runTest {
+            titleOnlyFilm()
+
+            val outcome = resolverWith(settings = SourceSettings(titleMatches = false)).resolve(movie(34372), episode = null)
+
+            assertEquals(emptyList<Any>(), sources(outcome).toList())
+            assertEquals(listOf(CoverageMiss(34372, Route.TITLE, CoverageMiss.Reason.FILTERED_BY_SETTINGS)), misses)
+        }
+
+    @Test
+    fun `title matches off still finds Wikidata-linked items`() =
+        runTest {
+            archive.sparql = { resolveFixture("wikidata-10331.tsv") }
+            archive.search = { resolveFixture("search-downloads-10331.json") }
+
+            val sources = sources(resolverWith(settings = SourceSettings(titleMatches = false)).resolve(movie(10331), null)).toList()
+
+            assertEquals(3, sources.size)
+        }
+
+    @Test
+    fun `any licence, including none, adds the unlicensed transfer, labelled as such`() =
+        runTest {
+            archive.sparql = { resolveFixture("wikidata-653.tsv") }
+            archive.search = { resolveFixture("search-downloads-653.json") }
+
+            val sources = sources(resolverWith(settings = SourceSettings(licences = LicenceLevel.ANY)).resolve(movie(653), null)).toList()
+
+            assertEquals(
+                listOf("Nosferatu_unlicensed_transfer", "PhantasmagoriaTheater-Nosferatu1922909"),
+                sources.map { it.id.substringBefore('/') },
+            )
+            assertEquals("Nosferatu (1922) · No licence stated", sources.first().label)
+            assertEquals("Nosferatu (1922) · Public domain (US)", sources.last().label)
+        }
+
+    @Test
+    fun `every Creative Commons licence still leaves out the unlicensed transfer`() =
+        runTest {
+            archive.sparql = { resolveFixture("wikidata-653.tsv") }
+            archive.search = { resolveFixture("search-downloads-653.json") }
+
+            val settings = SourceSettings(licences = LicenceLevel.CREATIVE_COMMONS)
+            val sources = sources(resolverWith(settings = settings).resolve(movie(653), null)).toList()
+
+            assertEquals(listOf("PhantasmagoriaTheater-Nosferatu1922909"), sources.map { it.id.substringBefore('/') })
+        }
+
+    @Test
+    fun `public domain only drops a CC BY copy, and a known film filtered to nothing is OK and empty`() =
+        runTest {
+            // Nosferatu's Wikidata answer, with one Archive item: a CC BY copy.
+            archive.sparql =
+                {
+                    resolveFixture("wikidata-653.tsv")
+                        .lines()
+                        .take(2)
+                        .joinToString("\n")
+                        .replace("Nosferatu_DVD_quality", "Nosferatu_by")
+                }
+            archive.search = { searchResponse("Nosferatu_by" to 1L) }
+            archive.metadataBodies["Nosferatu_by"] =
+                """{"metadata":{"mediatype":"movies","licenseurl":"https://creativecommons.org/licenses/by/4.0/"},""" +
+                """"files":[{"name":"film.mp4","format":"h.264","height":"480","length":"5600"}]}"""
+
+            val byDefault = sources(resolverWith().resolve(movie(653), null)).toList()
+            assertEquals("Nosferatu (1922) · CC BY 4.0", byDefault.single().label)
+            assertEquals(emptyList<CoverageMiss>(), misses)
+
+            val onlyPd = resolverWith(settings = SourceSettings(licences = LicenceLevel.PUBLIC_DOMAIN)).resolve(movie(653), null)
+            assertEquals(emptyList<Any>(), sources(onlyPd).toList())
+            assertEquals(listOf(CoverageMiss(653, Route.WIKIDATA, CoverageMiss.Reason.FILTERED_BY_SETTINGS)), misses)
+        }
+
+    @Test
+    fun `a minimum quality drops the sources below it`() =
+        runTest {
+            archive.sparql = { resolveFixture("wikidata-10331.tsv") }
+            archive.search = { resolveFixture("search-downloads-10331.json") }
+
+            val settings = SourceSettings(minimumQuality = MinimumQuality.HD_1080)
+            val sources = sources(resolverWith(settings = settings).resolve(movie(10331), null)).toList()
+
+            assertEquals(listOf(Resolution.RESOLUTION_HD_1080), sources.map { it.quality.resolution })
+            assertEquals(emptyList<CoverageMiss>(), misses)
+        }
+
+    @Test
+    fun `subtitles in my language keep the English captions on an English device`() =
+        runTest {
+            archive.sparql = { resolveFixture("wikidata-10331.tsv") }
+            archive.search = { resolveFixture("search-downloads-10331.json") }
+
+            val settings = SourceSettings(subtitlesInMyLanguage = true)
+            val sources = sources(resolverWith(settings = settings, deviceLanguage = "en").resolve(movie(10331), null)).toList()
+
+            assertEquals(3, sources.size)
+        }
+
+    @Test
+    fun `subtitles in my language on a Spanish device filter everything, and the miss says so`() =
+        runTest {
+            archive.sparql = { resolveFixture("wikidata-10331.tsv") }
+            archive.search = { resolveFixture("search-downloads-10331.json") }
+
+            val settings = SourceSettings(subtitlesInMyLanguage = true)
+            val outcome = resolverWith(settings = settings, deviceLanguage = "es").resolve(movie(10331), null)
+
+            assertEquals(emptyList<Any>(), sources(outcome).toList())
+            assertEquals(listOf(CoverageMiss(10331, Route.WIKIDATA, CoverageMiss.Reason.FILTERED_BY_SETTINGS)), misses)
+            assertEquals(emptyList<Triple<Int, String, String>>(), resolved)
+        }
+
+    @Test
+    fun `the settings combine`() =
+        runTest {
+            archive.sparql = { resolveFixture("wikidata-10331.tsv") }
+            archive.search = { resolveFixture("search-downloads-10331.json") }
+
+            val settings =
+                SourceSettings(
+                    titleMatches = false,
+                    licences = LicenceLevel.PUBLIC_DOMAIN,
+                    minimumQuality = MinimumQuality.HD_720,
+                    subtitlesInMyLanguage = true,
+                )
+            val sources = sources(resolverWith(settings = settings).resolve(movie(10331), null)).toList()
+
+            assertEquals(listOf(Resolution.RESOLUTION_HD_1080, Resolution.RESOLUTION_HD_720), sources.map { it.quality.resolution })
+        }
+
+    @Test
+    fun `the settings are read once per resolve, so a change applies to the next one`() =
+        runTest {
+            archive.sparql = { resolveFixture("wikidata-10331.tsv") }
+            archive.search = { resolveFixture("search-downloads-10331.json") }
+            var current = SourceSettings.DEFAULT
+            var reads = 0
+            val resolver =
+                archive.http().let { http ->
+                    Resolver(
+                        IndexRepository(database.indexDao(), seed = { seed }),
+                        ItemFinder(http),
+                        ItemReader(http),
+                        SourceMapper(testStrings),
+                        misses::add,
+                        settings = {
+                            reads++
+                            current
+                        },
+                    )
+                }
+
+            val first = sources(resolver.resolve(movie(10331), null))
+            current = SourceSettings(minimumQuality = MinimumQuality.HD_1080)
+            assertEquals(3, first.toList().size)
+            assertEquals(1, sources(resolver.resolve(movie(10331), null)).toList().size)
+            assertEquals(2, reads)
+        }
+
+    @Test
+    fun `settings that cannot be read fail the resolve, for the host to retry`() =
+        runTest {
+            val unreadable =
+                archive.http().let { http ->
+                    Resolver(
+                        IndexRepository(database.indexDao(), seed = { seed }),
+                        ItemFinder(http),
+                        ItemReader(http),
+                        SourceMapper(testStrings),
+                        misses::add,
+                        settings = { throw java.io.IOException("datastore") },
+                    )
+                }
+
+            val failure = runCatching { unreadable.resolve(movie(10331), episode = null) }.exceptionOrNull()
+            assertTrue(failure.toString(), failure is java.io.IOException)
+        }
 
     @Test
     fun `a failing deranking lookup still sends the sources`() =

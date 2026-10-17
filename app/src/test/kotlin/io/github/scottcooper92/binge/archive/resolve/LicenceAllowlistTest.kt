@@ -5,10 +5,13 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class LicenceAllowlistTest {
-    private fun label(url: String?) = LicenceAllowlist.match(url)?.let(testStrings::licenceName)
+    private fun label(
+        url: String?,
+        level: LicenceLevel = LicenceLevel.DEFAULT,
+    ) = LicenceAllowlist.match(url, level)?.let(testStrings::licenceName)
 
     @Test
-    fun `the four allowed licences, each with its label`() {
+    fun `the four default licences, each with its label`() {
         assertEquals("Public domain", label("http://creativecommons.org/publicdomain/mark/1.0/"))
         assertEquals("Public domain (US)", label("http://creativecommons.org/licenses/publicdomain/"))
         assertEquals("CC0", label("https://creativecommons.org/publicdomain/zero/1.0/"))
@@ -25,7 +28,7 @@ class LicenceAllowlistTest {
     }
 
     @Test
-    fun `every other licence is refused, however close`() {
+    fun `the default refuses every other licence, however close`() {
         listOf(
             "https://creativecommons.org/licenses/by-sa/4.0/",
             "https://creativecommons.org/licenses/by-nc/4.0/",
@@ -40,5 +43,62 @@ class LicenceAllowlistTest {
             "",
         ).forEach { assertNull(it, label(it)) }
         assertNull(label(null))
+    }
+
+    @Test
+    fun `every licence against every level`() {
+        val pd = "http://creativecommons.org/publicdomain/mark/1.0/"
+        val pdUs = "http://creativecommons.org/licenses/publicdomain/"
+        val cc0 = "https://creativecommons.org/publicdomain/zero/1.0/"
+        val by = "https://creativecommons.org/licenses/by/4.0/"
+        val bySa = "https://creativecommons.org/licenses/by-sa/4.0/"
+        val byNc = "https://creativecommons.org/licenses/by-nc/3.0/us/"
+        val byNd = "https://creativecommons.org/licenses/by-nd/2.0/"
+        val byNcSa = "https://creativecommons.org/licenses/by-nc-sa/4.0/deed.es"
+        val byNcNd = "https://creativecommons.org/licenses/by-nc-nd/3.0/legalcode"
+        val labels =
+            mapOf(
+                pd to "Public domain",
+                pdUs to "Public domain (US)",
+                cc0 to "CC0",
+                by to "CC BY 4.0",
+                bySa to "CC BY-SA 4.0",
+                byNc to "CC BY-NC 3.0 US",
+                byNd to "CC BY-ND 2.0",
+                byNcSa to "CC BY-NC-SA 4.0",
+                byNcNd to "CC BY-NC-ND 3.0",
+                null to "No licence stated",
+                "" to "No licence stated",
+            )
+        val publicDomain = setOf(pd, pdUs, cc0)
+        val admitted =
+            mapOf(
+                LicenceLevel.PUBLIC_DOMAIN to publicDomain,
+                LicenceLevel.PUBLIC_DOMAIN_AND_CC_BY to publicDomain + by,
+                LicenceLevel.CREATIVE_COMMONS to publicDomain + setOf(by, bySa, byNc, byNd, byNcSa, byNcNd),
+                LicenceLevel.ANY to labels.keys,
+            )
+
+        assertEquals(LicenceLevel.entries.toSet(), admitted.keys)
+        for ((level, urls) in admitted) {
+            for ((url, name) in labels) {
+                assertEquals("$url at $level", name.takeIf { url in urls }, label(url, level))
+            }
+        }
+    }
+
+    @Test
+    fun `no level admits what is not a Creative Commons URL`() {
+        listOf(
+            "Public Domain",
+            "https://example.org/licence",
+            "https://creativecommons.org/licenses/sampling+/1.0/",
+            "https://creativecommons.org/licenses/by-xx/4.0/",
+        ).forEach { assertNull(it, label(it, LicenceLevel.ANY)) }
+    }
+
+    @Test
+    fun `the default is public domain and CC BY`() {
+        assertEquals(LicenceLevel.PUBLIC_DOMAIN_AND_CC_BY, LicenceLevel.DEFAULT)
     }
 }

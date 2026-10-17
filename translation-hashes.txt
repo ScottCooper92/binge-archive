@@ -1,6 +1,7 @@
 # The hash of every source string a locale translates, so an edit to the source cannot
 # pass silently while a translation still carries the old wording. Generated -
 # run ./gradlew updateTranslationHashes after re-reading the translations it names.
+app:licence_none_stated  9d434927ef03
 app:licence_public_domain  8c3ff64bb211
 app:licence_public_domain_us  a32c095cfb93
 app:licences_allowed  1bb201d18835

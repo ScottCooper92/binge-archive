@@ -6,7 +6,9 @@ import com.binge.companion.contracts.stream.v1.StreamSource
 import com.binge.companion.contracts.stream.v1.SubtitleTrack
 import com.binge.companion.contracts.v1.PlaybackSource
 import com.google.protobuf.Timestamp
+import io.github.scottcooper92.binge.archive.settings.SourceSettings
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 /**
@@ -20,12 +22,15 @@ import java.util.concurrent.TimeUnit
  *   longer file and the larger one.
  * - Each source's label names the film and its licence, so the host can show the licence on the row.
  * - SubRip and WebVTT files become subtitle tracks, at most ten per source.
+ * - [kept] applies the user's minimum quality and subtitle-language settings to an item's sources.
  * - An item's sources go by height. The order of items, holding back an item this device reported
  *   and the cap of [MAX_SOURCES] are the [Resolver]'s, which streams sources item by item.
  */
 class SourceMapper(
     private val strings: SourceStrings,
     private val clock: () -> Long = System::currentTimeMillis,
+    /** The device's language, as an ISO 639 code: "en". */
+    private val deviceLanguage: () -> String = { Locale.getDefault().language },
 ) {
     /** When sources issued now expire: one resolve stamps all of its sources with the same time. */
     fun expiresAt(): Timestamp = Timestamp.newBuilder().setSeconds(TimeUnit.MILLISECONDS.toSeconds(clock()) + EXPIRY_SECONDS).build()
@@ -54,6 +59,21 @@ class SourceMapper(
         return best.entries
             .sortedByDescending { it.value.height }
             .map { (resolution, encode) -> source(item, encode, resolution, label, subtitles, expiresAt) }
+    }
+
+    /**
+     * The [sources] that [settings] keep: at or above the minimum quality, and, when asked, with a
+     * subtitle track in the device's language.
+     */
+    fun kept(
+        sources: List<StreamSource>,
+        settings: SourceSettings,
+    ): List<StreamSource> {
+        val language = deviceLanguage()
+        return sources.filter { source ->
+            settings.minimumQuality.admits(source.quality.resolution) &&
+                (!settings.subtitlesInMyLanguage || source.subtitlesList.any { Locale.forLanguageTag(it.language).language == language })
+        }
     }
 
     private fun source(
