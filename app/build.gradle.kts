@@ -234,6 +234,8 @@ androidComponents {
 // The exception on a failed test, into the console and so into CI's own log. Gradle's default
 // prints the exception's class and not its message.
 tasks.withType<Test>().configureEach {
+    // binge-companions#148's live measurement (measure/CoverageMeasurement.kt), skipped unless asked for.
+    providers.gradleProperty("archive.measure").orNull?.let { systemProperty("archive.measure", it) }
     testLogging {
         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
         showExceptions = true

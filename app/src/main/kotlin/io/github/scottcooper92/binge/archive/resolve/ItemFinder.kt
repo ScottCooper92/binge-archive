@@ -54,8 +54,7 @@ class ItemFinder(
         }
         val title = facts.title
         if (title != null && facts.runtimeSeconds != null) {
-            val year = facts.year?.let { " AND year:$it" }.orEmpty()
-            val candidates = search("mediatype:movies AND title:(\"${quoted(title)}\")$year")
+            val candidates = search(titleQuery(title, facts.year))
             if (candidates.isNotEmpty()) return confirmed(candidates, facts)
         }
         return Found(null, emptyList(), facts)
@@ -95,6 +94,12 @@ class ItemFinder(
     companion object {
         /** At most this many items are read for one resolve. */
         const val MAX_CANDIDATES = 5
+
+        /** The title route's Archive search: `movies` items whose title holds [title], from [year] when known. */
+        internal fun titleQuery(
+            title: String,
+            year: Int?,
+        ): String = "mediatype:movies AND title:(\"${quoted(title)}\")" + year?.let { " AND year:$it" }.orEmpty()
 
         /** A phrase inside a Lucene query: drop what would end it or escape out of it. */
         internal fun quoted(text: String): String = text.replace("\\", " ").replace("\"", " ").trim()
