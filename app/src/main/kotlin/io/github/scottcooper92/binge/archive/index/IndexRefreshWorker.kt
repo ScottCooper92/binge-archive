@@ -15,7 +15,7 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 /**
- * The weekly refresh: fetch a whole snapshot, then swap it in. If the fetch fails, the failure is
+ * The weekly refresh: settle the seed decision, then fetch a whole snapshot, then swap it in. If the fetch fails, the failure is
  * logged, the previous index stays, and WorkManager retries with backoff.
  */
 class IndexRefreshWorker(
@@ -27,6 +27,7 @@ class IndexRefreshWorker(
 ) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result =
         try {
+            repository.ensureSeeded()
             val snapshot = withContext(io) { fetch() }
             repository.replace(snapshot, RefreshSource.NETWORK)
             Result.success()

@@ -71,6 +71,15 @@ class IndexRefreshWorkerTest {
         }
 
     @Test
+    fun `a failed first fetch still leaves the seed answering lookups`() =
+        runTest {
+            assertEquals(ListenableWorker.Result.retry(), worker { throw IOException("offline") }.doWork())
+
+            assertNotNull(repository.lookup(movie(10331)))
+            assertEquals(RefreshSource.SEED, repository.lastSuccess().first()?.source)
+        }
+
+    @Test
     fun `the refresh is scheduled weekly, on any network, once`() {
         WorkManagerTestInitHelper.initializeTestWorkManager(context, Configuration.Builder().build())
         val workManager = WorkManager.getInstance(context)
