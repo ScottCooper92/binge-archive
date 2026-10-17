@@ -21,6 +21,9 @@ internal class FakeArchive(
     val server = MockWebServer()
     val searches = mutableListOf<String>()
     val metadataStatus = mutableMapOf<String, Int>()
+
+    /** When set, every search answers with this status instead of a body. */
+    var searchStatus: Int? = null
     val metadataBodies = mutableMapOf<String, String>()
 
     /** Holds an item's metadata answer until its latch is released, for the streaming test. */
@@ -48,7 +51,7 @@ internal class FakeArchive(
                         path == "/search" -> {
                             val query = request.url.queryParameter("q").orEmpty()
                             searches += query
-                            MockResponse(body = search(query))
+                            searchStatus?.let { MockResponse(code = it) } ?: MockResponse(body = search(query))
                         }
                         path.startsWith("/metadata/") -> metadata(request.url.pathSegments.last())
                         else -> MockResponse(code = 404)

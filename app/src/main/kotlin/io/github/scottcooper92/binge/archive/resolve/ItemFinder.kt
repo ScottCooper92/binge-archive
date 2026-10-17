@@ -1,5 +1,6 @@
 package io.github.scottcooper92.binge.archive.resolve
 
+import android.util.Log
 import io.github.scottcooper92.binge.archive.index.IndexHit
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -46,9 +47,12 @@ data class Found(
  * its IMDb-tagged ids as route 2, with [TitleFacts.NONE]. Neither route checks a runtime, so nothing
  * is lost but the label's title and year and [SourceMapper]'s minimum length. The licence check is
  * [ItemReader]'s and still applies. With no index ids to fall back on, the failure is the find's.
+ * On the Wikidata route the search only orders the candidates. If it fails, they keep Wikidata's
+ * order, the failure goes to [log], and the find goes on.
  */
 class ItemFinder(
     private val http: ResolverHttp,
+    private val log: (String, IOException) -> Unit = { message, e -> Log.w(TAG, message, e) },
 ) {
     /** Finds the items for [tmdbId]. [hit] is what the index knows of it, the fallback when Wikidata fails. */
     suspend fun find(
@@ -112,7 +116,13 @@ class ItemFinder(
 
     /** [identifiers] as candidates, best-downloaded first, at most [MAX_CANDIDATES]. */
     private suspend fun ranked(identifiers: List<String>): List<Candidate> {
-        val downloads = downloads(identifiers)
+        val downloads =
+            try {
+                downloads(identifiers)
+            } catch (e: IOException) {
+                log("Download counts unavailable; keeping the given order", e)
+                emptyMap()
+            }
         return identifiers
             .map { Candidate(it, downloads[it] ?: 0) }
             .sortedByDescending { it.downloads }
@@ -127,6 +137,8 @@ class ItemFinder(
     private suspend fun search(query: String): List<Candidate> = parseSearch(http.search(query, rows = MAX_CANDIDATES))
 
     companion object {
+        private const val TAG = "ArchiveFinder"
+
         /** At most this many items are read for one resolve. */
         const val MAX_CANDIDATES = 5
 
