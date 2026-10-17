@@ -33,17 +33,19 @@ class IndexRefreshWorkerTest {
         database.close()
     }
 
-    private fun worker(fetch: () -> IndexSnapshot) =
-        TestListenableWorkerBuilder<IndexRefreshWorker>(context)
-            .setWorkerFactory(
-                object : WorkerFactory() {
-                    override fun createWorker(
-                        appContext: Context,
-                        workerClassName: String,
-                        workerParameters: WorkerParameters,
-                    ): ListenableWorker = IndexRefreshWorker(appContext, workerParameters, repository, fetch, Dispatchers.Unconfined)
-                },
-            ).build()
+    private fun worker(
+        prune: suspend () -> Unit = {},
+        fetch: () -> IndexSnapshot,
+    ) = TestListenableWorkerBuilder<IndexRefreshWorker>(context)
+        .setWorkerFactory(
+            object : WorkerFactory() {
+                override fun createWorker(
+                    appContext: Context,
+                    workerClassName: String,
+                    workerParameters: WorkerParameters,
+                ): ListenableWorker = IndexRefreshWorker(appContext, workerParameters, repository, fetch, Dispatchers.Unconfined, prune)
+            },
+        ).build()
 
     @Test
     fun `a successful fetch replaces the seed`() =
@@ -69,6 +71,20 @@ class IndexRefreshWorkerTest {
             assertEquals(RefreshSource.SEED, repository.lastSuccess().first()?.source)
             val dao = database.indexDao()
             assertEquals("offline", dao.latestRefresh().first()?.message)
+        }
+
+    @Test
+    fun `each refresh prunes, and a failing prune does not stop it`() =
+        runTest {
+            var pruned = 0
+            val fresh = IndexSnapshot(listOf(WikidataLink(LinkedMediaType.MOVIE, 42, "fresh", true)), emptyList(), emptyList())
+
+            val result = worker(prune = { pruned++ }) { fresh }.doWork()
+            val afterFailure = worker(prune = { error("db closed") }) { fresh }.doWork()
+
+            assertEquals(ListenableWorker.Result.success(), result)
+            assertEquals(1, pruned)
+            assertEquals(ListenableWorker.Result.success(), afterFailure)
         }
 
     @Test

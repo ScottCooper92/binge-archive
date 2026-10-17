@@ -38,6 +38,19 @@ class DeviceRecordsTest {
         }
 
     @Test
+    fun `pruning forgets the reports older than thirty days and keeps the rest`() =
+        runTest {
+            reports.record("old", "SOURCE_PROBLEM_UNPLAYABLE")
+            now = TimeUnit.DAYS.toMillis(20)
+            reports.record("recent", "SOURCE_PROBLEM_UNPLAYABLE")
+            now = TimeUnit.DAYS.toMillis(31)
+
+            reports.pruneReports()
+
+            assertEquals(listOf("recent"), database.dao().reportedSince(0))
+        }
+
+    @Test
     fun `the device records database opens empty`() =
         runTest {
             val opened = DeviceRecordsDatabase.open(ApplicationProvider.getApplicationContext())
