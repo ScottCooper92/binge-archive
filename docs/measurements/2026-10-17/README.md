@@ -75,10 +75,12 @@ binge-companions#148 sets. See #18 for the options.
 The resolver maps every item before it sends a source, so **time to first source equals time to
 complete**. The harness stamps both, and they matched on every resolve.
 
+Percentiles are nearest-rank over every resolve, the `UNAVAILABLE` one included.
+
 | | p50 | p95 | Max |
 | --- | ---: | ---: | ---: |
-| All 258 resolves | 1.4 s | 4.9 s | 21.9 s |
-| Resolves with sources (49) | 1.1 s | 3.1 s | 5.1 s |
+| All 258 resolves | 1.4 s | 5.5 s | 21.9 s |
+| Resolves with sources (49) | 1.1 s | 3.5 s | 5.1 s |
 
 - 14 resolves took over 5 s, 6 over 8 s and 4 over 10 s. The slowest ones are `NOT_FOUND` or empty
   answers that went through all three routes, plus the one `UNAVAILABLE`.
@@ -102,7 +104,7 @@ complete**. The harness stamps both, and they matched on every resolve.
 
 These are proposals. The decisions are Scott's.
 
-1. **The Resolve deadline: 10 s.** p95 is 4.9 s from a data centre. A phone on a home network will be
+1. **The Resolve deadline: 10 s.** p95 is 5.5 s from a data centre. A phone on a home network will be
    slower, so 10 s leaves room above p95 while still cutting the few slow tail resolves (4 of 258 here).
    Because the first source arrives with the last, a deadline cuts a resolve to nothing, not to
    partial results. If the host wants sources sooner, the resolver could stream each item's sources as
