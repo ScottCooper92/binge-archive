@@ -17,6 +17,7 @@ import io.github.scottcooper92.binge.archive.resolve.ResolverHttp
 import io.github.scottcooper92.binge.archive.resolve.SourceMapper
 import io.github.scottcooper92.binge.archive.resolve.SourceStrings
 import io.github.scottcooper92.binge.archive.resolve.WikidataTitle
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import okhttp3.Call
@@ -79,6 +80,7 @@ class CoverageMeasurement {
             if (snapshot != null) return@repeat
             bytes.set(0)
             requests.set(0)
+            synchronized(errors) { errors.clear() }
             val started = System.nanoTime()
             val outcome =
                 try {
@@ -117,7 +119,6 @@ class CoverageMeasurement {
         database.close()
     }
 
-    @Suppress("LongParameterList")
     private suspend fun row(
         list: String,
         tmdbId: Int,
@@ -137,9 +138,11 @@ class CoverageMeasurement {
             try {
                 when (val outcome = resolver.resolve(movie(tmdbId), null)) {
                     is ResolveOutcome.Sources -> {
-                        val all = outcome.sources.toList()
+                        val all =
+                            outcome.sources
+                                .onEach { if (firstMs == null) firstMs = (System.nanoTime() - started) / NANOS_PER_MS }
+                                .toList()
                         sources = all.size
-                        if (all.isNotEmpty()) firstMs = (System.nanoTime() - started) / NANOS_PER_MS
                         if (all.isEmpty()) "empty" else "sources"
                     }
                     ResolveOutcome.NotFound -> "not_found"
@@ -147,7 +150,7 @@ class CoverageMeasurement {
                     is ResolveOutcome.Invalid -> "invalid"
                 }
             } catch (e: IOException) {
-                "unavailable:${e.message}"
+                "unavailable:${e.message.orEmpty().replace(Regex("\\s"), " ")}"
             }
         val totalMs = (System.nanoTime() - started) / NANOS_PER_MS
         val used = requests.get() - before
