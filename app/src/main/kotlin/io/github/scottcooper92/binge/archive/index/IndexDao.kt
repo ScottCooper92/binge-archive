@@ -34,6 +34,10 @@ interface IndexDao {
     @Insert
     suspend fun insertLog(log: RefreshLogEntity)
 
+    /** Archive items in the index, however many TMDB ids each has. */
+    @Query("SELECT COUNT(*) FROM (SELECT DISTINCT archive_id, imdb_id FROM archive_imdb)")
+    suspend fun archiveItemCount(): Int
+
     @Query("SELECT COUNT(*) FROM refresh_log")
     suspend fun refreshCount(): Int
 

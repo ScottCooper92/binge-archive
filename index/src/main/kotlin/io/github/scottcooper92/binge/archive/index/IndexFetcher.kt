@@ -47,6 +47,7 @@ class IndexFetcher(
         val items = mutableListOf<ArchiveImdbItem>()
         var page = 1
         var seen = 0
+        var numFound = 0
         do {
             val url =
                 archiveSearch
@@ -62,8 +63,11 @@ class IndexFetcher(
             val result = ArchiveParsers.imdbSearchPage(body(Request.Builder().url(url).build()))
             items += result.items
             seen += result.docs
+            numFound = result.numFound
             page++
         } while (result.docs > 0 && seen < result.numFound && page <= MAX_ARCHIVE_PAGES)
+        if (seen == 0) throw IOException("The Archive search found no items")
+        if (seen < numFound) throw IOException("The Archive search ended at $seen of $numFound items")
         return items.distinct()
     }
 

@@ -18,6 +18,7 @@ class IndexFetcherTest {
     private val requests = mutableListOf<RecordedRequest>()
     private var linksBody = fixture("wikidata-links.tsv")
     private var archiveStatus = 200
+    private var archiveBody = fixture("archive-imdb-search.json")
 
     @Before
     fun start() {
@@ -31,7 +32,7 @@ class IndexFetcherTest {
                             MockResponse
                                 .Builder()
                                 .code(archiveStatus)
-                                .body(fixture("archive-imdb-search.json"))
+                                .body(if (request.url.queryParameter("page") == "1") archiveBody else EMPTY_PAGE)
                                 .build()
                         body.contains("P345") -> MockResponse(body = fixture("wikidata-imdb.tsv"))
                         body.contains("DISTINCT") -> MockResponse(body = fixture("wikidata-non-film-classes.tsv"))
@@ -110,10 +111,30 @@ class IndexFetcherTest {
     }
 
     @Test
+    fun `an empty Archive answer fails the refresh`() {
+        archiveBody = """{"response":{"numFound":0,"start":0,"docs":[]}}"""
+
+        assertThrows(IOException::class.java) { fetcher().fetch() }
+    }
+
+    @Test
+    fun `an Archive answer that ends short of numFound fails the refresh`() {
+        archiveBody = fixture("archive-imdb-search.json").replace("\"numFound\": 4", "\"numFound\": 9")
+
+        val e = assertThrows(IOException::class.java) { fetcher().fetch() }
+
+        assertTrue(e.message, e.message!!.contains("4 of 9"))
+    }
+
+    @Test
     fun `the client has the fixed timeouts`() {
         val client: OkHttpClient = ArchiveHttp.client("test")
 
         assertEquals(10_000, client.connectTimeoutMillis)
         assertEquals(20_000, client.readTimeoutMillis)
+    }
+
+    private companion object {
+        const val EMPTY_PAGE = """{"response":{"numFound":9,"start":0,"docs":[]}}"""
     }
 }

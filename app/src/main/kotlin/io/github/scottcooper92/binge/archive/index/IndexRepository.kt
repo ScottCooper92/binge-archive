@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.io.IOException
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -50,11 +51,20 @@ class IndexRepository(
     /** The last successful refresh, seed or network; what the status screen shows as freshness. */
     fun lastSuccess(): Flow<RefreshLogEntity?> = dao.lastSuccess().onStart { ensureSeeded() }
 
-    /** Replaces the whole index with [snapshot] and logs it as a successful refresh. */
+    /**
+     * Replaces the whole index with [snapshot] and logs it as a successful refresh.
+     *
+     * A snapshot with fewer than half the Archive items the index holds is not a refresh: it throws
+     * an [IOException] and the previous index stays.
+     */
     suspend fun replace(
         snapshot: IndexSnapshot,
         source: RefreshSource,
     ) {
+        val current = dao.archiveItemCount()
+        if (snapshot.archiveItems.distinct().size * 2 < current) {
+            throw IOException("The Archive search found ${snapshot.archiveItems.size} items, under half of the $current in the index")
+        }
         val imdbLinks = snapshot.imdbLinks.groupBy { it.imdbId }
         val archiveItems =
             snapshot.archiveItems.flatMap { item ->
