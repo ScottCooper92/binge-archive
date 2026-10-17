@@ -2,15 +2,19 @@ package io.github.scottcooper92.binge.archive.index
 
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.io.IOException
 
 @RunWith(RobolectricTestRunner::class)
 class IndexRepositoryTest {
@@ -92,6 +96,35 @@ class IndexRepositoryTest {
             )
         }
 
+    private fun items(count: Int) = List(count) { ArchiveImdbItem("item-$it", "tt$it") }
+
+    @Test
+    fun `a snapshot under half the Archive items in the index fails and keeps the index`() =
+        runTest {
+            val index = repository(seed = null)
+            index.replace(sampleSnapshot.copy(archiveItems = items(10)), RefreshSource.NETWORK)
+
+            assertThrows(IOException::class.java) {
+                runBlocking { index.replace(sampleSnapshot.copy(archiveItems = items(4)), RefreshSource.NETWORK) }
+            }
+
+            assertEquals(10, dao.archiveItemCount())
+            assertEquals(1, dao.refreshCount())
+            assertNotNull(index.lookup(movie(653)))
+        }
+
+    @Test
+    fun `a normal Archive answer still replaces the index`() =
+        runTest {
+            val index = repository(seed = null)
+            index.replace(sampleSnapshot.copy(archiveItems = items(10)), RefreshSource.NETWORK)
+
+            index.replace(sampleSnapshot.copy(archiveItems = items(5)), RefreshSource.NETWORK)
+
+            assertEquals(5, dao.archiveItemCount())
+            assertEquals(2, dao.refreshCount())
+        }
+
     @Test
     fun `the seed is loaded once, and logged as the first success`() =
         runTest {
@@ -155,7 +188,7 @@ class IndexRepositoryTest {
 
             now = 3_000L
             index.replace(
-                IndexSnapshot(listOf(WikidataLink(LinkedMediaType.MOVIE, 7, "new", true)), emptyList(), emptyList()),
+                IndexSnapshot(listOf(WikidataLink(LinkedMediaType.MOVIE, 7, "new", true)), items(2), emptyList()),
                 RefreshSource.NETWORK,
             )
 
