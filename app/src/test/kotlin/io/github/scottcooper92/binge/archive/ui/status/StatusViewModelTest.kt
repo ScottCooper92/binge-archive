@@ -9,6 +9,7 @@ import io.github.scottcooper92.binge.archive.index.sampleSnapshot
 import io.github.scottcooper92.binge.archive.reports.DeviceRecords
 import io.github.scottcooper92.binge.archive.reports.DeviceRecordsDatabase
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -99,13 +100,34 @@ class StatusViewModelTest {
         }
 
     @Test
-    fun `a read that fails is the Error state, and retry reads again`() =
+    fun `a read that fails is the Error state, and each retry passes through Loading`() =
         runBlocking {
             var fail = true
-            val refresher = FakeRefresher(flow { if (fail) error("unreadable") else emit(false) })
+            val failNow = Channel<Unit>()
+            val refresher =
+                FakeRefresher(
+                    flow {
+                        if (fail) {
+                            failNow.receive()
+                            error("unreadable")
+                        }
+                        emit(false)
+                    },
+                )
             val viewModel = StatusViewModel(index, records, refresher)
 
-            withTimeout(5_000) { viewModel.uiState.first { it == StatusUiState.Error } }
+            suspend fun awaitState(state: StatusUiState) = withTimeout(5_000) { viewModel.uiState.first { it == state } }
+
+            awaitState(StatusUiState.Loading)
+            failNow.send(Unit)
+            awaitState(StatusUiState.Error)
+
+            // A retry that fails again leaves Error for Loading, then lands on Error again.
+            viewModel.retry()
+            awaitState(StatusUiState.Loading)
+            failNow.send(Unit)
+            awaitState(StatusUiState.Error)
+
             fail = false
             viewModel.retry()
 
