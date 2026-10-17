@@ -49,6 +49,21 @@ class ItemFinderTest {
         }
 
     @Test
+    fun `a failed download-count search keeps Wikidata's items, in Wikidata's order`() =
+        runTest {
+            archive.sparql = { facts(ia = "first_item") + facts(ia = "second_item").lines()[1] + "\n" }
+            archive.searchStatus = 503
+            val logged = mutableListOf<IOException>()
+
+            val found = ItemFinder(archive.http()) { _, e -> logged += e }.find(1)
+
+            assertEquals(Route.WIKIDATA, found.route)
+            assertEquals(listOf("first_item", "second_item"), found.candidates.map { it.identifier })
+            assertEquals(listOf(0L, 0L), found.candidates.map { it.downloads })
+            assertEquals(1, logged.size)
+        }
+
+    @Test
     fun `with no Archive id on Wikidata, the IMDb id is searched`() =
         runTest {
             archive.sparql = { facts(imdb = "tt0000001", runtime = "60") }

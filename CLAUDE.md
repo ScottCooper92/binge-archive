@@ -117,8 +117,9 @@ Rules that hold it together:
 
 `Resolver.resolve(mediaId, episode)` (package `resolve`) answers a `ResolveOutcome`, which the Service
 maps to the contract: `Sources` (a flow, possibly empty), `NotFound`, `NotAFilm` or `Invalid`. A
-network failure is an `IOException`, thrown out of `resolve()` itself (the finder's Wikidata and
-search calls, and the title route's loads) or out of the flow. The Service maps both to `UNAVAILABLE`.
+network failure is an `IOException`, thrown out of `resolve()` itself (the finder's Wikidata call, its
+IMDb and title searches, and the title route's loads) or out of the flow. The Wikidata route's
+download-count search only orders its items: if it fails, they keep Wikidata's order. The Service maps both to `UNAVAILABLE`.
 
 1. **The request.** An unusable `MediaId` or `EpisodeRef` is `Invalid` before anything is looked up.
 2. **Series and the index.** A valid series is `NotFound` (v1 carries none). A movie id the index
