@@ -11,14 +11,14 @@ class SourceMapperTest {
 
     private fun item(name: String) = ArchiveMetadata.parse(name, resolveFixture("metadata-$name.json"))
 
-    private fun licensed(
+    private fun sources(
         item: ArchiveItem,
-        downloads: Long = 0,
-    ) = LicensedItem(item, Licence(Licence.Kind.PUBLIC_DOMAIN_US), downloads)
+        facts: TitleFacts,
+    ) = mapper.sources(LicensedItem(item, Licence(Licence.Kind.PUBLIC_DOMAIN_US), 0), facts, mapper.expiresAt())
 
     @Test
     fun `Night of the Living Dead maps to its 1080p, 720p and SD h264 encodes`() {
-        val sources = mapper.map(listOf(licensed(item("Night.Of.The.Living.Dead_1080p"))), notld)
+        val sources = sources(item("Night.Of.The.Living.Dead_1080p"), notld)
 
         assertEquals(
             listOf(
@@ -39,7 +39,7 @@ class SourceMapperTest {
 
     @Test
     fun `the SubRip captions become one English track on every source`() {
-        val sources = mapper.map(listOf(licensed(item("Night.Of.The.Living.Dead_1080p"))), notld)
+        val sources = sources(item("Night.Of.The.Living.Dead_1080p"), notld)
 
         sources.forEach { source ->
             val track = source.subtitlesList.single()
@@ -53,9 +53,9 @@ class SourceMapperTest {
     fun `reels of a split upload are not the film`() {
         val nosferatu = WikidataTitle.parse(resolveFixture("wikidata-653.tsv"))
 
-        assertEquals(emptyList<Any>(), mapper.map(listOf(licensed(item("Nosferatu_DVD_quality"))), nosferatu))
+        assertEquals(emptyList<Any>(), sources(item("Nosferatu_DVD_quality"), nosferatu))
         // Without a runtime nothing says a reel is not the film, so the longest one stands for the class.
-        val withoutRuntime = mapper.map(listOf(licensed(item("Nosferatu_DVD_quality"))), nosferatu.copy(runtimeSeconds = null))
+        val withoutRuntime = sources(item("Nosferatu_DVD_quality"), nosferatu.copy(runtimeSeconds = null))
         assertEquals(listOf("nosferatu-2of5_512kb.mp4"), withoutRuntime.map { it.id.substringAfter('/') })
     }
 
@@ -63,7 +63,7 @@ class SourceMapperTest {
     fun `an MP4 is preferred over a taller Ogg when neither names h264`() {
         val nosferatu = WikidataTitle.parse(resolveFixture("wikidata-653.tsv"))
 
-        val source = mapper.map(listOf(licensed(item("PhantasmagoriaTheater-Nosferatu1922909"))), nosferatu).single()
+        val source = sources(item("PhantasmagoriaTheater-Nosferatu1922909"), nosferatu).single()
 
         assertEquals("PhantasmagoriaTheater-Nosferatu1922909_512kb.mp4", source.id.substringAfter('/'))
         assertEquals("Nosferatu (1922) · Public domain (US)", source.label)
@@ -71,58 +71,17 @@ class SourceMapperTest {
     }
 
     @Test
-    fun `items go in download order`() {
-        val nosferatu = WikidataTitle.parse(resolveFixture("wikidata-653.tsv")).copy(runtimeSeconds = null)
-        val sources =
-            mapper.map(
-                listOf(
-                    licensed(item("PhantasmagoriaTheater-Nosferatu1922909"), downloads = 1),
-                    licensed(item("Nosferatu_DVD_quality"), downloads = 9),
-                ),
-                nosferatu,
-            )
-
-        assertEquals("Nosferatu_DVD_quality", sources.first().id.substringBefore('/'))
-        assertEquals("PhantasmagoriaTheater-Nosferatu1922909", sources.last().id.substringBefore('/'))
-    }
-
-    @Test
-    fun `an item this device reported goes after every other`() {
-        val nosferatu = WikidataTitle.parse(resolveFixture("wikidata-653.tsv")).copy(runtimeSeconds = null)
-        val items =
-            listOf(
-                licensed(item("PhantasmagoriaTheater-Nosferatu1922909"), downloads = 1),
-                licensed(item("Nosferatu_DVD_quality"), downloads = 9),
-            )
-
-        val sources = mapper.map(items, nosferatu, deranked = setOf("Nosferatu_DVD_quality"))
-
-        assertEquals("PhantasmagoriaTheater-Nosferatu1922909", sources.first().id.substringBefore('/'))
-    }
-
-    @Test
-    fun `at most fifty sources and ten subtitle tracks`() {
+    fun `at most ten subtitle tracks`() {
         val files =
             (1..12).map { ArchiveFile("subs$it.srt", "SubRip", it.toLong(), null, null) } +
                 ArchiveFile("film.mp4", "h.264", 1, 480, 100.0)
-        val items =
-            (1..60).map { n ->
-                licensed(ArchiveItem("item$n", "movies", "Film", null, null, accessRestricted = false, dark = false, files = files))
-            }
+        val item = ArchiveItem("item", "movies", "Film", null, null, accessRestricted = false, dark = false, files = files)
 
-        val sources = mapper.map(items, TitleFacts.NONE)
+        val source = sources(item, TitleFacts.NONE).single()
 
-        assertEquals(50, sources.size)
-        assertEquals(10, sources.first().subtitlesCount)
-        assertEquals(
-            "und",
-            sources
-                .first()
-                .subtitlesList
-                .first()
-                .language,
-        )
-        assertEquals("Film · Public domain (US)", sources.first().label)
+        assertEquals(10, source.subtitlesCount)
+        assertEquals("und", source.subtitlesList.first().language)
+        assertEquals("Film · Public domain (US)", source.label)
     }
 
     @Test
