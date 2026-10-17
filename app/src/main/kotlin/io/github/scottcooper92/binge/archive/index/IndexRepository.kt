@@ -86,8 +86,10 @@ class IndexRepository(
     }
 
     /**
-     * Loads the seed if nothing has ever been loaded. Any refresh in the log, even a failed one,
-     * means the seed was offered already, so it is never loaded over a newer index.
+     * Loads the seed if nothing has ever been loaded. A refresh in the log means the seed was
+     * offered already, so it is never loaded over a newer index. That holds because every writer
+     * calls this first: lookups do, and so does the refresh worker, before it fetches or logs a
+     * failure. A failed refresh therefore never leaves the seed unloaded.
      */
     suspend fun ensureSeeded() {
         if (seeded) return
