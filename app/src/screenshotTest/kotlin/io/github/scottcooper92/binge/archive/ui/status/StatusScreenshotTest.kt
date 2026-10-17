@@ -15,24 +15,26 @@ import io.github.scottcooper92.binge.archive.preview.ArchiveScreenPreviews
 import io.github.scottcooper92.binge.archive.preview.ArchiveScreenStatePreview
 import io.github.scottcooper92.binge.archive.preview.ArchiveSettingsFontScalePreviews
 import io.github.scottcooper92.binge.archive.preview.ArchiveSpanishPreviews
+import io.github.scottcooper92.binge.archive.preview.ArchiveWideStressPreviews
 import com.binge.designsystem.R as DesR
 
 /** The phone's status screen: its layout across the matrix, then each state on the phone cell alone. */
 class StatusScreenshotTest {
     @PreviewTest
     @ArchiveScreenPreviews
+    @ArchiveWideStressPreviews
     @Composable
-    fun ready() = StatusScreen(previewReady, StatusActions(), now = PREVIEW_NOW)
+    fun ready() = PhoneStatusRoot(previewReady, StatusActions(), showingLicences = false, onCloseLicences = {}, now = PREVIEW_NOW)
 
     @PreviewTest
     @ArchiveFontScalePreviews
     @Composable
-    fun readyFontScale() = StatusScreen(previewReady, StatusActions(), now = PREVIEW_NOW)
+    fun readyFontScale() = PhoneStatusRoot(previewReady, StatusActions(), showingLicences = false, onCloseLicences = {}, now = PREVIEW_NOW)
 
     @PreviewTest
     @ArchiveSpanishPreviews
     @Composable
-    fun readySpanish() = StatusScreen(previewReady, StatusActions(), now = PREVIEW_NOW)
+    fun readySpanish() = PhoneStatusRoot(previewReady, StatusActions(), showingLicences = false, onCloseLicences = {}, now = PREVIEW_NOW)
 
     @PreviewTest
     @ArchiveScreenStatePreview
@@ -91,9 +93,24 @@ class StatusScreenshotTest {
     fun anyLicenceConfirmFontScale() = SectionFrame { AnyLicenceConfirm(StatusActions()) }
 
     @PreviewTest
-    @ArchiveScreenStatePreview
+    @ArchiveScreenPreviews
+    @ArchiveWideStressPreviews
     @Composable
-    fun licences() = LicenceScreen(onBack = {})
+    fun licences() = PhoneStatusRoot(previewReady, StatusActions(), showingLicences = true, onCloseLicences = {}, now = PREVIEW_NOW)
+
+    /** The Sources pane on its own with every setting moved, as the two-pane layout shows it. */
+    @PreviewTest
+    @ArchiveScreenStatePreview
+    @ArchiveSpanishPreviews
+    @Composable
+    fun sourcesPane() = SourcesScreen(previewSourcesChanged, StatusActions())
+
+    @PreviewTest
+    @ArchiveScreenPreviews
+    @Composable
+    fun loadingWide() =
+        PhoneStatusRoot(StatusUiState.Loading, StatusActions(), showingLicences = false, onCloseLicences = {
+        }, now = PREVIEW_NOW)
 
     @PreviewTest
     @ArchiveSpanishPreviews

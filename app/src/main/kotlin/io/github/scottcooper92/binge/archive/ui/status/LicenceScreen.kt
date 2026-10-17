@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import com.binge.designsystem.CenteredContent
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.template.BingeScreenScaffold
@@ -28,39 +29,42 @@ fun LicenceScreen(
 ) {
     BingeScreenScaffold(title = stringResource(R.string.licences_title), onBack = onBack, modifier = modifier) { padding ->
         ScreenBody(padding) { _ ->
-            LazyColumn(
-                contentPadding = padding.screenListPadding(),
-                verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
-            ) {
-                item {
-                    ItemGroup(
-                        title = null,
-                        rows =
-                            listOf(
-                                ListItem(
-                                    icon = Icons.Outlined.Gavel,
-                                    label = stringResource(R.string.licences_title),
-                                    detail = stringResource(R.string.licences_intro),
-                                    supportingMaxLines = INTRO_LINES,
-                                    clickable = false,
+            CenteredContent { capped ->
+                LazyColumn(
+                    modifier = capped,
+                    contentPadding = padding.screenListPadding(),
+                    verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
+                ) {
+                    item {
+                        ItemGroup(
+                            title = null,
+                            rows =
+                                listOf(
+                                    ListItem(
+                                        icon = Icons.Outlined.Gavel,
+                                        label = stringResource(R.string.licences_title),
+                                        detail = stringResource(R.string.licences_intro),
+                                        supportingMaxLines = INTRO_LINES,
+                                        clickable = false,
+                                    ),
                                 ),
-                            ),
-                    )
-                }
-                item { ItemGroup(title = stringResource(R.string.licences_allowed), rows = allowedRows()) }
-                item {
-                    ItemGroup(
-                        title = null,
-                        rows =
-                            listOf(
-                                ListItem(
-                                    icon = Icons.Outlined.Block,
-                                    label = stringResource(R.string.licences_not_allowed),
-                                    supportingMaxLines = INTRO_LINES,
-                                    clickable = false,
+                        )
+                    }
+                    item { ItemGroup(title = stringResource(R.string.licences_allowed), rows = allowedRows()) }
+                    item {
+                        ItemGroup(
+                            title = null,
+                            rows =
+                                listOf(
+                                    ListItem(
+                                        icon = Icons.Outlined.Block,
+                                        label = stringResource(R.string.licences_not_allowed),
+                                        supportingMaxLines = INTRO_LINES,
+                                        clickable = false,
+                                    ),
                                 ),
-                            ),
-                    )
+                        )
+                    }
                 }
             }
         }
