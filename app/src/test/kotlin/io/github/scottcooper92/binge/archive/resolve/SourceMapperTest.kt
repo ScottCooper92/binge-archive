@@ -1,5 +1,6 @@
 package io.github.scottcooper92.binge.archive.resolve
 
+import com.binge.companion.contracts.stream.v1.LicenceKind
 import com.binge.companion.contracts.stream.v1.Resolution
 import io.github.scottcooper92.binge.archive.settings.MinimumQuality
 import io.github.scottcooper92.binge.archive.settings.SourceSettings
@@ -32,7 +33,9 @@ class SourceMapperTest {
         )
         sources.forEach {
             assertEquals("H.264", it.quality.videoCodec)
-            assertEquals("Night of the Living Dead (1968) · Public domain (US)", it.label)
+            assertEquals("Night of the Living Dead (1968)", it.label)
+            assertEquals("Public domain (US)", it.licenceLabel)
+            assertEquals(LicenceKind.LICENCE_KIND_OPEN, it.licenceKind)
             assertTrue(it.source.url.startsWith("https://archive.org/download/Night.Of.The.Living.Dead_1080p/"))
             assertEquals(1_000L + 24 * 60 * 60, it.source.expiresAt.seconds)
         }
@@ -68,7 +71,8 @@ class SourceMapperTest {
         val source = sources(item("PhantasmagoriaTheater-Nosferatu1922909"), nosferatu).single()
 
         assertEquals("PhantasmagoriaTheater-Nosferatu1922909_512kb.mp4", source.id.substringAfter('/'))
-        assertEquals("Nosferatu (1922) · Public domain (US)", source.label)
+        assertEquals("Nosferatu (1922)", source.label)
+        assertEquals("Public domain (US)", source.licenceLabel)
         assertEquals("", source.quality.videoCodec)
     }
 
@@ -83,15 +87,17 @@ class SourceMapperTest {
 
         assertEquals(10, source.subtitlesCount)
         assertEquals("und", source.subtitlesList.first().language)
-        assertEquals("Film · Public domain (US)", source.label)
+        assertEquals("Film", source.label)
     }
 
     @Test
-    fun `a long title is shortened so the label fits 120 characters`() {
-        val label = testStrings.label("A".repeat(200), 1922, Licence(Licence.Kind.CC_BY, "4.0"), SourceMapper.MAX_LABEL)
+    fun `a long title is shortened so the label fits 120 characters, and the label names no licence`() {
+        val label = testStrings.label("A".repeat(200), 1922, SourceMapper.MAX_LABEL)
 
         assertEquals(120, label.length)
-        assertTrue(label.endsWith("… (1922) · CC BY 4.0"))
+        assertTrue(label.endsWith("… (1922)"))
+        assertEquals(120, testStrings.label("A".repeat(200), null, SourceMapper.MAX_LABEL).length)
+        assertEquals("Film", testStrings.label("Film", null, SourceMapper.MAX_LABEL))
     }
 
     @Test
@@ -141,21 +147,40 @@ class SourceMapperTest {
     }
 
     @Test
-    fun `an item with no licence stated says so on its label`() {
+    fun `each licence kind goes on the wire with its licence label`() {
+        fun wire(licence: Licence) = testStrings.licenceName(licence) to licence.kind.onTheWire()
+
+        assertEquals("Public domain" to LicenceKind.LICENCE_KIND_OPEN, wire(Licence(Licence.Kind.PUBLIC_DOMAIN_MARK)))
+        assertEquals("CC0" to LicenceKind.LICENCE_KIND_OPEN, wire(Licence(Licence.Kind.CC0)))
+        assertEquals("CC BY-NC-SA 4.0" to LicenceKind.LICENCE_KIND_OPEN, wire(Licence(Licence.Kind.CC_BY_NC_SA, "4.0")))
+        assertEquals("No licence stated" to LicenceKind.LICENCE_KIND_NONE_STATED, wire(Licence(Licence.Kind.NONE_STATED)))
         assertEquals(
-            "Film (1950) · No licence stated",
-            testStrings.label("Film", 1950, Licence(Licence.Kind.NONE_STATED)),
+            "All rights reserved" to LicenceKind.LICENCE_KIND_RESTRICTED,
+            wire(Licence(Licence.Kind.RESTRICTED, "All rights reserved")),
         )
+        assertEquals("Free to view" to LicenceKind.LICENCE_KIND_UNKNOWN, wire(Licence(Licence.Kind.UNKNOWN, "Free to view")))
+        Licence.Kind.entries.forEach { assertTrue(it.name, it.onTheWire() != LicenceKind.LICENCE_KIND_UNSPECIFIED) }
     }
 
     @Test
-    fun `an item's own licence text is shortened, so a long title still fits the label`() {
+    fun `an item's own licence text is shortened to the host's 40 characters`() {
         val own = Licence(Licence.Kind.RESTRICTED, "Copyright 1931 Universal Pictures Company, Inc. All rights reserved worldwide.")
 
-        val label = testStrings.label("A".repeat(200), 1931, own, SourceMapper.MAX_LABEL)
+        val name = testStrings.licenceName(own)
 
-        assertEquals(120, label.length)
-        assertTrue(label, label.endsWith("… (1931) · Copyright 1931 Universal Pictures Compa…"))
+        assertEquals(SourceStrings.MAX_LICENCE_LABEL, name.length)
+        assertEquals("Copyright 1931 Universal Pictures Compa…", name)
+    }
+
+    @Test
+    fun `shortening never cuts a character in two`() {
+        val emoji = "\uD83C\uDFAC"
+        val text = "a".repeat(38) + emoji + "tail"
+
+        val short = text.shortened(40)
+
+        assertEquals("a".repeat(38) + "…", short)
+        assertEquals("short", "short".shortened(40))
     }
 
     @Test

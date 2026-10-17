@@ -15,50 +15,40 @@ class SourceStrings(
     /** Takes the licence's code and its version with any jurisdiction: "CC %1$s %2$s". */
     private val creativeCommons: String,
     private val noneStated: String,
-    /** Takes the title, the year and the licence name. */
+    /** Takes the title and the year: "%1$s (%2$d)". */
     private val labelWithYear: String,
-    /** Takes the title and the licence name. */
-    private val labelWithoutYear: String,
     val automaticCaptions: String,
 ) {
+    /**
+     * The licence as the host shows it, in `StreamSource.licence_label`: a recognised licence's short
+     * name, "No licence stated", or the item's own words, which no translation can name. At most
+     * [MAX_LICENCE_LABEL] characters.
+     */
     fun licenceName(licence: Licence): String =
         when (licence.kind) {
             Licence.Kind.PUBLIC_DOMAIN_MARK -> publicDomainMark
             Licence.Kind.PUBLIC_DOMAIN_US -> publicDomainUs
             Licence.Kind.CC0 -> cc0
             Licence.Kind.NONE_STATED -> noneStated
-            // The item's own words, which no translation can name: shortened, so the label keeps room for the title.
-            Licence.Kind.RESTRICTED, Licence.Kind.UNKNOWN ->
-                if (licence.detail.length <= MAX_OWN_TEXT) licence.detail else licence.detail.take(MAX_OWN_TEXT - 1).trimEnd() + "…"
+            Licence.Kind.RESTRICTED, Licence.Kind.UNKNOWN -> licence.detail
             else -> creativeCommons.format(Locale.ROOT, licence.kind.code, licence.detail)
-        }
+        }.shortened(MAX_LICENCE_LABEL)
 
-    /** "Night of the Living Dead (1968) · Public domain (US)". */
+    /** The source's label: "Night of the Living Dead (1968)", the title shortened to fit [max] characters. */
     fun label(
         title: String,
         year: Int?,
-        licence: Licence,
-    ): String {
-        val name = licenceName(licence)
-        return if (year == null) labelWithoutYear.format(Locale.ROOT, title, name) else labelWithYear.format(Locale.ROOT, title, year, name)
-    }
-
-    /** [label] with the title shortened so the whole fits in [max] characters. */
-    fun label(
-        title: String,
-        year: Int?,
-        licence: Licence,
         max: Int,
     ): String {
-        val full = label(title, year, licence)
+        fun of(title: String) = if (year == null) title else labelWithYear.format(Locale.ROOT, title, year)
+        val full = of(title)
         if (full.length <= max) return full
-        val room = max - label("", year, licence).length
-        return label(title.take(room - 1).trimEnd() + "…", year, licence)
+        return of(title.shortened(max - of("").length))
     }
 
     companion object {
-        /** The most of an item's own licence text a label shows, ellipsis included. */
-        const val MAX_OWN_TEXT = 40
+        /** The host's cap on `licence_label`. */
+        const val MAX_LICENCE_LABEL = 40
 
         fun from(context: Context): SourceStrings =
             SourceStrings(
@@ -68,8 +58,18 @@ class SourceStrings(
                 creativeCommons = context.getString(R.string.licence_creative_commons),
                 noneStated = context.getString(R.string.licence_none_stated),
                 labelWithYear = context.getString(R.string.source_label_with_year),
-                labelWithoutYear = context.getString(R.string.source_label_without_year),
                 automaticCaptions = context.getString(R.string.subtitle_automatic),
             )
     }
+}
+
+/**
+ * This text in at most [max] characters, ending in "…" when it is cut. It never cuts a character in
+ * two: a surrogate pair stays whole.
+ */
+internal fun String.shortened(max: Int): String {
+    if (length <= max) return this
+    var end = max - 1
+    if (end > 0 && Character.isHighSurrogate(this[end - 1])) end--
+    return take(end).trimEnd() + "…"
 }

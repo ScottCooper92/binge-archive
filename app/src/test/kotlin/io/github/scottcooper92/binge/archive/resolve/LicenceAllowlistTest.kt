@@ -118,6 +118,15 @@ class LicenceAllowlistTest {
     }
 
     @Test
+    fun `an item's own text loses control and bidi-override characters`() {
+        assertEquals(
+            Licence(Licence.Kind.UNKNOWN, "Free to view"),
+            LicenceAllowlist.identify("Free\u202E to\u0007 view\u200B"),
+        )
+        assertEquals(Licence(Licence.Kind.UNKNOWN, "two lines"), LicenceAllowlist.identify("two\r\nlines"))
+    }
+
+    @Test
     fun `the default is public domain and CC BY`() {
         assertEquals(LicenceLevel.PUBLIC_DOMAIN_AND_CC_BY, LicenceLevel.DEFAULT)
     }
