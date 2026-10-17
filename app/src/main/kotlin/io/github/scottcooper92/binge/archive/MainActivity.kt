@@ -25,9 +25,8 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.scottcooper92.binge.archive.theme.ArchiveTheme
 import io.github.scottcooper92.binge.archive.theme.ArchiveTvTheme
-import io.github.scottcooper92.binge.archive.ui.status.LicenceScreen
+import io.github.scottcooper92.binge.archive.ui.status.PhoneStatusRoot
 import io.github.scottcooper92.binge.archive.ui.status.StatusActions
-import io.github.scottcooper92.binge.archive.ui.status.StatusScreen
 import io.github.scottcooper92.binge.archive.ui.status.StatusViewModel
 import io.github.scottcooper92.binge.archive.ui.tv.TvLicenceScreen
 import io.github.scottcooper92.binge.archive.ui.tv.TvStatusScreen
@@ -35,7 +34,8 @@ import io.github.scottcooper92.binge.archive.ui.tv.isTelevision
 
 /**
  * The app's own UI: the status screen, and the licence page it opens. A phone wears the design
- * system's theme; a television gets the TV pages under its TV theme.
+ * system's theme; a television gets the TV pages under its TV theme. [PhoneStatusRoot] lays the phone
+ * out for the window.
  */
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,6 +56,7 @@ class MainActivity : ComponentActivity() {
                     onRefreshNow = viewModel::refreshNow,
                     onRetry = viewModel::retry,
                     onOpenLicences = { showingLicences = true },
+                    onOpenSources = { showingLicences = false },
                     onOpenUrl = ::openUrl,
                     onClearRecent = viewModel::clearRecent,
                     onClearReported = viewModel::clearReported,
@@ -73,11 +74,7 @@ class MainActivity : ComponentActivity() {
             } else {
                 ArchiveTheme {
                     PhoneSurface {
-                        if (showingLicences) {
-                            LicenceScreen(onBack = { showingLicences = false })
-                        } else {
-                            StatusScreen(state, actions)
-                        }
+                        PhoneStatusRoot(state, actions, showingLicences, onCloseLicences = { showingLicences = false })
                     }
                 }
             }

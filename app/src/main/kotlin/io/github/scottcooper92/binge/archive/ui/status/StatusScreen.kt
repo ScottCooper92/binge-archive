@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import com.binge.designsystem.CenteredContent
 import com.binge.designsystem.ErrorKind
 import com.binge.designsystem.component.BingeChoice
 import com.binge.designsystem.component.BingeChoiceList
@@ -44,7 +45,10 @@ import com.binge.designsystem.R as DesR
 /**
  * The phone's status screen: what this app is, the Sources settings, the index, who the data comes
  * from, and this device's recently resolved titles and reports. [now] is a parameter so frames pass a
- * fixed instant.
+ * fixed instant. On a window wider than the reading width the column is capped and centred.
+ *
+ * As the list pane of [StatusListDetail], [selected] names the detail open beside it: the Sources
+ * section is then a row that opens it, and the open row is marked. Null is the screen on its own.
  */
 @Composable
 fun StatusScreen(
@@ -52,6 +56,7 @@ fun StatusScreen(
     actions: StatusActions,
     modifier: Modifier = Modifier,
     now: Long = System.currentTimeMillis(),
+    selected: StatusDetail? = null,
 ) {
     BingeScreenScaffold(title = stringResource(R.string.app_label), modifier = modifier) { padding ->
         ScreenBody(padding) { _ ->
@@ -59,7 +64,7 @@ fun StatusScreen(
                 StatusUiState.Loading ->
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
                 StatusUiState.Error -> ErrorScreen(kind = ErrorKind.Generic, onRetry = actions.onRetry)
-                is StatusUiState.Ready -> StatusGroups(state, actions, now, padding)
+                is StatusUiState.Ready -> StatusGroups(state, actions, now, padding, selected)
             }
         }
     }
@@ -71,22 +76,51 @@ private fun StatusGroups(
     actions: StatusActions,
     now: Long,
     padding: androidx.compose.foundation.layout.PaddingValues,
+    selected: StatusDetail?,
 ) {
-    LazyColumn(
-        contentPadding = padding.screenListPadding(),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
-    ) {
-        item { ItemGroup(title = stringResource(R.string.status_about_title), rows = aboutRows(actions)) }
-        item { SourceSettingsGroup(state, actions) }
-        item { ItemGroup(title = stringResource(R.string.status_index_title), rows = indexRows(state, actions, now)) }
-        item { ItemGroup(title = stringResource(R.string.status_sources_title), rows = sourceRows(actions)) }
-        item { ItemGroup(title = stringResource(R.string.status_recent_title), rows = recentRows(state.recent, actions, now)) }
-        item { ItemGroup(title = stringResource(R.string.status_reported_title), rows = reportedRows(state.reported, actions)) }
+    CenteredContent { capped ->
+        LazyColumn(
+            modifier = capped,
+            contentPadding = padding.screenListPadding(),
+            verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
+        ) {
+            item { ItemGroup(title = stringResource(R.string.status_about_title), rows = aboutRows(actions, selected)) }
+            item {
+                if (selected == null) {
+                    SourceSettingsGroup(state, actions)
+                } else {
+                    ItemGroup(title = null, rows = listOf(sourcesRow(state, actions, selected)))
+                }
+            }
+            item { ItemGroup(title = stringResource(R.string.status_index_title), rows = indexRows(state, actions, now)) }
+            item { ItemGroup(title = stringResource(R.string.status_sources_title), rows = sourceRows(actions)) }
+            item { ItemGroup(title = stringResource(R.string.status_recent_title), rows = recentRows(state.recent, actions, now)) }
+            item { ItemGroup(title = stringResource(R.string.status_reported_title), rows = reportedRows(state.reported, actions)) }
+        }
     }
 }
 
+/** In the list pane, the Sources section as one row that opens it beside the list, its detail the licences chosen. */
 @Composable
-private fun aboutRows(actions: StatusActions): List<ListItem> =
+private fun sourcesRow(
+    state: StatusUiState.Ready,
+    actions: StatusActions,
+    selected: StatusDetail,
+): ListItem =
+    ListItem(
+        icon = SourceSettingChoices.licencesIcon,
+        label = stringResource(R.string.settings_title),
+        detail = stringResource(SourceSettingChoices.licences.first { it.value == state.sources.licences }.label),
+        supportingMaxLines = SETTING_DETAIL_LINES,
+        selected = selected == StatusDetail.Sources,
+        onClick = actions.onOpenSources,
+    )
+
+@Composable
+private fun aboutRows(
+    actions: StatusActions,
+    selected: StatusDetail?,
+): List<ListItem> =
     listOf(
         ListItem(
             icon = Icons.Outlined.Info,
@@ -99,6 +133,8 @@ private fun aboutRows(actions: StatusActions): List<ListItem> =
             icon = Icons.Outlined.Gavel,
             label = stringResource(R.string.status_licences_row),
             detail = stringResource(R.string.status_licences_detail),
+            supportingMaxLines = SETTING_DETAIL_LINES,
+            selected = selected == StatusDetail.Licences,
             onClick = actions.onOpenLicences,
         ),
     )
@@ -111,6 +147,7 @@ private fun aboutRows(actions: StatusActions): List<ListItem> =
 fun SourceSettingsGroup(
     state: StatusUiState.Ready,
     actions: StatusActions,
+    title: String? = stringResource(R.string.settings_title),
 ) {
     if (state.confirmingAnyLicence) {
         BingeConfirmDialog(
@@ -122,7 +159,7 @@ fun SourceSettingsGroup(
             destructive = true,
         )
     }
-    ItemGroup(title = stringResource(R.string.settings_title), rows = sourceSettingRows(state, actions))
+    ItemGroup(title = title, rows = sourceSettingRows(state, actions))
 }
 
 /** The confirm "Any, including no licence" asks, without its modal window, for a frame. */
@@ -300,7 +337,8 @@ private fun reportedRows(
         )
 }
 
-private const val ABOUT_LINES = 4
+/** Enough that the about text is never cut, even in a list pane at a large font. */
+private const val ABOUT_LINES = 12
 
 /** A setting's subtitle or value is one short line; room for more keeps it whole at a large font size. */
 private const val SETTING_DETAIL_LINES = 3

@@ -43,6 +43,8 @@ data class StatusActions(
     val onRefreshNow: () -> Unit = {},
     val onRetry: () -> Unit = {},
     val onOpenLicences: () -> Unit = {},
+    /** Opens the Sources section in the detail pane, on a window wide enough for two. */
+    val onOpenSources: () -> Unit = {},
     val onOpenUrl: (String) -> Unit = {},
     val onClearRecent: () -> Unit = {},
     val onClearReported: () -> Unit = {},
