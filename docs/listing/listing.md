@@ -28,9 +28,9 @@ README.
 >
 > **Your choice of sources.** In the app's Sources settings you can turn off title matches, keep to
 > the public domain only, accept any Creative Commons licence, set a minimum quality of 720p or
-> 1080p, or ask only for copies with subtitles in your language. You can also include every copy,
-> whatever its licence: the app asks first, because those copies may not be licensed for viewing.
-> Each copy still shows its licence, or says it states none. The settings stay on your device.
+> 1080p, or ask only for copies with subtitles in your language. You can also choose which
+> licences to include. Each copy still shows its licence, or says it states none. The settings stay
+> on your device.
 >
 > **Mostly older films.** Most public-domain films are from before 1960, so many titles will have
 > nothing here. Series are not covered yet.
@@ -50,7 +50,7 @@ README.
 >
 > Open source, under the Apache 2.0 licence: github.com/ScottCooper92/binge-archive.
 
-(About 1,600 characters)
+(About 1,500 characters)
 
 ## Category and contact
 

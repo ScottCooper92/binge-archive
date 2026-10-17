@@ -25,9 +25,8 @@ La traducción de `listing.md`. El nombre de la app es el mismo en los dos idiom
 > **Tú eliges las fuentes.** En los ajustes de Fuentes de la app puedes desactivar las coincidencias
 > por título, quedarte solo con el dominio público, aceptar cualquier licencia Creative Commons,
 > fijar una calidad mínima de 720p o 1080p, o pedir solo copias con subtítulos en tu idioma.
-> También puedes incluir todas las copias, sea cual sea su licencia: la app te lo pregunta antes,
-> porque puede que esas copias no tengan permiso para verse. Cada copia sigue indicando su licencia,
-> o que no indica ninguna. Los ajustes se quedan en tu dispositivo.
+> También puedes elegir qué licencias incluir. Cada copia sigue indicando su licencia, o que no
+> indica ninguna. Los ajustes se quedan en tu dispositivo.
 >
 > **Sobre todo películas antiguas.** La mayoría de las películas de dominio público son de antes
 > de 1960, así que muchos títulos no tendrán nada aquí. Las series aún no están incluidas.
