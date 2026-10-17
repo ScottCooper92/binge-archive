@@ -61,7 +61,7 @@ jobs:
     concurrency:
       group: author-comments-${{ github.event.issue.number || github.event.pull_request.number }}
       cancel-in-progress: false
-    uses: ScottCooper92/binge-ci/.github/workflows/author-comments.yml@a802d4ad866837e53971f984980beeb88b937da1 # v1
+    uses: ScottCooper92/binge-ci/.github/workflows/author-comments.yml@0c5177c6b9f591bf2d4c87a2d0d48d2680b4c398 # v1
     with:
       author_bot_id: ${{ vars.AUTHOR_BOT_ID }}
       maintainer_handle: ScottCooper92
