@@ -1,5 +1,9 @@
 package io.github.scottcooper92.binge.archive.ui.status
 
+import io.github.scottcooper92.binge.archive.resolve.LicenceLevel
+import io.github.scottcooper92.binge.archive.settings.MinimumQuality
+import io.github.scottcooper92.binge.archive.settings.SourceSettings
+
 /** A fixed "now" for every frame, so relative dates never drift: 17 October 2026, 09:00 UTC. */
 const val PREVIEW_NOW = 1_792_227_600_000L
 
@@ -34,3 +38,18 @@ val previewEmpty =
 val previewFailedRefreshing = previewReady.copy(lastRefreshFailed = true, refreshing = true, recent = emptyList(), reported = emptyList())
 
 val previewRefreshing = previewReady.copy(refreshing = true)
+
+/** Every Sources setting moved off its default. */
+val previewSourcesChanged =
+    previewReady.copy(
+        sources =
+            SourceSettings(
+                titleMatches = false,
+                licences = LicenceLevel.CREATIVE_COMMONS,
+                minimumQuality = MinimumQuality.HD_1080,
+                subtitlesInMyLanguage = true,
+            ),
+    )
+
+/** "Any, including no licence" picked, waiting on its confirm. */
+val previewConfirmingAny = previewReady.copy(confirmingAnyLicence = true)

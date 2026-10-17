@@ -12,7 +12,7 @@
     <string name="status_loading">Cargando el índice…</string>
     <string name="status_about_title">Qué es esto</string>
     <string name="status_about_headline">Películas gratis para Binge</string>
-    <string name="status_about_body">Esta app busca copias de películas en Internet Archive para que Binge las reproduzca. Solo ofrece obras de dominio público, con CC0 o con CC BY.</string>
+    <string name="status_about_body">Esta app busca copias de películas en Internet Archive para que Binge las reproduzca. De forma predeterminada solo ofrece obras de dominio público, con CC0 o con CC BY.</string>
     <string name="status_licences_row">Qué licencias</string>
     <string name="status_licences_detail">Qué se puede ofrecer y por qué</string>
     <string name="status_index_title">Índice</string>
@@ -24,6 +24,21 @@
     <string name="status_refresh_now">Actualizar ahora</string>
     <string name="status_refresh_waiting">Esperando una red…</string>
     <string name="status_sources_title">Con datos de</string>
+
+    <string name="settings_title">Fuentes</string>
+    <string name="settings_title_matches">Coincidencias por título</string>
+    <string name="settings_title_matches_detail">Pueden hallar copias mal licenciadas</string>
+    <string name="settings_licences">Licencias</string>
+    <string name="settings_licences_public_domain">Solo dominio público</string>
+    <string name="settings_licences_default">Dominio público y CC BY</string>
+    <string name="settings_licences_creative_commons">Cualquier licencia Creative Commons</string>
+    <string name="settings_licences_any">Cualquiera, incluso sin licencia</string>
+    <string name="settings_quality">Calidad mínima</string>
+    <string name="settings_quality_any">Cualquiera</string>
+    <string name="settings_subtitles">Solo copias con subtítulos en mi idioma</string>
+    <string name="settings_any_title">¿Incluir obras sin licencia?</string>
+    <string name="settings_any_message">Puede que las obras sin licencia indicada no tengan permiso para verse. Puedes volver a cambiarlo cuando quieras.</string>
+    <string name="settings_any_confirm">Incluirlas</string>
     <string name="status_recent_title">Resueltas hace poco</string>
     <string name="status_recent_empty">Nada todavía. Abre una película en Binge.</string>
     <string name="status_recent_clear">Borrar esta lista</string>
@@ -33,11 +48,11 @@
     <string name="status_reported_clear">Borrar denuncias</string>
 
     <string name="licences_title">Qué licencias</string>
-    <string name="licences_intro">Solo se ofrece una copia si Internet Archive la publica con una de estas licencias. Nada más se ofrece nunca, y ningún ajuste lo cambia.</string>
+    <string name="licences_intro">De forma predeterminada, solo se ofrece una copia si Internet Archive la publica con una de estas licencias. Fuentes, en la pantalla principal, permite restringirlo o ampliarlo.</string>
     <string name="licences_allowed">Permitidas</string>
     <string name="licences_pdm_detail">Marca de dominio público: sin derechos de autor conocidos en ningún país</string>
     <string name="licences_pd_us_detail">Dominio público de Creative Commons: sin derechos de autor en Estados Unidos</string>
     <string name="licences_cc0_detail">El titular renunció a todos sus derechos</string>
     <string name="licences_cc_by_detail">Se puede compartir, citando al autor</string>
-    <string name="licences_not_allowed">No se ofrecen: licencias de compartir igual, no comerciales o sin obras derivadas, ni obras sin licencia.</string>
+    <string name="licences_not_allowed">No se ofrecen de forma predeterminada: licencias de compartir igual, no comerciales o sin obras derivadas, ni obras sin licencia.</string>
 </resources>

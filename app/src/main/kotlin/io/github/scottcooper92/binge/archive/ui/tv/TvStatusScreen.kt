@@ -24,6 +24,10 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.ErrorKind
 import com.binge.designsystem.formatRelativeOrAbsolute
+import com.binge.designsystem.tv.component.TvCheckboxRow
+import com.binge.designsystem.tv.component.TvConfirmDialog
+import com.binge.designsystem.tv.component.TvConfirmDialogContent
+import com.binge.designsystem.tv.component.TvOptionGroup
 import com.binge.designsystem.tv.component.TvOptionRow
 import com.binge.designsystem.tv.component.TvSectionTitle
 import com.binge.designsystem.tv.template.TvErrorPage
@@ -33,13 +37,16 @@ import com.binge.designsystem.tv.template.TvTwoPanePage
 import com.binge.designsystem.tv.template.TvTwoPaneSplit
 import com.binge.designsystem.tv.template.TvTwoPaneStyle
 import io.github.scottcooper92.binge.archive.R
+import io.github.scottcooper92.binge.archive.ui.status.SettingChoice
+import io.github.scottcooper92.binge.archive.ui.status.SourceSettingChoices
 import io.github.scottcooper92.binge.archive.ui.status.StatusActions
 import io.github.scottcooper92.binge.archive.ui.status.StatusUiState
 import java.text.NumberFormat
 import com.binge.designsystem.R as DesR
 
 /**
- * The television's status screen: the same sections as the phone's, in two panes. A television
+ * The television's status screen: the same sections as the phone's, in two panes. The Sources settings
+ * apply in place as the user presses OK; "Any, including no licence" asks first, focus on Cancel. A television
  * usually has no browser, so the source and title rows say where they point rather than opening it.
  */
 @Composable
@@ -88,6 +95,8 @@ private fun ColumnScope.TvStatusRows(
             modifier = Modifier.focusRequester(entry),
         )
 
+        TvSourceSettings(state, actions)
+
         TvSectionTitle(stringResource(R.string.status_index_title))
         TvRow(
             stringResource(R.string.status_films_linked),
@@ -134,6 +143,82 @@ private fun ColumnScope.TvStatusRows(
             TvRow(stringResource(R.string.status_reported_clear), null, Icons.Outlined.ClearAll, onClick = actions.onClearReported)
         }
     }
+}
+
+/** The Sources settings on the television: a row or a group per setting, each applying as OK is pressed. */
+@Composable
+fun TvSourceSettings(
+    state: StatusUiState.Ready,
+    actions: StatusActions,
+) {
+    val settings = state.sources
+    if (state.confirmingAnyLicence) {
+        TvConfirmDialog(
+            title = stringResource(R.string.settings_any_title),
+            message = stringResource(R.string.settings_any_message),
+            confirmLabel = stringResource(R.string.settings_any_confirm),
+            onConfirm = actions.onConfirmAnyLicence,
+            onDismissRequest = actions.onCancelAnyLicence,
+            destructive = true,
+        )
+    }
+    TvSectionTitle(stringResource(R.string.settings_title))
+    TvCheckboxRow(
+        label = stringResource(R.string.settings_title_matches),
+        checked = settings.titleMatches,
+        onCheckedChange = actions.onTitleMatches,
+        icon = SourceSettingChoices.titleMatchesIcon,
+        supportingText = stringResource(R.string.settings_title_matches_detail),
+    )
+    TvSettingGroup(
+        title = stringResource(R.string.settings_licences),
+        choices = SourceSettingChoices.licences,
+        selected = settings.licences,
+        onSelect = actions.onLicences,
+    )
+    TvSettingGroup(
+        title = stringResource(R.string.settings_quality),
+        choices = SourceSettingChoices.qualities,
+        selected = settings.minimumQuality,
+        onSelect = actions.onMinimumQuality,
+    )
+    TvCheckboxRow(
+        label = stringResource(R.string.settings_subtitles),
+        checked = settings.subtitlesInMyLanguage,
+        onCheckedChange = actions.onSubtitlesInMyLanguage,
+        icon = SourceSettingChoices.subtitlesIcon,
+    )
+}
+
+@Composable
+private fun <T> TvSettingGroup(
+    title: String,
+    choices: List<SettingChoice<T>>,
+    selected: T,
+    onSelect: (T) -> Unit,
+) {
+    TvOptionGroup(
+        title = title,
+        choices = choices.map { it.value to stringResource(it.label) },
+        selected = selected,
+        onSelect = onSelect,
+        choiceIcon = { value -> choices.first { it.value == value }.icon },
+    )
+}
+
+/** The confirm "Any, including no licence" asks, without its window, as it first shows: focus on Cancel. */
+@Composable
+fun TvAnyLicenceConfirm(actions: StatusActions) {
+    TvConfirmDialogContent(
+        title = stringResource(R.string.settings_any_title),
+        message = stringResource(R.string.settings_any_message),
+        confirmLabel = stringResource(R.string.settings_any_confirm),
+        dismissLabel = stringResource(DesR.string.action_cancel),
+        destructive = true,
+        onConfirm = actions.onConfirmAnyLicence,
+        onDismissRequest = actions.onCancelAnyLicence,
+        initiallyDismissFocused = true,
+    )
 }
 
 /** One focusable row. A row with nothing to do still takes focus, so the remote can read it. */

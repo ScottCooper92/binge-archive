@@ -46,6 +46,18 @@ annotation class ArchiveScreenPreviews
 @Preview(name = "font20", device = PHONE_PORTRAIT_SPEC, fontScale = 2f, uiMode = UI_MODE_NIGHT_YES, locale = SOURCE_LOCALE)
 annotation class ArchiveFontScalePreviews
 
+/** A phone window at font scales 1.3 and 2.0, for a section that must not crop at either. */
+@PreviewWrapper(ArchiveScreenshotThemeWrapper::class)
+@Preview(name = "font13", device = PHONE_PORTRAIT_SPEC, fontScale = 1.3f, uiMode = UI_MODE_NIGHT_YES, locale = SOURCE_LOCALE)
+@Preview(name = "font20", device = PHONE_PORTRAIT_SPEC, fontScale = 2f, uiMode = UI_MODE_NIGHT_YES, locale = SOURCE_LOCALE)
+annotation class ArchiveSettingsFontScalePreviews
+
+/** A television screen root at font scales 1.3 and 2.0. */
+@PreviewWrapper(ArchiveTvScreenshotThemeOnBlackWrapper::class)
+@Preview(name = "tv-font13", device = TV_PREVIEW_SPEC, fontScale = 1.3f, uiMode = UI_MODE_NIGHT_YES, locale = SOURCE_LOCALE)
+@Preview(name = "tv-font20", device = TV_PREVIEW_SPEC, fontScale = 2f, uiMode = UI_MODE_NIGHT_YES, locale = SOURCE_LOCALE)
+annotation class ArchiveTvFontScalePreviews
+
 /** The phone cell alone, for a state of a screen whose layout frame has the matrix. */
 @PreviewWrapper(ArchiveScreenshotThemeWrapper::class)
 @Preview(name = "phone", device = PHONE_PORTRAIT_SPEC, uiMode = UI_MODE_NIGHT_YES, locale = SOURCE_LOCALE)

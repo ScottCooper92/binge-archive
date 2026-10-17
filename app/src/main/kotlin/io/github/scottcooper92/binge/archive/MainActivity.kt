@@ -44,7 +44,7 @@ class MainActivity : ComponentActivity() {
         val graph = (application as ArchiveApp).graph
         val factory =
             viewModelFactory {
-                initializer { StatusViewModel(graph.index, graph.records, graph.refresher) }
+                initializer { StatusViewModel(graph.index, graph.records, graph.refresher, graph.sourceSettings) }
             }
         setContent {
             val viewModel: StatusViewModel = viewModel(factory = factory)
@@ -59,6 +59,12 @@ class MainActivity : ComponentActivity() {
                     onOpenUrl = ::openUrl,
                     onClearRecent = viewModel::clearRecent,
                     onClearReported = viewModel::clearReported,
+                    onTitleMatches = viewModel::setTitleMatches,
+                    onLicences = viewModel::chooseLicences,
+                    onConfirmAnyLicence = viewModel::confirmAnyLicence,
+                    onCancelAnyLicence = viewModel::cancelAnyLicence,
+                    onMinimumQuality = viewModel::setMinimumQuality,
+                    onSubtitlesInMyLanguage = viewModel::setSubtitlesInMyLanguage,
                 )
             if (LocalConfiguration.current.isTelevision()) {
                 ArchiveTvTheme {
