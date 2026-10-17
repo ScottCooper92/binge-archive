@@ -1,0 +1,39 @@
+# The hash of every source string a locale translates, so an edit to the source cannot
+# pass silently while a translation still carries the old wording. Generated -
+# run ./gradlew updateTranslationHashes after re-reading the translations it names.
+app:licence_public_domain  8c3ff64bb211
+app:licence_public_domain_us  a32c095cfb93
+app:licences_allowed  1bb201d18835
+app:licences_cc0_detail  436eb814cead
+app:licences_cc_by_detail  455d9e3183df
+app:licences_intro  87c27ad80a60
+app:licences_not_allowed  56ec6482c019
+app:licences_pd_us_detail  b554bdac8d88
+app:licences_pdm_detail  fa0dc14a53ba
+app:licences_title  98f23bffb823
+app:not_on_archive  2aa792ffa5ed
+app:source_label_with_year  9c2342bd4115
+app:source_label_without_year  fed2d9b8a028
+app:status_about_body  d0c0a0662654
+app:status_about_headline  9e972aafcf77
+app:status_about_title  45d2766ee518
+app:status_films_linked  a27100c7547c
+app:status_index_title  39c3be1198a2
+app:status_last_refreshed  58095fd7c9e1
+app:status_licences_detail  1a2be978163a
+app:status_licences_row  98f23bffb823
+app:status_loading  de96814f63b9
+app:status_never_refreshed  a9549d7d0636
+app:status_recent_clear  2c8492fd9825
+app:status_recent_empty  60973aaa8ab8
+app:status_recent_title  c047368279b7
+app:status_refresh_failed  1731c4b38f45
+app:status_refresh_failed_detail  e74ac6d1d2d9
+app:status_refresh_now  148677068467
+app:status_refresh_waiting  658137b8971d
+app:status_reported_clear  927e7bb74312
+app:status_reported_detail  00f5e4c456ee
+app:status_reported_empty  ab7ebf8d09e3
+app:status_reported_title  34540bb7b089
+app:status_sources_title  fdc5d2e9410c
+app:subtitle_automatic  2169be84eaed

@@ -43,6 +43,17 @@ interface IndexDao {
     @Query("SELECT * FROM refresh_log ORDER BY id DESC LIMIT 1")
     suspend fun lastRefresh(): RefreshLogEntity?
 
+    @Query("SELECT * FROM refresh_log ORDER BY id DESC LIMIT 1")
+    fun latestRefresh(): Flow<RefreshLogEntity?>
+
+    /** Films the index can place: a Wikidata film link, or an Archive item tagged with a film's IMDb id. */
+    @Query(
+        "SELECT COUNT(*) FROM (" +
+            "SELECT tmdb_id FROM wikidata_link WHERE media_type = 'MOVIE' AND is_film = 1 " +
+            "UNION SELECT tmdb_id FROM archive_imdb WHERE tmdb_id IS NOT NULL AND is_film = 1)",
+    )
+    fun filmCount(): Flow<Int>
+
     @Query("DELETE FROM wikidata_link")
     suspend fun deleteLinks()
 

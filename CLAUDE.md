@@ -18,9 +18,9 @@ wire format is a PR against binge-companions.
 The plan is binge-companions' epic
 [#141](https://github.com/ScottCooper92/binge-companions/issues/141) and its phases there,
 #142 to #149.
-Status is pre-alpha: the index, the resolver and the exported Service are in. The app's own screens
-(#146) and release readiness (#147) are still to come, and the Service has yet to be checked against
-Binge on a device.
+Status is pre-alpha: the index, the resolver, the exported Service and the app's own screens are in.
+Release readiness (#147) is still to come, and the Service has yet to be checked against Binge on a
+device.
 
 The contracts, the SDK and the design system are consumed as source. `binge-companions/` and
 `design-system/` are git submodules, included as composite builds in `settings.gradle.kts`.
@@ -105,7 +105,8 @@ Rules that hold it together:
   writes `assets/index/seed.tsv`. Offline it writes nothing and the build goes on; the app then starts
   empty until its first refresh. A seed under a week old is reused; `-Parchive.skipSeed` skips it.
   Tests never depend on the live seed: `SeedAssetTest` skips itself when a build has none.
-- The seed is loaded on the first lookup, and only when the log is empty, so it never overwrites a
+- The seed is loaded before the first read of any kind (a lookup, Probe, the status screen or the
+  refresh worker), off the caller's thread, and only when the log is empty, so it never overwrites a
   newer index.
 - The status screen's freshness is `refresh_log`'s last success (`IndexRepository.lastSuccess()`).
 - The Room schema is exported to `app/schemas` and committed. The database falls back to a
@@ -161,13 +162,33 @@ action with the SDK's manifest meta-data (`com.binge.companion.name`, `.icon`, `
 - **`ReportSource`** takes a `source_id` of the form `<identifier>/<file name>`, the identifier in
   the Archive's character set; anything else is `INVALID_ARGUMENT`. The index is not consulted, so
   an item found by any route can be reported. The report is stored on the device
-  (`reports.db`, separate from the index) and pushes that item after every other for 30 days.
+  (`device-records.db`, separate from the index) and pushes that item after every other for 30 days.
 - A gated rpc checks its capability with a STREAM `requireDeclared`, the twin of the SDK's
   REQUEST-typed one.
 - **Who may bind:** a release build pins Binge's published certificate (`HostPolicy.pinned` with
   `BingeHosts.release`). A debug build admits Binge's package names under any certificate
   (`HostPolicy.anyCertificateOf`) plus this app's own uid, chosen by `BuildConfig.DEBUG` and
   nothing a user can switch.
+
+## The app's own screens
+
+A companion's UI is for what only it can do. With nothing to sign in to, this one is a status screen,
+its licence page, and the hand-off Binge's "manage" row starts:
+
+- **`ui/status`**: `StatusViewModel` exposes one `StateFlow<StatusUiState>`, a sealed `Loading`,
+  `Ready` or `Error`, never a set of flags. `StatusScreen` (phone) and `ui/tv/TvStatusScreen` take the
+  state and a `StatusActions`, so every arm renders in a frame. Sections: what this is (and the
+  licence page), the index (films linked, last refresh, a failed refresh, "Refresh now"), who the
+  data comes from, recently resolved titles, and reported copies.
+- **Recently resolved and reported** live in `device-records.db` (`reports/DeviceRecords.kt`), on
+  the device only, never shown to the host. Each list has a clear action.
+- **`SettingsHandOffActivity`** answers `CompanionManifest.ACTION_SETTINGS`. It checks its caller
+  with the SDK's `HandOffPolicy` (the same pins as the Service) and opens `MainActivity`. A start
+  with no calling package opens nothing.
+- **No browse, no search, and no setting that changes what is resolved.** Not a quality preference,
+  and never a licence toggle.
+- Everything is the design system's: `ItemGroup` rows on the phone, `TvTwoPanePage` and
+  `TvOptionRow` on the television. The brand colour is chosen once, in `theme/`.
 
 ## Talking to Wikidata and the Archive
 
@@ -182,8 +203,8 @@ action with the SDK's manifest meta-data (`com.binge.companion.name`, `.icon`, `
 - No caching beyond the on-device index.
 - **Coverage misses are logged on the device, by route**, for binge-companions#148's measurement.
   They never leave the device: no analytics, no crash reporting and no upload of any kind.
-- The app stores no user data beyond the user's own source reports, kept on the device in
-  `reports.db`. The index is public metadata it can rebuild. Backup is off.
+- The app stores no user data beyond the user's own source reports and the last ten titles it
+  resolved, kept on the device in `device-records.db`. The index is public metadata it can rebuild. Backup is off.
 
 ## Kotlin, Gradle and Android
 
@@ -203,7 +224,8 @@ action with the SDK's manifest meta-data (`com.binge.companion.name`, `.icon`, `
   `qualifiers` string say.
 - `runCatching` is banned in `src/main` by detekt. Use the SDK's `attempt`
   (`com.binge.companion.sdk`): `runCatching` also catches the cancellation a cancelled scope sends.
-- Every user-visible string comes from `strings.xml`. The app is English only for now.
+- Every user-visible string comes from `strings.xml`, with its Spanish in `values-es`. The default
+  locale is en-GB (`res/resources.properties`).
 
 ## Gates
 
@@ -215,7 +237,11 @@ where to confirm the list.
 - `ktlintCheck`.
 - `detekt`, with type resolution, against the root `detekt.yml`. There is no baseline: the gate is
   zero findings. Keep it that way rather than creating one.
-- Android lint (`:app:lint`), with `UnusedResources` pinned to error.
+- Android lint (`:app:lint`). The translation checks (`MissingTranslation`, `ExtraTranslation` and the
+  format and quantity checks) and `UnusedResources` are pinned to error: a locale is complete or it
+  does not exist, so an English string added without its Spanish is a red build.
+- `checkTranslationStaleness`: a reworded English string whose Spanish was not re-read. Re-read it,
+  then `./gradlew updateTranslationHashes` and commit `translation-hashes.txt`.
 - `koverVerify`: line coverage below **95%** in `:app` or in `:index`. The floors were measured
   (98.8% in each when the index landed), not inherited. Excluded: generated code (Room's, BuildConfig),
   the Activity, the Application and `AppGraph` (wiring), composables, and `:index`'s `SeedMain` (the
@@ -226,7 +252,7 @@ where to confirm the list.
 - `checkTvMaterialSeparation`: a Material 3 import under `ui/tv`, or a tv-material import anywhere
   else. `theme/ArchiveTheme.kt` is the one allowed crossing.
 
-detekt's wiring and `checkTvMaterialSeparation` are binge-ci's shared gates, from the `binge-ci`
+detekt's wiring, `checkTranslationStaleness` and `checkTvMaterialSeparation` are binge-ci's shared gates, from the `binge-ci`
 submodule. Keep that submodule on the same binge-ci release as the `uses:` pins in
 `.github/workflows/`, and move them together.
 
@@ -244,7 +270,8 @@ Frames live in `app/src/screenshotTest/kotlin/…`, each a `@Composable` with `@
 of the multipreviews in `preview/ArchivePreviewMatrices.kt`. The PNGs are committed under
 `app/src/screenshotTestDebug/reference/…`. When a change is meant to alter a frame, re-record with
 `./gradlew :app:updateDebugScreenshotTest`, look at the new PNGs, and commit them with the code.
-New UI comes with its frames in the same PR.
+New UI comes with its frames in the same PR, every state arm included. Frames pin the locale
+(`SOURCE_LOCALE`, or `es` for the Spanish cells) and a fixed `now`, so nothing drifts.
 
 **Never silence a gate instead of fixing it.** Do not add a ktlint baseline or a `ktlint-disable`
 comment (`./gradlew ktlintFormat` is the fix), a `lint-baseline.xml`, `abortOnError = false`, a

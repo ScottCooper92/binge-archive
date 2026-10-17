@@ -24,6 +24,7 @@ composeBom = "2026.08.00"
 # the BOM's stable line does not have, and resolution would otherwise pick one of the two silently.
 material3 = "1.5.0-alpha29"
 activityCompose = "1.13.0"
+lifecycle = "2.11.0"
 androidxTestCore = "1.7.0"
 okhttp = "5.4.0"
 kotlinxSerializationJson = "1.11.0"
@@ -51,6 +52,8 @@ compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview"
 # The renderer the screenshot frames run under; version from the BOM.
 compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 compose-material3 = { module = "androidx.compose.material3:material3", version.ref = "material3" }
+lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 androidx-test-core = { module = "androidx.test:core", version.ref = "androidxTestCore" }

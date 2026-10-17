@@ -1,5 +1,6 @@
 package io.github.scottcooper92.binge.archive.index
 
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -157,4 +158,59 @@ class IndexRepositoryTest {
             assertEquals(RefreshSource.NETWORK, index.lastSuccess().first()?.source)
             assertEquals(3_000L, index.lastSuccess().first()?.finishedAt)
         }
+
+    @Test
+    fun `the film count and the latest refresh are read for the status screen`() =
+        runTest {
+            val index = repository()
+            // 653, 10331 and 2973 (through its IMDb id), plus the 10331 the IMDb route also reaches: three films.
+            assertEquals(3, index.filmCount().first())
+
+            now = 2_000L
+            index.recordFailure("offline")
+
+            assertEquals(3, index.filmCount().first())
+            assertFalse(checkNotNull(index.latestRefresh().first()).succeeded)
+        }
+
+    @Test
+    fun `each status screen read loads the seed first, on a fresh install`() =
+        runTest {
+            assertEquals(3, repository().filmCount().first())
+        }
+
+    @Test
+    fun `the last refresh read loads the seed first`() =
+        runTest {
+            assertEquals(RefreshSource.SEED, checkNotNull(repository().lastSuccess().first()).source)
+        }
+
+    @Test
+    fun `the latest refresh read loads the seed first`() =
+        runTest {
+            assertTrue(checkNotNull(repository().latestRefresh().first()).succeeded)
+            assertEquals(1, seedLoads)
+        }
+
+    @Test
+    fun `the seed is read on the seed context, not the caller's thread`() {
+        val executor =
+            java.util.concurrent.Executors
+                .newSingleThreadExecutor { Thread(it, "seed-io") }
+        try {
+            var readOn: String? = null
+            val index =
+                IndexRepository(
+                    dao,
+                    seed = { sampleSnapshot.also { readOn = Thread.currentThread().name } },
+                    seedContext = executor.asCoroutineDispatcher(),
+                )
+
+            kotlinx.coroutines.runBlocking { index.ensureSeeded() }
+
+            assertTrue("read on $readOn", readOn.orEmpty().startsWith("seed-io"))
+        } finally {
+            executor.shutdownNow()
+        }
+    }
 }

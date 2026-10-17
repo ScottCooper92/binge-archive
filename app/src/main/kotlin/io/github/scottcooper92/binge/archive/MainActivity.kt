@@ -1,35 +1,98 @@
 package io.github.scottcooper92.binge.archive
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.scottcooper92.binge.archive.theme.ArchiveTheme
 import io.github.scottcooper92.binge.archive.theme.ArchiveTvTheme
-import io.github.scottcooper92.binge.archive.ui.HomeScreen
-import io.github.scottcooper92.binge.archive.ui.tv.TvHomeScreen
+import io.github.scottcooper92.binge.archive.ui.status.LicenceScreen
+import io.github.scottcooper92.binge.archive.ui.status.StatusActions
+import io.github.scottcooper92.binge.archive.ui.status.StatusScreen
+import io.github.scottcooper92.binge.archive.ui.status.StatusViewModel
+import io.github.scottcooper92.binge.archive.ui.tv.TvLicenceScreen
+import io.github.scottcooper92.binge.archive.ui.tv.TvStatusScreen
 import io.github.scottcooper92.binge.archive.ui.tv.isTelevision
 
-/** The app's own UI: the phone surface under the design system's theme, or the TV one on a television. */
+/**
+ * The app's own UI: the status screen, and the licence page it opens. A phone wears the design
+ * system's theme; a television gets the TV pages under its TV theme.
+ */
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val graph = (application as ArchiveApp).graph
+        val factory =
+            viewModelFactory {
+                initializer { StatusViewModel(graph.index, graph.records, graph.refresher) }
+            }
         setContent {
+            val viewModel: StatusViewModel = viewModel(factory = factory)
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
+            var showingLicences by rememberSaveable { mutableStateOf(false) }
+            BackHandler(enabled = showingLicences) { showingLicences = false }
+            val actions =
+                StatusActions(
+                    onRefreshNow = viewModel::refreshNow,
+                    onRetry = viewModel::retry,
+                    onOpenLicences = { showingLicences = true },
+                    onOpenUrl = ::openUrl,
+                    onClearRecent = viewModel::clearRecent,
+                    onClearReported = viewModel::clearReported,
+                )
             if (LocalConfiguration.current.isTelevision()) {
-                ArchiveTvTheme { TvHomeScreen() }
+                ArchiveTvTheme {
+                    if (showingLicences) TvLicenceScreen() else TvStatusScreen(state, actions)
+                }
             } else {
                 ArchiveTheme {
-                    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                        HomeScreen()
+                    PhoneSurface {
+                        if (showingLicences) {
+                            LicenceScreen(onBack = { showingLicences = false })
+                        } else {
+                            StatusScreen(state, actions)
+                        }
                     }
                 }
             }
         }
     }
+
+    /** Opens [url] in the browser. A device with none, a television usually, keeps the user here. */
+    private fun openUrl(url: String) {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        } catch (e: ActivityNotFoundException) {
+            Log.i(TAG, "No browser for $url", e)
+        }
+    }
+
+    private companion object {
+        const val TAG = "ArchiveMain"
+    }
+}
+
+@Composable
+private fun PhoneSurface(content: @Composable () -> Unit) {
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background, content = content)
 }

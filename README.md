@@ -18,7 +18,8 @@ holds an openly licensed copy, Binge offers it to play, and names the licence on
   backups. If you tell Binge a copy did not play, this app remembers that on your device for 30 days
   and offers that copy last.
 
-The app itself has one screen, which says what it does. You find films from Binge.
+The app itself has one screen: what it does, how fresh its index is, the films it found for you
+recently and any copies you reported. You find films from Binge. The app speaks English and Spanish.
 
 ## For the person writing a companion
 
@@ -33,8 +34,8 @@ against the film's runtime. It keeps only items with an allowed licence, and map
 to sources. The plan is
 [binge-companions#141](https://github.com/ScottCooper92/binge-companions/issues/141).
 
-Status is pre-alpha. The index, the resolver and the STREAM Service are in; the app's own screens
-and the release follow.
+Status is pre-alpha. The index, the resolver, the STREAM Service and the app's screens are in; the
+release follows.
 
 ## Building
 

@@ -29,6 +29,7 @@ class ResolverTest {
     private val archive = FakeArchive()
     private val database = inMemoryIndex()
     private val misses = mutableListOf<CoverageMiss>()
+    private val resolved = mutableListOf<Triple<Int, String, String>>()
 
     private val seed =
         IndexSnapshot(
@@ -51,6 +52,7 @@ class ResolverTest {
                 ItemReader(http),
                 SourceMapper(testStrings),
                 misses::add,
+                recordResolved = { tmdbId, title, identifier -> resolved += Triple(tmdbId, title, identifier) },
             )
         }
 
@@ -85,6 +87,7 @@ class ResolverTest {
                 },
             )
             assertEquals(emptyList<CoverageMiss>(), misses)
+            assertEquals(listOf(Triple(10331, "Night of the Living Dead", "Night.Of.The.Living.Dead_1080p")), resolved)
         }
 
     @Test

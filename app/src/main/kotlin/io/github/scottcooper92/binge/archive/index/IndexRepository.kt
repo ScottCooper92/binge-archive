@@ -3,13 +3,17 @@ package io.github.scottcooper92.binge.archive.index
 import com.binge.companion.contracts.v1.MediaId
 import com.binge.companion.contracts.v1.MediaType
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 
 /**
  * The on-device index: Probe's answers and the resolver's first two routes.
  *
- * A fresh install starts from the seed the APK ships ([seed]), loaded on the first lookup. The
+ * A fresh install starts from the seed the APK ships ([seed]), loaded before the first read. The
  * weekly refresh replaces it. A failed refresh is logged and changes nothing else: the previous
  * index stays, and nothing is ever deleted except by a successful replace.
  */
@@ -17,6 +21,8 @@ class IndexRepository(
     private val dao: IndexDao,
     private val seed: () -> IndexSnapshot?,
     private val clock: () -> Long = System::currentTimeMillis,
+    /** Where the seed is read and parsed: a 450 KB asset, kept off the caller's thread. */
+    private val seedContext: CoroutineContext = EmptyCoroutineContext,
 ) {
     private val seeding = Mutex()
 
@@ -34,8 +40,14 @@ class IndexRepository(
         }
     }
 
+    /** The most recent refresh, successful or not: a failed one is what the status screen warns about. */
+    fun latestRefresh(): Flow<RefreshLogEntity?> = dao.latestRefresh().onStart { ensureSeeded() }
+
+    /** How many films the index can place. */
+    fun filmCount(): Flow<Int> = dao.filmCount().onStart { ensureSeeded() }
+
     /** The last successful refresh, seed or network; what the status screen shows as freshness. */
-    fun lastSuccess(): Flow<RefreshLogEntity?> = dao.lastSuccess()
+    fun lastSuccess(): Flow<RefreshLogEntity?> = dao.lastSuccess().onStart { ensureSeeded() }
 
     /** Replaces the whole index with [snapshot] and logs it as a successful refresh. */
     suspend fun replace(
@@ -81,15 +93,16 @@ class IndexRepository(
 
     /**
      * Loads the seed if nothing has ever been loaded. A refresh in the log means the seed was
-     * offered already, so it is never loaded over a newer index. That holds because every writer
-     * calls this first: lookups do, and so does the refresh worker, before it fetches or logs a
-     * failure. A failed refresh therefore never leaves the seed unloaded.
+     * offered already, so it is never loaded over a newer index. That holds because every reader
+     * and writer calls this first: lookups (and so Probe and the resolver), the status screen's
+     * flows, and the refresh worker before it fetches or logs a failure. A failed refresh therefore
+     * never leaves the seed unloaded, and nothing reads an index the seed has not reached yet.
      */
     suspend fun ensureSeeded() {
         if (seeded) return
         seeding.withLock {
             if (seeded) return
-            if (dao.refreshCount() == 0) seed()?.let { replace(it, RefreshSource.SEED) }
+            if (dao.refreshCount() == 0) withContext(seedContext) { seed() }?.let { replace(it, RefreshSource.SEED) }
             seeded = true
         }
     }

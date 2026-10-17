@@ -2,16 +2,19 @@ package io.github.scottcooper92.binge.archive
 
 import android.content.Context
 import androidx.work.ListenableWorker
+import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import io.github.scottcooper92.binge.archive.index.ArchiveHttp
 import io.github.scottcooper92.binge.archive.index.IndexDatabase
 import io.github.scottcooper92.binge.archive.index.IndexFetcher
 import io.github.scottcooper92.binge.archive.index.IndexRefreshWorker
+import io.github.scottcooper92.binge.archive.index.IndexRefresher
 import io.github.scottcooper92.binge.archive.index.IndexRepository
+import io.github.scottcooper92.binge.archive.index.WorkManagerIndexRefresher
 import io.github.scottcooper92.binge.archive.index.readSeed
-import io.github.scottcooper92.binge.archive.reports.ReportDatabase
-import io.github.scottcooper92.binge.archive.reports.SourceReports
+import io.github.scottcooper92.binge.archive.reports.DeviceRecords
+import io.github.scottcooper92.binge.archive.reports.DeviceRecordsDatabase
 import io.github.scottcooper92.binge.archive.resolve.ItemFinder
 import io.github.scottcooper92.binge.archive.resolve.ItemReader
 import io.github.scottcooper92.binge.archive.resolve.LogcatCoverageLog
@@ -39,10 +42,15 @@ class AppGraph(
 
     private val database: IndexDatabase by lazy { IndexDatabase.open(appContext) }
 
-    val index: IndexRepository by lazy { IndexRepository(database.indexDao(), seed = { appContext.assets.readSeed() }) }
+    val index: IndexRepository by lazy {
+        IndexRepository(database.indexDao(), seed = { appContext.assets.readSeed() }, seedContext = io)
+    }
 
-    /** The user's source reports, on this device only. */
-    val reports: SourceReports by lazy { SourceReports(ReportDatabase.open(appContext).reportDao()) }
+    /** What this device remembers of its own use: source reports and recently resolved titles. */
+    val records: DeviceRecords by lazy { DeviceRecords(DeviceRecordsDatabase.open(appContext).dao()) }
+
+    /** The status screen's "Refresh now", on the same worker as the weekly refresh. */
+    val refresher: IndexRefresher by lazy { WorkManagerIndexRefresher(WorkManager.getInstance(appContext)) }
 
     /** Resolves a title to sources: the index, then Wikidata and the Archive. */
     val resolver: Resolver by lazy {
@@ -53,7 +61,8 @@ class AppGraph(
             ItemReader(http),
             SourceMapper(SourceStrings.from(appContext)),
             LogcatCoverageLog,
-            deranked = reports::deranked,
+            deranked = records::deranked,
+            recordResolved = records::recordResolved,
         )
     }
 

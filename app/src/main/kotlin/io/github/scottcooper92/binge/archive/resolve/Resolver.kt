@@ -58,6 +58,8 @@ class Resolver(
     private val mapper: SourceMapper,
     private val coverage: CoverageLog,
     private val deranked: suspend () -> Set<String> = { emptySet() },
+    /** Told of each resolve that found sources: the TMDB id, the title and the first source's Archive item. */
+    private val recordResolved: suspend (tmdbId: Int, title: String, identifier: String) -> Unit = { _, _, _ -> },
 ) : TitleResolver {
     override suspend fun resolve(
         media: MediaId,
@@ -97,6 +99,11 @@ class Resolver(
             when {
                 items.isEmpty() -> coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.NO_LICIT_ITEM))
                 sources.isEmpty() -> coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.NO_PLAYABLE_FILE))
+                else -> {
+                    val identifier = sources.first().id.substringBefore('/')
+                    val title = found.facts.title ?: items.firstOrNull { it.item.identifier == identifier }?.item?.title ?: identifier
+                    recordResolved(tmdbId, title, identifier)
+                }
             }
             sources.asFlow().collect { emit(it) }
         }
