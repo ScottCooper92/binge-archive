@@ -157,8 +157,9 @@ action with the SDK's manifest meta-data (`com.binge.companion.name`, `.icon`, `
   message, before or after sources were sent.
 - **`Probe`** reads the index and never the network. It refuses what `Resolve` refuses, and a
   valid series is `NOT_FOUND`.
-- **`ReportSource`** takes a `source_id` of the form `<identifier>/<file name>` naming an item the
-  index knows; anything else is `INVALID_ARGUMENT`. The report is stored on the device
+- **`ReportSource`** takes a `source_id` of the form `<identifier>/<file name>`, the identifier in
+  the Archive's character set; anything else is `INVALID_ARGUMENT`. The index is not consulted, so
+  an item found by any route can be reported. The report is stored on the device
   (`reports.db`, separate from the index) and pushes that item after every other for 30 days.
 - A gated rpc checks its capability with a STREAM `requireDeclared`, the twin of the SDK's
   REQUEST-typed one.
