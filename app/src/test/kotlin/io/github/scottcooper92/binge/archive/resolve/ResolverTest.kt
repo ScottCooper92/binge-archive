@@ -294,11 +294,27 @@ class ResolverTest {
         }
 
     @Test
-    fun `a Wikidata failure fails the resolve, for the host to retry`() =
+    fun `a Wikidata failure on a film the index does not know fails the resolve, for the host to retry`() =
         runTest {
-            archive.sparql = { throw IllegalStateException("down") }
+            archive.sparqlStatus = 503
 
-            val failure = runCatching { sources(resolver.resolve(movie(10331), episode = null)).toList() }.exceptionOrNull()
+            val failure = runCatching { resolver.resolve(movie(99), episode = null) }.exceptionOrNull()
             assertTrue(failure.toString(), failure is java.io.IOException)
+            assertEquals(emptyList<String>(), archive.searches)
+        }
+
+    @Test
+    fun `a Wikidata failure on a film the index knows resolves from the index's Archive ids`() =
+        runTest {
+            archive.sparqlStatus = 503
+            archive.search = { resolveFixture("search-downloads-10331.json") }
+
+            val sources = sources(resolver.resolve(movie(10331), episode = null)).toList()
+
+            assertEquals(3, sources.size)
+            assertTrue(sources.all { it.id.startsWith("Night.Of.The.Living.Dead_1080p/") })
+            // With no Wikidata facts, the label is the item's own title, and no year.
+            assertTrue(sources.first().label, sources.first().label.startsWith("Night of the Living Dead · "))
+            assertEquals(listOf(CoverageMiss(10331, Route.WIKIDATA, CoverageMiss.Reason.WIKIDATA_FAILED)), misses)
         }
 }

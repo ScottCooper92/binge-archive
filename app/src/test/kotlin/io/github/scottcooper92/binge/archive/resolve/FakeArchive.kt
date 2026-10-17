@@ -29,6 +29,9 @@ internal class FakeArchive(
     /** Holds an item's metadata answer until its latch is released, for the streaming test. */
     val metadataGates = mutableMapOf<String, java.util.concurrent.CountDownLatch>()
 
+    /** When set, Wikidata answers every query with this status and no body: a failed query. */
+    var sparqlStatus: Int? = null
+
     /** Holds every SPARQL answer back this long, for the cancellation test. */
     var sparqlDelaySeconds = 0L
 
@@ -38,6 +41,7 @@ internal class FakeArchive(
                 override fun dispatch(request: RecordedRequest): MockResponse {
                     val path = request.url.encodedPath
                     return when {
+                        path == "/sparql" && sparqlStatus != null -> MockResponse(code = checkNotNull(sparqlStatus))
                         path == "/sparql" ->
                             MockResponse
                                 .Builder()

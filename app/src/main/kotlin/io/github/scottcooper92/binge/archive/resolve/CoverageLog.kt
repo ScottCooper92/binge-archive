@@ -26,6 +26,9 @@ data class CoverageMiss(
 
         /** Licit items were found, with no playable video file. */
         NO_PLAYABLE_FILE,
+
+        /** Wikidata failed, and [route]'s candidates are the index's Archive ids instead. */
+        WIKIDATA_FAILED,
     }
 }
 

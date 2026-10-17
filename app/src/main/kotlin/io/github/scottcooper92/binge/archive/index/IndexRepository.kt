@@ -11,7 +11,8 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
 /**
- * The on-device index: Probe's answers and the resolver's first two routes.
+ * The on-device index: Probe's answers, the resolver's film check, and the resolver's fallback for
+ * its first two routes when the live Wikidata query fails.
  *
  * A fresh install starts from the seed the APK ships ([seed]), loaded before the first read. The
  * weekly refresh replaces it. A failed refresh is logged and changes nothing else: the previous
