@@ -112,8 +112,24 @@ class ItemFinderTest {
             val found = ItemFinder(archive.http()).find(1)
 
             assertEquals(Route.TITLE, found.route)
-            assertEquals(listOf("unlicensed"), found.candidates.map { it.identifier })
+            assertEquals(listOf("unlicensed", "flaky"), found.candidates.map { it.identifier })
+            assertEquals(setOf("unlicensed"), found.preloaded.keys)
         }
+
+    @Test
+    fun `an unlicensed title match beside one that failed to load fails the read, not answers empty`() {
+        archive.sparql = { facts(runtime = "60") }
+        archive.search = { searchResponse("unlicensed" to 3L, "flaky" to 2L) }
+        archive.metadataBodies["unlicensed"] = withVideo(lengthSeconds = 3600)
+        archive.metadataStatus["flaky"] = 503
+
+        assertThrows(IOException::class.java) {
+            kotlinx.coroutines.runBlocking {
+                val http = archive.http()
+                ItemReader(http).read(ItemFinder(http).find(1))
+            }
+        }
+    }
 
     @Test
     fun `with no runtime to check against, the title route is skipped`() =
