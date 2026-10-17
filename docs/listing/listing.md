@@ -50,7 +50,7 @@ README.
 >
 > Open source, under the Apache 2.0 licence: github.com/ScottCooper92/binge-archive.
 
-(About 1,500 characters)
+(About 1,550 characters)
 
 ## Category and contact
 
