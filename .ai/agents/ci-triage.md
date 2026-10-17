@@ -4,16 +4,17 @@ Maps a red CI run to its correct fix. `author-ci-fix.yml` reads this file from `
 the table below. It gets one repair attempt per commit, so a guess is expensive and stopping is cheap.
 
 CI runs the tasks of `./gradlew build` as four jobs in parallel, checks the submodule pins in a fifth
-on a PR, then aggregates them in a last one. `.github/workflows/ci.yml` is the source of truth:
+on a PR, lints the workflows in a sixth, then aggregates them in a last one. `.github/workflows/ci.yml` is the source of truth:
 
 | Job | Runs |
 | --- | --- |
 | `submodule-pins` | On a PR only: binge-ci's check that every submodule pin is merged upstream, unless the PR carries `hold` |
+| `actionlint` | Lints the workflows, including the callers of reusable workflows. Skipped on the nightly schedule |
 | `checks` | `./gradlew build` minus the tasks the next three jobs own: Kotlin compile, `ktlintCheck`, `detekt`, Android `lint`, `checkTvMaterialSeparation`, the debug assemble, `checkTranslationStaleness`, and `:index:test` with `:index:koverVerify` |
 | `tests` | `:app:testDebugUnitTest` and `:app:koverVerify` |
 | `screenshots` | `:app:validateDebugScreenshotTest` |
 | `release` | `:app:assembleRelease`: R8 and lint-vital |
-| `build` | Nothing of its own. Green only if the other five are. Merges the four Gradle jobs' reports into one `build-reports` artifact |
+| `build` | Nothing of its own. Green only if the other six are. Merges the four Gradle jobs' reports into one `build-reports` artifact |
 
 `build` is the check branch protection requires, and the one `author-ci-fix.yml` reads. Its log only
 says which job failed. Read the failing job's log: that is where the error is.

@@ -140,7 +140,9 @@ query (step 3): they keep the index's order.
    A title match counts as found only if a video file runs within 8% of the runtime, checked
    before any licence. If none qualifies and any failed to load, the resolve fails, never
    `NotFound`.
-   Wikidata is always asked first, since only it gives the title, year and runtime. If that query
+   Wikidata is always asked first, since only it gives the title, year and runtime. That query has
+   its own budget of 4 s (`ResolverHttp`), well inside the host's 10 s deadline, and running out of it
+   is an `IOException` like any other failure. If that query
    fails, the index hit's Archive ids stand in: its Wikidata ids as route 1, else its IMDb-tagged ids
    as route 2. They are read with no title facts, so the label takes the item's own title, and the
    minimum length is off. The licence check still applies. The fallback is logged as a
@@ -215,7 +217,8 @@ its licence page, and the hand-off Binge's "manage" row starts:
 - **Keyless.** No API key, no account and no sign-in, and no TMDB fallback: binge-companions#148
   measured what one could add, and the maintainer decided the app stays keyless.
 - One HTTP client for the whole app (`ArchiveHttp.client`), with fixed timeouts: 10 s to connect,
-  20 s to read. Every request names the app in its User-Agent, as Wikimedia asks. Both hosts are
+  20 s to read. The weekly refresh keeps both. The resolver's Wikidata query alone gets a 4 s budget
+  (`ResolverHttp.SPARQL_BUDGET_MILLIS`), since the host cancels at 10 s. Every request names the app in its User-Agent, as Wikimedia asks. Both hosts are
   public and served over HTTPS; the network security config trusts system CAs only and refuses
   cleartext.
 - Keep each Wikidata query well inside the read timeout. A subclass walk per row made the link query
@@ -284,7 +287,8 @@ submodule. Keep that submodule on the same binge-ci release as the `uses:` pins 
 CI runs the same tasks as four jobs in parallel (`checks`, `tests`, `screenshots`, `release`;
 `:index`'s tests and coverage run in `checks`), plus
 `submodule-pins` on a PR, which fails a pin its own repository has not merged unless the PR carries
-`hold`. A last job, `build`, is green only if all of them are. It is the check branch protection
+`hold`, and `actionlint`, which lints the workflows and is skipped on the nightly schedule. A last
+job, `build`, is green only if all of them are. It is the check branch protection
 requires, and the one the bots read. `ci.yml` explains the split.
 
 There is no `buf` here, so do not report a finding as though one had caught it.
