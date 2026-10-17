@@ -14,6 +14,12 @@ interface IndexDao {
         tmdbId: Int,
     ): List<WikidataLinkEntity>
 
+    @Query(
+        "SELECT EXISTS(SELECT 1 FROM wikidata_link WHERE archive_id = :identifier) " +
+            "OR EXISTS(SELECT 1 FROM archive_imdb WHERE archive_id = :identifier)",
+    )
+    suspend fun knowsItem(identifier: String): Boolean
+
     @Query("SELECT * FROM archive_imdb WHERE tmdb_id = :tmdbId ORDER BY archive_id")
     suspend fun archiveItems(tmdbId: Int): List<ArchiveImdbEntity>
 

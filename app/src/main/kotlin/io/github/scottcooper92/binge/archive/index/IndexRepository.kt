@@ -34,6 +34,12 @@ class IndexRepository(
         }
     }
 
+    /** Whether the index has ever linked the Archive item [identifier] to a title. */
+    suspend fun knowsItem(identifier: String): Boolean {
+        ensureSeeded()
+        return dao.knowsItem(identifier)
+    }
+
     /** The last successful refresh, seed or network; what the status screen shows as freshness. */
     fun lastSuccess(): Flow<RefreshLogEntity?> = dao.lastSuccess()
 

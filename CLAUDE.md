@@ -18,7 +18,9 @@ wire format is a PR against binge-companions.
 The plan is binge-companions' epic
 [#141](https://github.com/ScottCooper92/binge-companions/issues/141) and its phases there,
 #142 to #149.
-Status is pre-alpha: the on-device index and the resolver are in; the Service is still to come.
+Status is pre-alpha: the index, the resolver and the exported Service are in. The app's own screens
+(#146) and release readiness (#147) are still to come, and the Service has yet to be checked against
+Binge on a device.
 
 The contracts, the SDK and the design system are consumed as source. `binge-companions/` and
 `design-system/` are git submodules, included as composite builds in `settings.gradle.kts`.
@@ -138,6 +140,31 @@ catalogue, one the routes found but the index did not know, and a resolve that e
 `LogcatCoverageLog` writes them to logcat on the device and nowhere else.
 Every HTTP call is cancellable: when the host cancels, the call is cancelled with it.
 
+## The Service
+
+`service/ArchiveCompanionService` is the exported Service, under the `com.binge.companion.STREAM`
+action with the SDK's manifest meta-data (`com.binge.companion.name`, `.icon`, `.majors` = 1).
+`ArchiveStreamService` serves STREAM v1:
+
+- **`Handshake`** always succeeds: there is no sign-in. It declares `CAPABILITY_PROBE`,
+  `CAPABILITY_SUBTITLES` and `CAPABILITY_REPORT_SOURCE`, names "Internet Archive" as the provider,
+  and ignores `HostInfo`.
+- **`Resolve`** is the resolver's `ResolveOutcome`, mapped in one place, `ArchiveErrors`.
+  `NOT_FOUND` carries a `LocalizedMessage`, "Not on the Internet Archive", in the device's locale.
+  A Wikidata or Archive failure is `UNAVAILABLE` with a fixed description, never an exception's
+  message, before or after sources were sent.
+- **`Probe`** reads the index and never the network. It refuses what `Resolve` refuses, and a
+  valid series is `NOT_FOUND`.
+- **`ReportSource`** takes a `source_id` of the form `<identifier>/<file name>` naming an item the
+  index knows; anything else is `INVALID_ARGUMENT`. The report is stored on the device
+  (`reports.db`, separate from the index) and pushes that item after every other for 30 days.
+- A gated rpc checks its capability with a STREAM `requireDeclared`, the twin of the SDK's
+  REQUEST-typed one.
+- **Who may bind:** a release build pins Binge's published certificate (`HostPolicy.pinned` with
+  `BingeHosts.release`). A debug build admits Binge's package names under any certificate
+  (`HostPolicy.anyCertificateOf`) plus this app's own uid, chosen by `BuildConfig.DEBUG` and
+  nothing a user can switch.
+
 ## Talking to Wikidata and the Archive
 
 - **Keyless.** No API key, no account and no sign-in. Whether to add a TMDB fallback is decided
@@ -151,7 +178,8 @@ Every HTTP call is cancellable: when the host cancels, the call is cancelled wit
 - No caching beyond the on-device index.
 - **Coverage misses are logged on the device, by route**, for binge-companions#148's measurement.
   They never leave the device: no analytics, no crash reporting and no upload of any kind.
-- The app stores no user data. The index is public metadata it can rebuild. Backup is off.
+- The app stores no user data beyond the user's own source reports, kept on the device in
+  `reports.db`. The index is public metadata it can rebuild. Backup is off.
 
 ## Kotlin, Gradle and Android
 

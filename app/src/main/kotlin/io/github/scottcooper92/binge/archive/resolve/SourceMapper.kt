@@ -20,7 +20,8 @@ import java.util.concurrent.TimeUnit
  *   longer file and the larger one.
  * - Each source's label names the film and its licence, so the host can show the licence on the row.
  * - SubRip and WebVTT files become subtitle tracks, at most ten per source.
- * - Items in download order, then sources by height; at most fifty in all.
+ * - Items in download order, then sources by height; at most fifty in all. An item this device
+ *   reported recently ([deranked][map]) goes after every other.
  */
 class SourceMapper(
     private val clock: () -> Long = System::currentTimeMillis,
@@ -28,10 +29,11 @@ class SourceMapper(
     fun map(
         items: List<LicensedItem>,
         facts: TitleFacts,
+        deranked: Set<String> = emptySet(),
     ): List<StreamSource> {
         val expiresAt = Timestamp.newBuilder().setSeconds(TimeUnit.MILLISECONDS.toSeconds(clock()) + EXPIRY_SECONDS).build()
         return items
-            .sortedByDescending { it.downloads }
+            .sortedWith(compareBy<LicensedItem> { it.item.identifier in deranked }.thenByDescending { it.downloads })
             .flatMap { sources(it, facts, expiresAt) }
             .take(MAX_SOURCES)
     }

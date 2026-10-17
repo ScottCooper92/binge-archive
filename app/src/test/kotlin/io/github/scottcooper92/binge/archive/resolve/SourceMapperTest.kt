@@ -87,6 +87,20 @@ class SourceMapperTest {
     }
 
     @Test
+    fun `an item this device reported goes after every other`() {
+        val nosferatu = WikidataTitle.parse(resolveFixture("wikidata-653.tsv")).copy(runtimeSeconds = null)
+        val items =
+            listOf(
+                licensed(item("PhantasmagoriaTheater-Nosferatu1922909"), downloads = 1),
+                licensed(item("Nosferatu_DVD_quality"), downloads = 9),
+            )
+
+        val sources = mapper.map(items, nosferatu, deranked = setOf("Nosferatu_DVD_quality"))
+
+        assertEquals("PhantasmagoriaTheater-Nosferatu1922909", sources.first().id.substringBefore('/'))
+    }
+
+    @Test
     fun `at most fifty sources and ten subtitle tracks`() {
         val files =
             (1..12).map { ArchiveFile("subs$it.srt", "SubRip", it.toLong(), null, null) } +
