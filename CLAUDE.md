@@ -122,10 +122,12 @@ network failure comes out of the flow as an `IOException`, for `UNAVAILABLE`.
 3. **`ItemFinder`.** Routes in a fixed order, stopping at the first that finds items: the Wikidata
    item's Archive ids, then Archive items tagged with its IMDb id, then a title-and-year search
    (only with a Wikidata runtime to check against). At most five candidates, best-downloaded first.
+   A title match counts as found only if a video file runs within 8% of the runtime, checked
+   before any licence. If none qualifies and any failed to load, the resolve fails, never
+   `NotFound`.
 4. **`ItemReader`.** Reads each candidate's metadata. It drops items with no allowlisted licence,
-   restricted or dark items, non-`movies` items, and items that fail to load. A title-route item
-   must have a video file within 8% of the runtime. If every candidate fails to load, the resolve
-   fails rather than answering empty.
+   restricted or dark items, non-`movies` items, and items that fail to load. If none is admitted
+   and any failed to load, the resolve fails rather than answering empty.
 5. **`SourceMapper`.** Video files only (`VideoFormats`). With a runtime, a file under half of it is
    dropped: a reel, a trailer or an extra is not the film. One source per resolution class per
    item, preferring h.264 in MP4, then any MP4, then height, length and size. The label is
