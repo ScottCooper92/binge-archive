@@ -16,7 +16,6 @@ import io.github.scottcooper92.binge.archive.resolve.Resolver
 import io.github.scottcooper92.binge.archive.resolve.ResolverHttp
 import io.github.scottcooper92.binge.archive.resolve.SourceMapper
 import io.github.scottcooper92.binge.archive.resolve.SourceStrings
-import io.github.scottcooper92.binge.archive.resolve.WikidataTitle
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
@@ -150,26 +149,23 @@ class CoverageMeasurement {
                     is ResolveOutcome.Invalid -> "invalid"
                 }
             } catch (e: IOException) {
-                "unavailable:${e.message.orEmpty().replace(Regex("\\s"), " ")}"
+                "unavailable:${e.message.orEmpty().replace(Regex("\\s+"), " ")}"
             }
         val totalMs = (System.nanoTime() - started) / NANOS_PER_MS
         val used = requests.get() - before
         val codes = synchronized(errors) { errors.joinToString(",") }
         val missReasons = misses.joinToString(",") { it.reason.name.lowercase() }
-        // Outside the timed resolve: the route, the facts and the raw title search, for the report.
-        val route = runCatchingIo { ItemFinder(http).find(tmdbId) }?.route
-        val facts = runCatchingIo { WikidataTitle.parse(http.sparql(WikidataTitle.query(tmdbId))) }
+        // Outside the timed resolve: the route and facts (one more find, which can differ from the timed
+        // one only if this pass fails) and the raw title search, for the report.
+        val found = runCatchingIo { ItemFinder(http).find(tmdbId) }
+        val route = found?.route
+        val facts = found?.facts
         val titleSearch =
             if (facts?.title != null && facts.runtimeSeconds != null && facts.archiveIds.isEmpty()) {
-                val year = facts.year?.let { " AND year:$it" }.orEmpty()
                 runCatchingIo {
                     ItemFinder
-                        .parseSearch(
-                            http.search(
-                                "mediatype:movies AND title:(\"${ItemFinder.quoted(facts.title)}\")$year",
-                                rows = ItemFinder.MAX_CANDIDATES,
-                            ),
-                        ).joinToString(",") { it.identifier }
+                        .parseSearch(http.search(ItemFinder.titleQuery(facts.title, facts.year), rows = ItemFinder.MAX_CANDIDATES))
+                        .joinToString(",") { it.identifier }
                 }
             } else {
                 null
