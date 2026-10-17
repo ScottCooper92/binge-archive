@@ -30,7 +30,7 @@ class MainActivityTest {
         compose.onNodeWithText(text(R.string.licences_intro)).assertExists()
 
         compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
-        compose.onNodeWithText(text(R.string.status_films_linked)).assertExists()
+        compose.onNodeWithText(text(R.string.settings_title_matches)).assertExists()
     }
 
     private companion object {

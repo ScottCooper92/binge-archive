@@ -1,5 +1,9 @@
 package io.github.scottcooper92.binge.archive.ui.status
 
+import io.github.scottcooper92.binge.archive.resolve.LicenceLevel
+import io.github.scottcooper92.binge.archive.settings.MinimumQuality
+import io.github.scottcooper92.binge.archive.settings.SourceSettings
+
 /** A title this device resolved for a host, as the status screen lists it. */
 data class RecentTitle(
     val tmdbId: Int,
@@ -24,6 +28,10 @@ sealed interface StatusUiState {
         val recent: List<RecentTitle>,
         /** Archive items this device reported, pushed down for 30 days. */
         val reported: List<String>,
+        /** The user's Sources settings, as saved. */
+        val sources: SourceSettings = SourceSettings.DEFAULT,
+        /** Whether "Any, including no licence" was picked and waits on its confirm. Nothing is saved until then. */
+        val confirmingAnyLicence: Boolean = false,
     ) : StatusUiState
 
     /** The device's own records could not be read. */
@@ -38,6 +46,13 @@ data class StatusActions(
     val onOpenUrl: (String) -> Unit = {},
     val onClearRecent: () -> Unit = {},
     val onClearReported: () -> Unit = {},
+    val onTitleMatches: (Boolean) -> Unit = {},
+    /** A licence level picked. [LicenceLevel.ANY] asks first: see [StatusUiState.Ready.confirmingAnyLicence]. */
+    val onLicences: (LicenceLevel) -> Unit = {},
+    val onConfirmAnyLicence: () -> Unit = {},
+    val onCancelAnyLicence: () -> Unit = {},
+    val onMinimumQuality: (MinimumQuality) -> Unit = {},
+    val onSubtitlesInMyLanguage: (Boolean) -> Unit = {},
 )
 
 /** The pages a viewer of an Archive item or a site opens. */

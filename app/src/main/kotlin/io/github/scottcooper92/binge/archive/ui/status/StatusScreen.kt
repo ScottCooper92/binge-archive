@@ -23,10 +23,15 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.ErrorKind
+import com.binge.designsystem.component.BingeChoice
+import com.binge.designsystem.component.BingeChoiceList
+import com.binge.designsystem.component.BingeConfirmDialog
+import com.binge.designsystem.component.BingeConfirmDialogContent
 import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemDestination
+import com.binge.designsystem.component.bingeChoiceItem
 import com.binge.designsystem.formatRelativeOrAbsolute
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.ErrorScreen
@@ -37,8 +42,9 @@ import java.text.NumberFormat
 import com.binge.designsystem.R as DesR
 
 /**
- * The phone's status screen: what this app is, the index, who the data comes from, and this device's
- * recently resolved titles and reports. [now] is a parameter so frames pass a fixed instant.
+ * The phone's status screen: what this app is, the Sources settings, the index, who the data comes
+ * from, and this device's recently resolved titles and reports. [now] is a parameter so frames pass a
+ * fixed instant.
  */
 @Composable
 fun StatusScreen(
@@ -71,6 +77,7 @@ private fun StatusGroups(
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
         item { ItemGroup(title = stringResource(R.string.status_about_title), rows = aboutRows(actions)) }
+        item { SourceSettingsGroup(state, actions) }
         item { ItemGroup(title = stringResource(R.string.status_index_title), rows = indexRows(state, actions, now)) }
         item { ItemGroup(title = stringResource(R.string.status_sources_title), rows = sourceRows(actions)) }
         item { ItemGroup(title = stringResource(R.string.status_recent_title), rows = recentRows(state.recent, actions, now)) }
@@ -95,6 +102,85 @@ private fun aboutRows(actions: StatusActions): List<ListItem> =
             onClick = actions.onOpenLicences,
         ),
     )
+
+/**
+ * The Sources settings, saved as made. "Any, including no licence" asks first, on [AnyLicenceConfirm],
+ * shown while [StatusUiState.Ready.confirmingAnyLicence].
+ */
+@Composable
+fun SourceSettingsGroup(
+    state: StatusUiState.Ready,
+    actions: StatusActions,
+) {
+    if (state.confirmingAnyLicence) {
+        BingeConfirmDialog(
+            title = stringResource(R.string.settings_any_title),
+            message = stringResource(R.string.settings_any_message),
+            confirmLabel = stringResource(R.string.settings_any_confirm),
+            onConfirm = actions.onConfirmAnyLicence,
+            onDismissRequest = actions.onCancelAnyLicence,
+            destructive = true,
+        )
+    }
+    ItemGroup(title = stringResource(R.string.settings_title), rows = sourceSettingRows(state, actions))
+}
+
+/** The confirm "Any, including no licence" asks, without its modal window, for a frame. */
+@Composable
+fun AnyLicenceConfirm(actions: StatusActions) {
+    BingeConfirmDialogContent(
+        title = stringResource(R.string.settings_any_title),
+        message = stringResource(R.string.settings_any_message),
+        confirmLabel = stringResource(R.string.settings_any_confirm),
+        onConfirm = actions.onConfirmAnyLicence,
+        onDismissRequest = actions.onCancelAnyLicence,
+        destructive = true,
+    )
+}
+
+@Composable
+private fun sourceSettingRows(
+    state: StatusUiState.Ready,
+    actions: StatusActions,
+): List<ListItem> {
+    val settings = state.sources
+    return listOf(
+        ListItem(
+            icon = SourceSettingChoices.titleMatchesIcon,
+            label = stringResource(R.string.settings_title_matches),
+            detail = stringResource(R.string.settings_title_matches_detail),
+            supportingMaxLines = SETTING_DETAIL_LINES,
+            toggled = settings.titleMatches,
+            onClick = { actions.onTitleMatches(!settings.titleMatches) },
+        ),
+        bingeChoiceItem(
+            icon = SourceSettingChoices.licencesIcon,
+            title = stringResource(R.string.settings_licences),
+            choices = SourceSettingChoices.licences.toChoiceList(),
+            selected = settings.licences,
+            emptyLabel = "",
+            onSelect = actions.onLicences,
+        ).copy(supportingMaxLines = SETTING_DETAIL_LINES),
+        bingeChoiceItem(
+            icon = SourceSettingChoices.qualityIcon,
+            title = stringResource(R.string.settings_quality),
+            choices = SourceSettingChoices.qualities.toChoiceList(),
+            selected = settings.minimumQuality,
+            emptyLabel = "",
+            onSelect = actions.onMinimumQuality,
+        ).copy(supportingMaxLines = SETTING_DETAIL_LINES),
+        ListItem(
+            icon = SourceSettingChoices.subtitlesIcon,
+            label = stringResource(R.string.settings_subtitles),
+            toggled = settings.subtitlesInMyLanguage,
+            onClick = { actions.onSubtitlesInMyLanguage(!settings.subtitlesInMyLanguage) },
+        ),
+    )
+}
+
+@Composable
+private fun <T> List<SettingChoice<T>>.toChoiceList(): BingeChoiceList<T> =
+    BingeChoiceList.Ready(map { BingeChoice(it.value, stringResource(it.label), icon = it.icon) })
 
 @Composable
 private fun indexRows(
@@ -215,3 +301,6 @@ private fun reportedRows(
 }
 
 private const val ABOUT_LINES = 4
+
+/** A setting's subtitle or value is one short line; room for more keeps it whole at a large font size. */
+private const val SETTING_DETAIL_LINES = 3

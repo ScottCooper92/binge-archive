@@ -1,5 +1,6 @@
 package io.github.scottcooper92.binge.archive.ui.status
 
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import io.github.scottcooper92.binge.archive.index.IndexRefresher
@@ -8,7 +9,14 @@ import io.github.scottcooper92.binge.archive.index.inMemoryIndex
 import io.github.scottcooper92.binge.archive.index.sampleSnapshot
 import io.github.scottcooper92.binge.archive.reports.DeviceRecords
 import io.github.scottcooper92.binge.archive.reports.DeviceRecordsDatabase
+import io.github.scottcooper92.binge.archive.resolve.LicenceLevel
+import io.github.scottcooper92.binge.archive.settings.MinimumQuality
+import io.github.scottcooper92.binge.archive.settings.SourceSettings
+import io.github.scottcooper92.binge.archive.settings.SourceSettingsStore
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +31,9 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
@@ -37,6 +47,14 @@ class StatusViewModelTest {
             .build()
     private val index = IndexRepository(indexDatabase.indexDao(), seed = { sampleSnapshot }, clock = { 5_000L })
     private val records = DeviceRecords(recordsDatabase.dao(), clock = { 9_000L })
+
+    @get:Rule
+    val folder = TemporaryFolder()
+
+    private val settingsScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private val settings by lazy {
+        SourceSettingsStore(PreferenceDataStoreFactory.create(scope = settingsScope) { folder.root.resolve("s.preferences_pb") })
+    }
 
     private class FakeRefresher(
         override val refreshing: Flow<Boolean> = MutableStateFlow(false),
@@ -56,6 +74,7 @@ class StatusViewModelTest {
     @After
     fun close() {
         Dispatchers.resetMain()
+        settingsScope.cancel()
         indexDatabase.close()
         recordsDatabase.close()
     }
@@ -71,7 +90,7 @@ class StatusViewModelTest {
             records.recordResolved(10331, "Night of the Living Dead", "Night.Of.The.Living.Dead_1080p")
             records.record("Nosferatu_DVD_quality", "SOURCE_PROBLEM_UNPLAYABLE")
 
-            val ready = StatusViewModel(index, records, FakeRefresher(MutableStateFlow(true))).ready()
+            val ready = StatusViewModel(index, records, FakeRefresher(MutableStateFlow(true)), settings).ready()
 
             assertEquals(4, ready.filmCount)
             assertEquals(5_000L, ready.lastRefreshedAt)
@@ -87,7 +106,7 @@ class StatusViewModelTest {
             records.recordResolved(653, "Nosferatu", "PhantasmagoriaTheater-Nosferatu1922909")
             records.record("x", "SOURCE_PROBLEM_OTHER")
             val refresher = FakeRefresher()
-            val viewModel = StatusViewModel(index, records, refresher)
+            val viewModel = StatusViewModel(index, records, refresher, settings)
             viewModel.ready { it.recent.isNotEmpty() && it.reported.isNotEmpty() }
 
             viewModel.refreshNow()
@@ -114,7 +133,7 @@ class StatusViewModelTest {
                         emit(false)
                     },
                 )
-            val viewModel = StatusViewModel(index, records, refresher)
+            val viewModel = StatusViewModel(index, records, refresher, settings)
 
             suspend fun awaitState(state: StatusUiState) = withTimeout(5_000) { viewModel.uiState.first { it == state } }
 
@@ -134,5 +153,63 @@ class StatusViewModelTest {
             // The read loaded the seed first, so the screen shows its time, not "Not yet".
             val ready = viewModel.ready()
             assertEquals(5_000L, ready.lastRefreshedAt)
+        }
+
+    @Test
+    fun `the Sources settings start at the defaults, and each is saved as it is made`() =
+        runBlocking {
+            val viewModel = StatusViewModel(index, records, FakeRefresher(), settings)
+            assertEquals(SourceSettings.DEFAULT, viewModel.ready().sources)
+
+            viewModel.setTitleMatches(false)
+            viewModel.chooseLicences(LicenceLevel.PUBLIC_DOMAIN)
+            viewModel.setMinimumQuality(MinimumQuality.HD_720)
+            viewModel.setSubtitlesInMyLanguage(true)
+
+            val expected =
+                SourceSettings(
+                    titleMatches = false,
+                    licences = LicenceLevel.PUBLIC_DOMAIN,
+                    minimumQuality = MinimumQuality.HD_720,
+                    subtitlesInMyLanguage = true,
+                )
+            assertEquals(expected, viewModel.ready { it.sources == expected }.sources)
+            assertEquals(expected, settings.current())
+        }
+
+    @Test
+    fun `any licence asks first, and saves nothing until confirmed`() =
+        runBlocking {
+            val viewModel = StatusViewModel(index, records, FakeRefresher(), settings)
+
+            viewModel.chooseLicences(LicenceLevel.ANY)
+            val asking = viewModel.ready { it.confirmingAnyLicence }
+            assertEquals(LicenceLevel.DEFAULT, asking.sources.licences)
+            assertEquals(LicenceLevel.DEFAULT, settings.current().licences)
+
+            viewModel.confirmAnyLicence()
+            val confirmed = viewModel.ready { !it.confirmingAnyLicence && it.sources.licences == LicenceLevel.ANY }
+            assertEquals(LicenceLevel.ANY, confirmed.sources.licences)
+            assertEquals(LicenceLevel.ANY, settings.current().licences)
+
+            // Easy to undo: any other level saves at once.
+            viewModel.chooseLicences(LicenceLevel.DEFAULT)
+            viewModel.ready { it.sources.licences == LicenceLevel.DEFAULT }
+            assertEquals(LicenceLevel.DEFAULT, settings.current().licences)
+        }
+
+    @Test
+    fun `cancelling the confirm keeps the licences as they were`() =
+        runBlocking {
+            val viewModel = StatusViewModel(index, records, FakeRefresher(), settings)
+
+            viewModel.chooseLicences(LicenceLevel.ANY)
+            viewModel.ready { it.confirmingAnyLicence }
+            viewModel.cancelAnyLicence()
+
+            assertEquals(LicenceLevel.DEFAULT, viewModel.ready { !it.confirmingAnyLicence }.sources.licences)
+            // A confirm with nothing asked saves nothing.
+            viewModel.confirmAnyLicence()
+            assertEquals(LicenceLevel.DEFAULT, settings.current().licences)
         }
 }

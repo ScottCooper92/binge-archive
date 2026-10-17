@@ -20,7 +20,7 @@ import com.binge.designsystem.template.screenListPadding
 import io.github.scottcooper92.binge.archive.R
 import com.binge.designsystem.R as DesR
 
-/** The licence allowlist, in plain words: what may be offered, and that nothing changes it. */
+/** The default licences, in plain words: what is offered unless the Sources settings say otherwise. */
 @Composable
 fun LicenceScreen(
     onBack: () -> Unit,
