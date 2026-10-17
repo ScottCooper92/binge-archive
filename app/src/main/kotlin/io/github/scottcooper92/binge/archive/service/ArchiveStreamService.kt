@@ -128,7 +128,8 @@ class ArchiveStreamService(
 
 /**
  * Refuses a gated rpc this companion did not declare, as `PERMISSION_DENIED`, the contract's code for
- * it. The STREAM twin of the SDK's REQUEST-typed `requireDeclared`.
+ * it. The STREAM twin of the SDK's REQUEST-typed `requireDeclared`. binge-companions#239 adds a
+ * STREAM-typed one to the SDK; once a release carries it, this goes and the SDK's is used.
  */
 internal fun Set<Capability>.requireDeclared(capability: Capability) {
     if (capability !in this) {
