@@ -1,0 +1,205 @@
+name: Device smoke (minified)
+
+# The one emulator lane. It asserts something ci.yml cannot: that the release keep rules hold
+# across a real Binder, on the minified build, for the exported Service, the generated stubs and the
+# protobuf runtime. Its Resolve goes to Wikidata and the Archive for real, so a red run that says
+# UNAVAILABLE names one of those two services, not a keep rule. That answer is a pure function of the committed tree plus the toolchain, so it is
+# triggered by the paths that can change it, with a weekly run behind that for the one input that
+# varies with time rather than with a diff: the hosted runner image and the system image.
+#
+# It runs on a hosted runner because the emulator needs KVM, and it frees disk first because a stock
+# ubuntu-latest has too little left for an AVD once the SDK and this build's dependencies have landed.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch or SHA to run against
+        required: false
+        default: main
+  push:
+    branches: [main]
+    paths:
+      - 'app/build.gradle.kts'
+      - 'app/src/androidTest/**'
+      - 'app/src/main/keepRules/**'
+      - 'app/src/main/kotlin/io/github/scottcooper92/binge/archive/service/**'
+      - 'app/src/main/kotlin/io/github/scottcooper92/binge/archive/resolve/**'
+      - 'app/src/main/kotlin/io/github/scottcooper92/binge/archive/index/**'
+      - 'index/**'
+      - 'binge-companions'
+      - 'libs.versions.toml'
+      - '.github/workflows/device-smoke.yml'
+  schedule:
+    - cron: '0 6 * * 1'
+
+# The weekly run has its own group. Sharing main's with a push would let a push cancel it mid-run,
+# and a cancelled scheduled run is reported (a job that hits its timeout is `cancelled`, not
+# `failure`), so that would raise a false alarm.
+concurrency:
+  group: device-smoke-${{ github.event_name == 'schedule' && 'weekly' || github.event.inputs.ref || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  companion-smoke:
+    name: Handshake, probe and resolve over Binder on a minified build
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    # The shared `save-avd-cache` action runs `gh cache delete` before it saves. Without
+    # `actions: write` the delete gets a 403 that `|| true` hides, and the cache freezes at its
+    # first content.
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+          ref: ${{ github.event.inputs.ref || github.sha }}
+
+      - name: Free disk space for the emulator
+        run: |
+          df -h /
+          sudo rm -rf /usr/local/lib/android/sdk/ndk /usr/share/dotnet /opt/ghc \
+            /usr/local/.ghcup /usr/share/swift /usr/local/share/powershell
+          docker system prune -af || true
+          df -h /
+
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+
+      - name: Accept the SDK licences the system image needs
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+
+      - name: Enable KVM for the runner user
+        continue-on-error: true
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Check the runner can virtualise
+        run: |
+          set -euo pipefail
+          if [ ! -e /dev/kvm ]; then
+            echo "::error::No /dev/kvm on this runner, so no emulator can run here."
+            exit 1
+          fi
+          if [ ! -w /dev/kvm ]; then
+            echo "::error::/dev/kvm exists but is not writable by $(id -un)."
+            exit 1
+          fi
+          echo "/dev/kvm present and writable."
+
+      # A miss is not a failure: the setup step below falls back to the full download and boot.
+      - name: Restore AVD cache
+        uses: ScottCooper92/binge-ci/.github/actions/restore-avd-cache@a802d4ad866837e53971f984980beeb88b937da1 # v1
+        with:
+          device: smokeAtdApi34
+          api-level: '34'
+          system-image-source: aosp-atd
+          default-branch: main
+
+      # showKernelLogging is what makes an emulator that fails to start say why: without it the
+      # failure reads as an empty error list.
+      - name: Create the managed-device snapshot
+        id: setup-device
+        run: >
+          ./gradlew :app:smokeAtdApi34Setup
+          -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect
+          -Pandroid.experimental.testOptions.managedDevices.emulator.showKernelLogging=true
+          --info
+
+      - name: Run the smoke on the minified debug build
+        run: >
+          ./gradlew :app:smokeAtdApi34DebugAndroidTest
+          -PminifyDebug
+          -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect
+          -Pandroid.experimental.testOptions.managedDevices.emulator.showKernelLogging=true
+
+      # Push to main only, so a dispatch or the weekly run never overwrites the cache entry.
+      - name: Save AVD cache
+        if: >
+          !cancelled() && github.event_name == 'push' &&
+          steps.setup-device.outcome == 'success'
+        uses: ScottCooper92/binge-ci/.github/actions/save-avd-cache@a802d4ad866837e53971f984980beeb88b937da1 # v1
+        with:
+          device: smokeAtdApi34
+          api-level: '34'
+          system-image-source: aosp-atd
+          default-branch: main
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: device-smoke-results
+          path: |
+            app/build/reports/androidTests/**
+            app/build/outputs/androidTest-results/**
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # The weekly run is the backstop for what changes with time rather than with a diff (the runner
+  # image, the system image), and it has no PR or push to carry a failure, so without this a red
+  # one is a mark in the Actions tab that nothing points at. One issue stays open while the
+  # scheduled run is red and closes itself on the next green one, so an open one means "still
+  # broken", not "old". Scheduled runs only: a push or a manual dispatch already has someone
+  # watching it. The same report as ci.yml's nightly-report, with its own issue. The issue is matched
+  # by its author as well as its title: on a public repository anyone can open one with this title.
+  scheduled-report:
+    if: ${{ always() && github.event_name == 'schedule' }}
+    needs: companion-smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          SMOKE_RESULT: ${{ needs.companion-smoke.result }}
+        with:
+          script: |
+            const title = 'Weekly device smoke is failing on main';
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const { owner, repo } = context.repo;
+            const open = (await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, state: 'open', per_page: 100,
+            })).find((i) => !i.pull_request && i.title === title && i.user?.login === 'github-actions[bot]');
+
+            if (process.env.SMOKE_RESULT === 'success') {
+              if (!open) return;
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: open.number,
+                body: `The weekly smoke run is green again: ${runUrl}`,
+              });
+              await github.rest.issues.update({
+                owner, repo, issue_number: open.number, state: 'closed', state_reason: 'completed',
+              });
+            } else {
+              if (open) {
+                await github.rest.issues.createComment({
+                  owner, repo, issue_number: open.number,
+                  body: `Still failing: ${runUrl}`,
+                });
+                return;
+              }
+              await github.rest.issues.create({
+                owner, repo, title,
+                body: [
+                  `The scheduled run of the device smoke failed: ${runUrl}`,
+                  '',
+                  'Nothing was pushed to cause this, so suspect the environment first: Wikidata or the Internet Archive being down, a runner image or Android SDK update, the aosp-atd system image, or /dev/kvm on the hosted runner. The device-smoke-results artifact is kept for seven days.',
+                  '',
+                  'This issue closes itself on the next green scheduled run.',
+                ].join('\n'),
+              });
+            }

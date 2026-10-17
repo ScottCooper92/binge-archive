@@ -33,6 +33,7 @@ android {
         // A release workflow overrides both from the tag it builds; a local build keeps the placeholders.
         versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
         versionName = System.getenv("VERSION_NAME") ?: "0.1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildFeatures {
@@ -97,9 +98,17 @@ android {
         debug {
             // A package of its own, so a debug build installs beside a release one instead of over it.
             applicationIdSuffix = ".debug"
+            // Opt-in (`-PminifyDebug`) minified debug build: the one the device lane runs, so a keep
+            // rule that goes stale fails there rather than on a user. BuildConfig.DEBUG stays true, which
+            // is what lets the smoke test bind as a caller. Off by default: it would slow the dev loop.
+            if (project.hasProperty("minifyDebug")) {
+                optimization { enable = true }
+            }
         }
         release {
-            // One switch for code shrinking, resource shrinking and the default Android keep rules.
+            // One switch for code shrinking, resource shrinking and the default Android keep rules;
+            // this app's own rules are the `keepRules` source set. Must stay identical to the
+            // minifyDebug block above, or the lane stops proving what release ships.
             optimization { enable = true }
             if (releaseStoreFile != null) {
                 signingConfig = signingConfigs.getByName("release")
@@ -122,6 +131,18 @@ android {
         // Robolectric hosts Compose on the JVM, against screens built from stringResource, so the
         // merged resources have to be on the unit-test classpath.
         unitTests.isIncludeAndroidResources = true
+
+        managedDevices {
+            localDevices {
+                // The device lane's emulator, driven by device-smoke.yml and never by ci.yml.
+                // aosp-atd is headless and carries no Google APIs, which the smoke does not need.
+                create("smokeAtdApi34") {
+                    device = "Pixel 6"
+                    apiLevel = 34
+                    systemImageSource = "aosp-atd"
+                }
+            }
+        }
     }
 }
 
@@ -174,6 +195,12 @@ dependencies {
     testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.test.manifest)
+
+    // The device lane alone: the Service over a real Binder, on the minified build.
+    androidTestImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.core)
 
     // The frames render against the same Compose the app ships, and the validation API is what
     // @PreviewTest resolves to.
