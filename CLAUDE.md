@@ -265,25 +265,6 @@ requires, and the one the bots read. `ci.yml` explains the split.
 
 There is no `buf` here, so do not report a finding as though one had caught it.
 
-## Releasing
-
-- **R8.** Release builds shrink. The app's own keep rules are the `keepRules` source set
-  (`app/src/main/keepRules/`), in `main` so the minified debug build uses the same ones. The
-  libraries and the contracts bring their own; add a rule here only for what they do not cover.
-- **`-PminifyDebug`** builds a minified debug app. The device lane runs it, so a stale keep rule fails
-  there rather than on a user. Its `optimization` block must match release's.
-- **The device lane** (`device-smoke.yml`, never `ci.yml`): an emulator binds the Service across a real
-  Binder on the minified debug build, then handshakes, probes and resolves Night of the Living Dead
-  (`app/src/androidTest`). Its Resolve uses the live network, so an `UNAVAILABLE` there names
-  Wikidata or the Archive first. It runs on a push to `main` that touches the paths it lists, weekly,
-  and by hand. A red weekly run opens one issue, which closes on the next green one.
-- **`release.yml`** builds a signed bundle from a `v*` tag, checks it is release-signed (never
-  `CN=Android Debug`), shrunk and seeded, and attaches it with the R8 mapping to a GitHub Release. Play
-  upload, the upload key's secrets and the Play Console app are the maintainer's.
-- **The listing** lives in `docs/listing/`: the store text in English and Spanish, the privacy policy
-  and the Data safety answers. A change to what the app stores, sends or asks for changes
-  `privacy.md` and `data-safety.md` in the same PR.
-
 ### Screenshot frames
 
 Frames live in `app/src/screenshotTest/kotlin/…`, each a `@Composable` with `@PreviewTest` and one
@@ -297,6 +278,29 @@ New UI comes with its frames in the same PR, every state arm included. Frames pi
 comment (`./gradlew ktlintFormat` is the fix), a `lint-baseline.xml`, `abortOnError = false`, a
 `detekt-baseline.xml` or a `@Suppress` to get past detekt, and do not exclude a source set from
 `check` or lower the kover floor.
+
+## Releasing
+
+- **R8.** Release builds shrink. The app's own keep rules are the `keepRules` source set
+  (`app/src/main/keepRules/`), in `main` so the minified debug build uses the same ones. The
+  libraries and the contracts bring their own; add a rule here only for what they do not cover.
+  `app/src/debug/keepRules/` keeps, for the minified debug build only, the classes the
+  instrumentation test calls that the app itself never uses (the Kotlin stdlib, the gRPC client).
+  Without it the test process crashes before any test starts.
+- **`-PminifyDebug`** builds a minified debug app. The device lane runs it, so a stale keep rule fails
+  there rather than on a user. Its `optimization` block must match release's.
+- **The device lane** (`device-smoke.yml`, never `ci.yml`): an emulator binds the Service across a real
+  Binder on the minified debug build, then handshakes, probes and resolves Night of the Living Dead
+  (`app/src/androidTest`). Its Resolve uses the live network, so an `UNAVAILABLE` there names
+  Wikidata or the Archive first. A run with zero tests fails: a crashed test process can otherwise
+  end green. It runs on a push to `main` that touches the paths it lists, weekly,
+  and by hand. A red weekly run opens one issue, which closes on the next green one.
+- **`release.yml`** builds a signed bundle from a `v*` tag, checks it is release-signed (never
+  `CN=Android Debug`), shrunk and seeded, and attaches it with the R8 mapping to a GitHub Release. Play
+  upload, the upload key's secrets and the Play Console app are the maintainer's.
+- **The listing** lives in `docs/listing/`: the store text in English and Spanish, the privacy policy
+  and the Data safety answers. A change to what the app stores, sends or asks for changes
+  `privacy.md` and `data-safety.md` in the same PR.
 
 ## Follow-ups
 

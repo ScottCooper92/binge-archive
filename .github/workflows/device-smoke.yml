@@ -127,6 +127,29 @@ jobs:
           -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect
           -Pandroid.experimental.testOptions.managedDevices.emulator.showKernelLogging=true
 
+      # A process that crashes before any test starts can still end the task green, with zero
+      # tests. So the lane also needs at least one test to have run; a failing test already fails
+      # the step above.
+      - name: Fail unless a test ran
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t results < <(find app/build/outputs/androidTest-results -name 'TEST-*.xml' 2>/dev/null)
+          if [ "${#results[@]}" -eq 0 ]; then
+            echo "::error::No instrumentation test results were written."
+            exit 1
+          fi
+          ran=0
+          for file in "${results[@]}"; do
+            tests=$(grep -oP '<testsuite[^>]*\btests="\K[0-9]+' "$file" | head -n 1 || true)
+            ran=$((ran + ${tests:-0}))
+          done
+          if [ "$ran" -eq 0 ]; then
+            echo "::error::The instrumentation run finished with zero tests: the test process crashed before any test started."
+            exit 1
+          fi
+          echo "Instrumentation tests run: $ran"
+
       # Push to main only, so a dispatch or the weekly run never overwrites the cache entry.
       - name: Save AVD cache
         if: >
