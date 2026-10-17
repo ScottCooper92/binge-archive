@@ -90,8 +90,9 @@ class ArchiveStreamService(
 
     /**
      * Records a report against the Archive item the source came from. A `source_id` is
-     * `<identifier>/<file name>`; one in another shape, or naming an item the index has never seen,
-     * was not issued here and is `INVALID_ARGUMENT`.
+     * `<identifier>/<file name>`, the identifier in the Archive's character set; one in another shape
+     * was not issued here and is `INVALID_ARGUMENT`. The index is not consulted: `Resolve` also serves
+     * items the routes found live, which the index may not hold.
      */
     override suspend fun reportSource(request: ReportSourceRequest): ReportSourceResponse = withContext(io) { reportOnIo(request) }
 
@@ -99,8 +100,7 @@ class ArchiveStreamService(
         CAPABILITIES.requireDeclared(Capability.CAPABILITY_REPORT_SOURCE)
         val identifier = request.sourceId.substringBefore('/', missingDelimiterValue = "")
         val fileName = request.sourceId.substringAfter('/', missingDelimiterValue = "")
-        if (identifier.isEmpty() || fileName.isEmpty()) throw errors.invalid("Not a source id this companion issues")
-        if (!index.knowsItem(identifier)) throw errors.invalid("Not a source this companion issued")
+        if (!ARCHIVE_IDENTIFIER.matches(identifier) || fileName.isEmpty()) throw errors.invalid("Not a source id this companion issues")
         val problem =
             when (request.problem) {
                 SourceProblem.SOURCE_PROBLEM_UNPLAYABLE,
@@ -116,6 +116,8 @@ class ArchiveStreamService(
     }
 
     companion object {
+        private val ARCHIVE_IDENTIFIER = Regex("[A-Za-z0-9][A-Za-z0-9_.-]*")
+
         const val PROVIDER_NAME = "Internet Archive"
 
         /** Fixed: nothing here depends on a user or a session. */
