@@ -105,7 +105,8 @@ Rules that hold it together:
   writes `assets/index/seed.tsv`. Offline it writes nothing and the build goes on; the app then starts
   empty until its first refresh. A seed under a week old is reused; `-Parchive.skipSeed` skips it.
   Tests never depend on the live seed: `SeedAssetTest` skips itself when a build has none.
-- The seed is loaded on the first lookup, and only when the log is empty, so it never overwrites a
+- The seed is loaded before the first read of any kind (a lookup, Probe, the status screen or the
+  refresh worker), off the caller's thread, and only when the log is empty, so it never overwrites a
   newer index.
 - The status screen's freshness is `refresh_log`'s last success (`IndexRepository.lastSuccess()`).
 - The Room schema is exported to `app/schemas` and committed. The database falls back to a
@@ -115,7 +116,8 @@ Rules that hold it together:
 
 `Resolver.resolve(mediaId, episode)` (package `resolve`) answers a `ResolveOutcome`, which the Service
 maps to the contract: `Sources` (a flow, possibly empty), `NotFound`, `NotAFilm` or `Invalid`. A
-network failure comes out of the flow as an `IOException`, for `UNAVAILABLE`.
+network failure is an `IOException`, thrown out of `resolve()` itself (the finder's Wikidata and
+search calls, and the title route's loads) or out of the flow. The Service maps both to `UNAVAILABLE`.
 
 1. **The request.** An unusable `MediaId` or `EpisodeRef` is `Invalid` before anything is looked up.
 2. **Series and the index.** A valid series is `NotFound` (v1 carries none). A movie id the index
