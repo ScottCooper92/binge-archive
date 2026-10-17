@@ -62,6 +62,33 @@
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+            exported="true" is the integration surface: Binge reaches this Service with bindService,
+            and what guards it is the caller policy in ArchiveCompanionService, not the manifest.
+            android:process is absent so the Service runs under this app's own uid, which is what the
+            host's certificate check verifies.
+
+            Binge reads the meta-data WITHOUT binding, to list this companion and check that the two
+            can parse each other before any process of ours starts. The keys are CompanionManifest's.
+        -->
+        <service
+            android:name=".service.ArchiveCompanionService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.binge.companion.STREAM" />
+            </intent-filter>
+
+            <meta-data
+                android:name="com.binge.companion.name"
+                android:value="@string/companion_label" />
+            <meta-data
+                android:name="com.binge.companion.icon"
+                android:resource="@drawable/ic_companion" />
+            <meta-data
+                android:name="com.binge.companion.majors"
+                android:value="1" />
+        </service>
     </application>
 
 </manifest>

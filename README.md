@@ -14,8 +14,9 @@ holds an openly licensed copy, Binge offers it to play, and names the licence on
   nothing here.
 - **No account and no sign-in.** The app needs no key and asks you for nothing.
 - **Nothing about you leaves your device.** The app asks Wikidata and the Internet Archive about the
-  film you opened, and nothing else. It has no analytics and no crash reporting, stores no data about
-  you, and is left out of backups.
+  film you opened, and nothing else. It has no analytics and no crash reporting, and is left out of
+  backups. If you tell Binge a copy did not play, this app remembers that on your device for 30 days
+  and offers that copy last.
 
 The app itself has one screen, which says what it does. You find films from Binge.
 
@@ -32,7 +33,8 @@ against the film's runtime. It keeps only items with an allowed licence, and map
 to sources. The plan is
 [binge-companions#141](https://github.com/ScottCooper92/binge-companions/issues/141).
 
-Status is pre-alpha. The on-device index and the resolver are in; the Service follows.
+Status is pre-alpha. The index, the resolver and the STREAM Service are in; the app's own screens
+and the release follow.
 
 ## Building
 

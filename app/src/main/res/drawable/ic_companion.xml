@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The mark on its own, with no background: Binge reads it off the Service's meta-data to show this
+    companion in its list, and may tint it flat. The same film frame as the launcher icon.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:fillColor="#FF34D399"
+        android:fillType="evenOdd"
+        android:pathData="M6,10 h36 a4,4 0 0,1 4,4 v20 a4,4 0 0,1 -4,4 h-36 a4,4 0 0,1 -4,-4 v-20 a4,4 0 0,1 4,-4 z M7,14 v4 h4 v-4 z M7,22 v4 h4 v-4 z M7,30 v4 h4 v-4 z M37,14 v4 h4 v-4 z M37,22 v4 h4 v-4 z M37,30 v4 h4 v-4 z M20,17 v14 l11,-7 z" />
+</vector>

@@ -37,6 +37,14 @@ sealed interface ResolveOutcome {
     ) : ResolveOutcome
 }
 
+/** What the Service resolves through. [Resolver] is the one implementation; the Service's tests stub it. */
+fun interface TitleResolver {
+    suspend fun resolve(
+        media: MediaId,
+        episode: EpisodeRef?,
+    ): ResolveOutcome
+}
+
 /**
  * Resolves a title to [StreamSource]s. The index answers first: a known non-film is [ResolveOutcome.NotAFilm].
  * Then [ItemFinder] looks for Archive items, for a film the index knows and for one it does not, since a
@@ -49,12 +57,13 @@ class Resolver(
     private val reader: ItemReader,
     private val mapper: SourceMapper,
     private val coverage: CoverageLog,
-) {
-    suspend fun resolve(
+    private val deranked: suspend () -> Set<String> = { emptySet() },
+) : TitleResolver {
+    override suspend fun resolve(
         media: MediaId,
         episode: EpisodeRef?,
     ): ResolveOutcome {
-        val invalidReason = invalid(media, episode)
+        val invalidReason = unusableRequest(media, episode)
         if (invalidReason != null) return ResolveOutcome.Invalid(invalidReason)
         if (media.mediaType == MediaType.MEDIA_TYPE_TV) return ResolveOutcome.NotFound
         val hit = index.lookup(media)
@@ -84,26 +93,29 @@ class Resolver(
     ): Flow<StreamSource> =
         flow {
             val items = reader.read(found)
-            val sources = mapper.map(items, found.facts)
+            val sources = mapper.map(items, found.facts, deranked())
             when {
                 items.isEmpty() -> coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.NO_LICIT_ITEM))
                 sources.isEmpty() -> coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.NO_PLAYABLE_FILE))
             }
             sources.asFlow().collect { emit(it) }
         }
-
-    /** The contract's unusable requests, as a reason, or null for a usable one. */
-    private fun invalid(
-        media: MediaId,
-        episode: EpisodeRef?,
-    ): String? =
-        when {
-            media.tmdbId <= 0 -> "tmdb_id must be positive"
-            media.mediaType == MediaType.MEDIA_TYPE_MOVIE && episode != null -> "a movie takes no episode"
-            media.mediaType == MediaType.MEDIA_TYPE_TV && episode == null -> "a series needs an episode"
-            media.mediaType == MediaType.MEDIA_TYPE_TV && episode != null && (episode.seasonNumber < 0 || episode.episodeNumber < 1) ->
-                "no such episode"
-            media.mediaType != MediaType.MEDIA_TYPE_MOVIE && media.mediaType != MediaType.MEDIA_TYPE_TV -> "unknown media type"
-            else -> null
-        }
 }
+
+/**
+ * The contract's unusable requests, as a reason, or null for a usable one. Shared by `Resolve` and
+ * `Probe`, which refuse the same requests.
+ */
+fun unusableRequest(
+    media: MediaId,
+    episode: EpisodeRef?,
+): String? =
+    when {
+        media.tmdbId <= 0 -> "tmdb_id must be positive"
+        media.mediaType == MediaType.MEDIA_TYPE_MOVIE && episode != null -> "a movie takes no episode"
+        media.mediaType == MediaType.MEDIA_TYPE_TV && episode == null -> "a series needs an episode"
+        media.mediaType == MediaType.MEDIA_TYPE_TV && episode != null && (episode.seasonNumber < 0 || episode.episodeNumber < 1) ->
+            "no such episode"
+        media.mediaType != MediaType.MEDIA_TYPE_MOVIE && media.mediaType != MediaType.MEDIA_TYPE_TV -> "unknown media type"
+        else -> null
+    }

@@ -144,6 +144,8 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.work.testing)
     testImplementation(libs.okhttp.mockwebserver)
+    // The Service is driven over an in-process channel: the whole contract, no device.
+    testImplementation(libs.grpc.inprocess)
     testImplementation(libs.androidx.test.core)
     testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)
@@ -242,6 +244,9 @@ kover {
                     "*ComposableSingletons*",
                     "*PreviewData*",
                     "io.github.scottcooper92.binge.archive.MainActivity*",
+                    // The exported Service: services() and hostPolicy() hand the SDK objects from the graph.
+                    // What they choose is tested through ArchiveStreamService and selectHostPolicy.
+                    "io.github.scottcooper92.binge.archive.service.ArchiveCompanionService",
                     // The Application and the hand-built graph: wiring, every member a constructed object.
                     "io.github.scottcooper92.binge.archive.ArchiveApp",
                     "io.github.scottcooper92.binge.archive.AppGraph*",

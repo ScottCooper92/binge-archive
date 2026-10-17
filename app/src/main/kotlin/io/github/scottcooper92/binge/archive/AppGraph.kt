@@ -10,6 +10,8 @@ import io.github.scottcooper92.binge.archive.index.IndexFetcher
 import io.github.scottcooper92.binge.archive.index.IndexRefreshWorker
 import io.github.scottcooper92.binge.archive.index.IndexRepository
 import io.github.scottcooper92.binge.archive.index.readSeed
+import io.github.scottcooper92.binge.archive.reports.ReportDatabase
+import io.github.scottcooper92.binge.archive.reports.SourceReports
 import io.github.scottcooper92.binge.archive.resolve.ItemFinder
 import io.github.scottcooper92.binge.archive.resolve.ItemReader
 import io.github.scottcooper92.binge.archive.resolve.LogcatCoverageLog
@@ -39,10 +41,20 @@ class AppGraph(
 
     val index: IndexRepository by lazy { IndexRepository(database.indexDao(), seed = { appContext.assets.readSeed() }) }
 
+    /** The user's source reports, on this device only. */
+    val reports: SourceReports by lazy { SourceReports(ReportDatabase.open(appContext).reportDao()) }
+
     /** Resolves a title to sources: the index, then Wikidata and the Archive. */
     val resolver: Resolver by lazy {
         val http = ResolverHttp(http)
-        Resolver(index, ItemFinder(http), ItemReader(http), SourceMapper(SourceStrings.from(appContext)), LogcatCoverageLog)
+        Resolver(
+            index,
+            ItemFinder(http),
+            ItemReader(http),
+            SourceMapper(SourceStrings.from(appContext)),
+            LogcatCoverageLog,
+            deranked = reports::deranked,
+        )
     }
 
     /** Builds the workers this app schedules, with their collaborators from this graph. */

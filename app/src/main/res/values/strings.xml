@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_label">Binge Archive</string>
+    <!-- The name Binge shows for this companion. A proper noun pair, not translated. -->
+    <string name="companion_label" translatable="false">Internet Archive</string>
+    <!-- Shown by Binge on this companion's row when a film is not on the Internet Archive. -->
+    <string name="not_on_archive">Not on the Internet Archive</string>
     <string name="home_headline">Free films for Binge</string>
     <string name="home_body">This app finds public-domain and openly licensed films on the Internet Archive, and Binge plays them. It only returns items with an open licence. Open a film in Binge to see whether a copy is here.</string>
     <string name="licence_public_domain">Public domain</string>
