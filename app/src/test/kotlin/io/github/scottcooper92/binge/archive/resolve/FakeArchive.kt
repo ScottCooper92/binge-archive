@@ -23,6 +23,9 @@ internal class FakeArchive(
     val metadataStatus = mutableMapOf<String, Int>()
     val metadataBodies = mutableMapOf<String, String>()
 
+    /** Holds an item's metadata answer until its latch is released, for the streaming test. */
+    val metadataGates = mutableMapOf<String, java.util.concurrent.CountDownLatch>()
+
     /** Holds every SPARQL answer back this long, for the cancellation test. */
     var sparqlDelaySeconds = 0L
 
@@ -52,6 +55,7 @@ internal class FakeArchive(
     }
 
     private fun metadata(identifier: String): MockResponse {
+        metadataGates[identifier]?.await(GATE_TIMEOUT_SECONDS, java.util.concurrent.TimeUnit.SECONDS)
         metadataStatus[identifier]?.let { return MockResponse(code = it) }
         metadataBodies[identifier]?.let { return MockResponse(body = it) }
         val body = javaClass.getResource("/fixtures/resolve/metadata-$identifier.json")?.readText() ?: "{}"
@@ -67,7 +71,12 @@ internal class FakeArchive(
         )
 
     override fun close() {
+        metadataGates.values.forEach { it.countDown() }
         server.close()
+    }
+
+    private companion object {
+        const val GATE_TIMEOUT_SECONDS = 30L
     }
 }
 

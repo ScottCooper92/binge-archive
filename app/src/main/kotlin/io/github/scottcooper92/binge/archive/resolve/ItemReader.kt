@@ -3,6 +3,9 @@ package io.github.scottcooper92.binge.archive.resolve
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.toList
 import java.io.IOException
 import kotlin.math.abs
 
@@ -19,6 +22,9 @@ data class LicensedItem(
  * not load. A title-route candidate must also have a video file within 8% of the film's runtime;
  * [ItemFinder] has already checked that, and [Found.preloaded] carries the metadata it read.
  *
+ * The candidates' metadata loads in parallel, and [readEach] hands on each admitted item as soon as it
+ * and every candidate ahead of it have loaded, so a slow later item never holds back an earlier one.
+ *
  * One item failing to load drops that item while others are still read. If no item is admitted and
  * any load failed, the resolve fails (transient, so the host may retry): the item that failed might
  * have been the licit one, so "no licit source" is not an answer the app can give.
@@ -26,21 +32,31 @@ data class LicensedItem(
 class ItemReader(
     private val http: ResolverHttp,
 ) {
-    suspend fun read(found: Found): List<LicensedItem> {
-        if (found.candidates.isEmpty()) return emptyList()
-        val loads =
-            found.preloaded.let { preloaded ->
-                val (ready, missing) = found.candidates.partition { it.identifier in preloaded }
-                ready.map { it to Result.success(preloaded.getValue(it.identifier)) } + loadAll(http, missing)
+    /** Every admitted item, in candidate order, once all are read. */
+    suspend fun read(found: Found): List<LicensedItem> = readEach(found).toList()
+
+    /** Each admitted item, in candidate order, as soon as it and every candidate ahead of it are read. */
+    fun readEach(found: Found): Flow<LicensedItem> =
+        flow {
+            coroutineScope {
+                val loads = found.candidates.map { candidate -> candidate to async { load(candidate, found.preloaded) } }
+                var admitted = 0
+                var failure: Throwable? = null
+                for ((candidate, load) in loads) {
+                    val result = load.await()
+                    result.exceptionOrNull()?.let { if (failure == null) failure = it }
+                    val item = result.getOrNull()?.let { admit(candidate, it, found) } ?: continue
+                    admitted++
+                    emit(item)
+                }
+                failure?.takeIf { admitted == 0 }?.let { throw IOException("No candidate item could be read", it) }
             }
-        val loaded = loads.mapNotNull { (candidate, result) -> result.getOrNull()?.let { candidate to it } }
-        val admitted = loaded.mapNotNull { (candidate, item) -> admit(candidate, item, found) }
-        if (admitted.isEmpty()) {
-            val failure = loads.firstNotNullOfOrNull { it.second.exceptionOrNull() }
-            if (failure != null) throw IOException("No candidate item could be read", failure)
         }
-        return admitted
-    }
+
+    private suspend fun load(
+        candidate: Candidate,
+        preloaded: Map<String, ArchiveItem>,
+    ): Result<ArchiveItem> = preloaded[candidate.identifier]?.let { Result.success(it) } ?: loadOne(http, candidate)
 
     private fun admit(
         candidate: Candidate,
@@ -60,17 +76,18 @@ class ItemReader(
             candidates: List<Candidate>,
         ): List<Pair<Candidate, Result<ArchiveItem>>> =
             coroutineScope {
-                candidates
-                    .map { candidate ->
-                        async {
-                            candidate to
-                                try {
-                                    Result.success(ArchiveMetadata.parse(candidate.identifier, http.metadata(candidate.identifier)))
-                                } catch (e: IOException) {
-                                    Result.failure(e)
-                                }
-                        }
-                    }.awaitAll()
+                candidates.map { candidate -> async { candidate to loadOne(http, candidate) } }.awaitAll()
+            }
+
+        /** One candidate's metadata, or the [IOException] that stopped it loading. */
+        private suspend fun loadOne(
+            http: ResolverHttp,
+            candidate: Candidate,
+        ): Result<ArchiveItem> =
+            try {
+                Result.success(ArchiveMetadata.parse(candidate.identifier, http.metadata(candidate.identifier)))
+            } catch (e: IOException) {
+                Result.failure(e)
             }
 
         /** Whether a video file of [item] runs within [RUNTIME_TOLERANCE] of the film's runtime. */

@@ -74,7 +74,8 @@ check, is never a fix for a test or a coverage gap. It is a decision for the mai
 - **Media is identified as media type + TMDB id.** Translating that into Archive identifiers is
   this app's job, and it lives in one clearly named place.
 - **Partial results are normal.** `Resolve` streams sources as it finds them and stops all work
-  when the call is cancelled. The host reads at most fifty.
+  when the call is cancelled. The host reads at most fifty, and cancels at its 10 s deadline (set
+  from binge-companions#148's measurement), so the sources sent before then are what the user gets.
 - The exported Service is the attack surface. Whatever guards it is load-bearing, and is not
   loosened to make a test pass.
 
@@ -129,15 +130,18 @@ search calls, and the title route's loads) or out of the flow. The Service maps 
    A title match counts as found only if a video file runs within 8% of the runtime, checked
    before any licence. If none qualifies and any failed to load, the resolve fails, never
    `NotFound`.
-4. **`ItemReader`.** Reads each candidate's metadata. It drops items with no allowlisted licence,
-   restricted or dark items, non-`movies` items, and items that fail to load. If none is admitted
-   and any failed to load, the resolve fails rather than answering empty.
+4. **`ItemReader`.** Reads every candidate's metadata in parallel, and hands on each admitted item
+   as soon as it and the candidates ahead of it are read: a slow item holds back only those after
+   it. It drops items with no allowlisted licence, restricted or dark items, non-`movies` items,
+   and items that fail to load. If none is admitted and any failed to load, the resolve fails rather
+   than answering empty.
 5. **`SourceMapper`.** Video files only (`VideoFormats`). With a runtime, a file under half of it is
    dropped: a reel, a trailer or an extra is not the film. One source per resolution class per
    item, preferring h.264 in MP4, then any MP4, then height, length and size. The label is
-   "Title (year) · licence". SubRip and WebVTT become subtitle tracks, at most ten. Items go in
-   download order, at most fifty sources. URLs are `https://archive.org/download/…`, with a nominal
-   24-hour expiry.
+   "Title (year) · licence". SubRip and WebVTT become subtitle tracks, at most ten. Each item's
+   sources are sent as soon as the item is read, in download order; an item this device reported is
+   held back and sent last. At most fifty sources. URLs are `https://archive.org/download/…`, with a
+   nominal 24-hour expiry.
 
 Every gap is a `CoverageMiss` (route and reason) for binge-companions#148: a film not in the
 catalogue, one the routes found but the index did not know, and a resolve that ends with nothing.
@@ -192,8 +196,8 @@ its licence page, and the hand-off Binge's "manage" row starts:
 
 ## Talking to Wikidata and the Archive
 
-- **Keyless.** No API key, no account and no sign-in. Whether to add a TMDB fallback is decided
-  after binge-companions#148 measures coverage.
+- **Keyless.** No API key, no account and no sign-in, and no TMDB fallback: binge-companions#148
+  measured what one could add, and the maintainer decided the app stays keyless.
 - One HTTP client for the whole app (`ArchiveHttp.client`), with fixed timeouts: 10 s to connect,
   20 s to read. Every request names the app in its User-Agent, as Wikimedia asks. Both hosts are
   public and served over HTTPS; the network security config trusts system CAs only and refuses

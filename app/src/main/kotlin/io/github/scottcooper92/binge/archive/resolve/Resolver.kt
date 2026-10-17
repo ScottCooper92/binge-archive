@@ -6,7 +6,6 @@ import com.binge.companion.contracts.v1.MediaId
 import com.binge.companion.contracts.v1.MediaType
 import io.github.scottcooper92.binge.archive.index.IndexRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 
@@ -89,23 +88,48 @@ class Resolver(
         }
     }
 
+    /**
+     * Each item's sources as soon as the item is read, so a deadline keeps what was found before it. Items
+     * come in download order; one this device reported is held back and sent after every other. At most
+     * [SourceMapper.MAX_SOURCES] in all.
+     */
     private fun sources(
         tmdbId: Int,
         found: Found,
     ): Flow<StreamSource> =
         flow {
-            val items = reader.read(found)
-            val sources = mapper.map(items, found.facts, deranked())
-            when {
-                items.isEmpty() -> coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.NO_LICIT_ITEM))
-                sources.isEmpty() -> coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.NO_PLAYABLE_FILE))
-                else -> {
-                    val identifier = sources.first().id.substringBefore('/')
-                    val title = found.facts.title ?: items.firstOrNull { it.item.identifier == identifier }?.item?.title ?: identifier
-                    recordResolved(tmdbId, title, identifier)
+            val derankedIds = deranked()
+            val expiresAt = mapper.expiresAt()
+            val heldBack = mutableListOf<LicensedItem>()
+            var items = 0
+            var sent = 0
+
+            suspend fun send(licensed: LicensedItem) {
+                for (source in mapper.sources(licensed, found.facts, expiresAt)) {
+                    if (sent == SourceMapper.MAX_SOURCES) return
+                    if (sent ==
+                        0
+                    ) {
+                        recordResolved(
+                            tmdbId,
+                            found.facts.title ?: licensed.item.title ?: licensed.item.identifier,
+                            licensed.item.identifier,
+                        )
+                    }
+                    emit(source)
+                    sent++
                 }
             }
-            sources.asFlow().collect { emit(it) }
+
+            reader.readEach(found).collect { licensed ->
+                items++
+                if (licensed.item.identifier in derankedIds) heldBack += licensed else send(licensed)
+            }
+            heldBack.forEach { send(it) }
+            when {
+                items == 0 -> coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.NO_LICIT_ITEM))
+                sent == 0 -> coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.NO_PLAYABLE_FILE))
+            }
         }
 }
 

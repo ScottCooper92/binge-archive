@@ -13,9 +13,12 @@ import io.github.scottcooper92.binge.archive.index.movie
 import io.github.scottcooper92.binge.archive.index.series
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -64,6 +67,57 @@ class ResolverTest {
 
     private suspend fun sources(outcome: ResolveOutcome): Flow<com.binge.companion.contracts.stream.v1.StreamSource> =
         (outcome as ResolveOutcome.Sources).sources
+
+    @Test
+    fun `a slow second item does not delay the first item's sources`() =
+        runBlocking {
+            archive.sparql = { resolveFixture("wikidata-653.tsv") }
+            archive.search = {
+                searchResponse(
+                    "PhantasmagoriaTheater-Nosferatu1922909" to 900L,
+                    "Nosferatu_DVD_quality" to 500L,
+                    "Nosferatu_unlicensed_transfer" to 100L,
+                    "Nosferatu_dark_item" to 10L,
+                )
+            }
+            val slow = java.util.concurrent.CountDownLatch(1)
+            archive.metadataGates["Nosferatu_DVD_quality"] = slow
+
+            val flow = sources(resolver.resolve(movie(653), episode = null))
+            val first = withTimeout(10_000) { flow.first() }
+
+            assertTrue(first.id, first.id.startsWith("PhantasmagoriaTheater-Nosferatu1922909/"))
+            assertEquals(1L, slow.count)
+            slow.countDown()
+        }
+
+    @Test
+    fun `an item this device reported is sent after every other, even when it reads first`() =
+        runTest {
+            archive.sparql = { resolveFixture("wikidata-653.tsv") }
+            archive.search = { searchResponse("Nosferatu_DVD_quality" to 900L, "PhantasmagoriaTheater-Nosferatu1922909" to 500L) }
+            archive.metadataBodies["Nosferatu_DVD_quality"] =
+                """{"metadata":{"mediatype":"movies","licenseurl":"http://creativecommons.org/publicdomain/zero/1.0/"},""" +
+                """"files":[{"name":"dvd.mp4","format":"h.264","height":"480","length":"5600"}]}"""
+            val reported =
+                archive.http().let { http ->
+                    Resolver(
+                        IndexRepository(database.indexDao(), seed = { seed }),
+                        ItemFinder(http),
+                        ItemReader(http),
+                        SourceMapper(testStrings),
+                        misses::add,
+                        deranked = { setOf("Nosferatu_DVD_quality") },
+                    )
+                }
+
+            val sources = sources(reported.resolve(movie(653), episode = null)).toList()
+
+            assertEquals(
+                listOf("PhantasmagoriaTheater-Nosferatu1922909", "Nosferatu_DVD_quality"),
+                sources.map { it.id.substringBefore('/') }.distinct(),
+            )
+        }
 
     @Test
     fun `Night of the Living Dead resolves to its h264 encodes with SubRip tracks`() =
