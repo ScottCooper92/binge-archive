@@ -34,7 +34,7 @@ table does not name.
 | `checkTvMaterialSeparation` | A Material 3 import under `ui/tv`, or a tv-material import elsewhere | Import from the right library. Do not add to the allowlist |
 | Kotlin compile error | Ordinary | Fix it. If a contract symbol "does not exist", the app and the contract it builds against disagree: fix the app. A wrong contract is a PR against binge-companions |
 | A unit test fails | Ordinary | Fix the code the test describes. Changing an assertion is only right when the PR deliberately changed that behaviour and says so |
-| A licence test fails | The allowlist or its check | Fix the code so the test passes as written. **Never** widen the allowlist or loosen the check. If the test itself looks wrong, **stop** |
+| A licence test fails | A licence level or its check | Fix the code so the test passes as written. **Never** widen the default level, admit a licence at a level that does not list it, or loosen the check. If the test itself looks wrong, **stop** |
 | `validateDebugScreenshotTest` reports a diff | A frame no longer renders like its PNG | **Stop.** Leave the tree clean and say in a PR comment: run `./gradlew :app:updateDebugScreenshotTest`, look at the PNGs, commit them with the code |
 | `koverVerify` below the floor | Coverage | **Stop.** Writing the right test is a judgment call |
 | `Failed to apply plugin 'org.jetbrains.kotlin.android'` | AGP 9 rejects the plugin being applied to a module | Remove the `apply` from that module. The root build's `apply false` is intentional; leave it. Do not downgrade AGP |
@@ -63,7 +63,7 @@ Do not run the full gate. CI does that on push.
 - Add a ktlint baseline, `lint-baseline.xml`, `detekt-baseline.xml`, or a disable comment.
 - Set `abortOnError = false`, exclude a source set from `check`, or lower the kover floor.
 - Raise `minSdk` or change `compileSdk` to make a failure go away.
-- Widen the licence allowlist or loosen the licence check.
+- Widen the default licence level, admit a licence at a level that does not list it, or loosen the licence check.
 - Loosen whatever guards the exported Service.
 
 ## When in doubt

@@ -21,11 +21,15 @@ Green is necessary and not sufficient. Everything below is ungated.
 
 Roughly in order of how expensive they are to get wrong.
 
-**Only openly licensed items are returned.** An Archive item becomes a source only if its licence is
-on the allowlist in `CLAUDE.md`. A diff that widens the allowlist, matches a licence loosely (a
-prefix that admits a non-commercial or no-derivatives licence, say), or adds any path to a source
-that skips the check is a finding, whatever the PR says it is for. This is the single most important
-thing to read for.
+**By default, only openly licensed items are returned; anything wider is the user's own choice.**
+An Archive item becomes a source only if the user's licence level admits its licence (`CLAUDE.md` >
+The one rule). The default is the four open licences `CLAUDE.md` names, and only the user widens it:
+"Any, whatever the licence" only through its confirm. A diff that widens the default, matches a
+licence loosely into it (a prefix that admits a non-commercial or no-derivatives licence, say), sets
+a wider level without the user's choice, or adds any path to a source that skips the check is a
+finding, whatever the PR says it is for. So is a source whose `licence_kind` calls a licence open
+that is not public domain or Creative Commons, or a `label` that carries the licence instead of
+`licence_label`. This is the single most important thing to read for.
 
 **`Resolve`'s four answers stay distinct, as `stream.proto` defines them.** Sources; OK and empty
 ("a known title with no licit source"); `NOT_FOUND` ("the title is not in this integration's
