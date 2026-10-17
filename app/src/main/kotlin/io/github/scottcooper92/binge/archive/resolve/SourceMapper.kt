@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit
  * - Items in download order, then sources by height; at most fifty in all.
  */
 class SourceMapper(
+    private val strings: SourceStrings,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
     fun map(
@@ -54,7 +55,7 @@ class SourceMapper(
             encodes
                 .groupBy { VideoFormats.resolutionOf(it.height) }
                 .mapValues { (_, group) -> group.maxWith(PREFERENCE) }
-        val label = label(facts.title ?: item.title ?: item.identifier, facts.year, licensed.licence)
+        val label = strings.label(facts.title ?: item.title ?: item.identifier, facts.year, licensed.licence, MAX_LABEL)
         val subtitles = subtitles(item)
         return best.entries
             .sortedByDescending { it.value.height }
@@ -100,7 +101,7 @@ class SourceMapper(
                     .newBuilder()
                     .setUrl(downloadUrl(item.identifier, file.name))
                     .setLanguage(language)
-                    .setLabel(if (file.name.contains(".asr.")) AUTOMATIC_LABEL else "")
+                    .setLabel(if (file.name.contains(".asr.")) strings.automaticCaptions else "")
                     .build()
             }
     }
@@ -129,7 +130,6 @@ class SourceMapper(
         private const val MINIMUM_SHARE_OF_RUNTIME = 0.5
         private const val SUBRIP = "SubRip"
         private const val WEBVTT = "Web Video Text Tracks"
-        private const val AUTOMATIC_LABEL = "Automatic captions"
 
         fun downloadUrl(
             identifier: String,
@@ -142,17 +142,5 @@ class SourceMapper(
                 .addPathSegments(fileName)
                 .build()
                 .toString()
-
-        /** "Night of the Living Dead (1968) · Public domain (US)", the title shortened to fit 120. */
-        fun label(
-            title: String,
-            year: Int?,
-            licence: Licence,
-        ): String {
-            val suffix = (year?.let { " ($it)" }.orEmpty()) + " · " + licence.label
-            val room = MAX_LABEL - suffix.length
-            val shortTitle = if (title.length <= room) title else title.take(room - 1).trimEnd() + "…"
-            return shortTitle + suffix
-        }
     }
 }

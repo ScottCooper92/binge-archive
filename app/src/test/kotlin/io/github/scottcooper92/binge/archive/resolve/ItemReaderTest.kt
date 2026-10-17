@@ -31,7 +31,7 @@ class ItemReaderTest {
                 )
 
             assertEquals(listOf("PhantasmagoriaTheater-Nosferatu1922909"), items.map { it.item.identifier })
-            assertEquals(Licence("Public domain (US)"), items.single().licence)
+            assertEquals(Licence(Licence.Kind.PUBLIC_DOMAIN_US), items.single().licence)
         }
 
     @Test
@@ -87,7 +87,7 @@ class ItemReaderTest {
             val items = ItemReader(archive.http()).read(found(Route.WIKIDATA, "missing", "restricted", "audio", "garbled", "fine"))
 
             assertEquals(listOf("fine"), items.map { it.item.identifier })
-            assertEquals(Licence("CC0"), items.single().licence)
+            assertEquals(Licence(Licence.Kind.CC0), items.single().licence)
         }
 
     @Test

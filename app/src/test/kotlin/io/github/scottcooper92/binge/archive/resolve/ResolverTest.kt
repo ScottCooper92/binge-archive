@@ -45,7 +45,13 @@ class ResolverTest {
 
     private val resolver =
         archive.http().let { http ->
-            Resolver(IndexRepository(database.indexDao(), seed = { seed }), ItemFinder(http), ItemReader(http), SourceMapper(), misses::add)
+            Resolver(
+                IndexRepository(database.indexDao(), seed = { seed }),
+                ItemFinder(http),
+                ItemReader(http),
+                SourceMapper(testStrings),
+                misses::add,
+            )
         }
 
     @After
