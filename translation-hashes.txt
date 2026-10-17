@@ -14,7 +14,7 @@ app:licences_title  98f23bffb823
 app:not_on_archive  2aa792ffa5ed
 app:source_label_with_year  9c2342bd4115
 app:source_label_without_year  fed2d9b8a028
-app:status_about_body  b83e32318687
+app:status_about_body  d0c0a0662654
 app:status_about_headline  9e972aafcf77
 app:status_about_title  45d2766ee518
 app:status_films_linked  a27100c7547c

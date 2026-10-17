@@ -19,7 +19,7 @@
     <string name="status_loading">Loading the index…</string>
     <string name="status_about_title">What this is</string>
     <string name="status_about_headline">Free films for Binge</string>
-    <string name="status_about_body">This app finds copies of films on the Internet Archive for Binge to play. It only offers items in the public domain or under a Creative Commons licence.</string>
+    <string name="status_about_body">This app finds copies of films on the Internet Archive for Binge to play. It only offers items in the public domain, under CC0 or under CC BY.</string>
     <string name="status_licences_row">Which licences</string>
     <string name="status_licences_detail">What may be offered, and why</string>
     <string name="status_index_title">Index</string>
