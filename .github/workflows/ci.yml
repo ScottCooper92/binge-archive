@@ -5,7 +5,8 @@ name: CI
 # one, and author-conflicts on one completing against main. They match it by NAME,
 # so renaming this workflow silently unhooks all three.
 #
-# Four jobs in parallel, then `build`. `./gradlew build` runs every check `CLAUDE.md` lists under
+# Four build jobs in parallel, beside `submodule-pins` and `actionlint`, then `build`.
+# `./gradlew build` runs every check `CLAUDE.md` lists under
 # Gates, because the plugins wire themselves into `check` (or `app/build.gradle.kts` does it by
 # hand) and `build` depends on `check`. The screenshot validation, R8, the unit tests and
 # lint/detekt each take minutes, so three of the slowest pieces run as jobs of their own (`tests`, `screenshots`,
@@ -13,9 +14,10 @@ name: CI
 # a gate added to `check` later lands in `checks` without anyone touching this file.
 #
 # `build` is the job branch protection requires, and the one the bots read through this workflow's
-# conclusion. It runs after the four and `submodule-pins`, passes only if all of them passed (the pin
-# check passes by being skipped outside a PR), and folds the four's report artifacts back into the one
-# `build-reports` artifact author-ci-fix downloads.
+# conclusion. It runs after the four, `submodule-pins` and `actionlint`, passes only if all of them
+# passed (the pin check passes by being skipped outside a PR, actionlint by being skipped on the
+# nightly), and folds the four's report artifacts back into the one `build-reports` artifact
+# author-ci-fix downloads.
 #
 # Deliberately NO paths-ignore. bot-review requires a
 # SUCCESSFUL run of this workflow against the head, so a skipped run means a PR that
@@ -202,7 +204,7 @@ jobs:
   # the merge step instead of skipping this job, which would read as "not run" rather than red.
   build:
     if: ${{ always() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
-    needs: [submodule-pins, checks, tests, screenshots, release]
+    needs: [submodule-pins, actionlint, checks, tests, screenshots, release]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -218,14 +220,17 @@ jobs:
           retention-days: ${{ github.event_name == 'schedule' && 7 || 1 }}
         continue-on-error: true
 
-      # The pin check is skipped outside a pull request, so a skip passes for it alone.
+      # The pin check is skipped outside a pull request, and actionlint on the nightly schedule, so
+      # a skip passes for those two alone.
       - name: Fail unless every job passed
         env:
           PINS: ${{ needs.submodule-pins.result }}
+          ACTIONLINT: ${{ needs.actionlint.result }}
           RESULTS: ${{ needs.checks.result }} ${{ needs.tests.result }} ${{ needs.screenshots.result }} ${{ needs.release.result }}
         run: |
-          echo "submodule-pins: $PINS; checks, tests, screenshots, release: $RESULTS"
+          echo "submodule-pins: $PINS; actionlint: $ACTIONLINT; checks, tests, screenshots, release: $RESULTS"
           [ "$PINS" = success ] || [ "$PINS" = skipped ] || exit 1
+          [ "$ACTIONLINT" = success ] || [ "$ACTIONLINT" = skipped ] || exit 1
           for result in $RESULTS; do
             [ "$result" = success ] || exit 1
           done
