@@ -284,9 +284,11 @@ comment (`./gradlew ktlintFormat` is the fix), a `lint-baseline.xml`, `abortOnEr
 - **R8.** Release builds shrink. The app's own keep rules are the `keepRules` source set
   (`app/src/main/keepRules/`), in `main` so the minified debug build uses the same ones. The
   libraries and the contracts bring their own; add a rule here only for what they do not cover.
-  `app/src/debug/keepRules/` keeps, for the minified debug build only, the classes the
-  instrumentation test calls that the app itself never uses (the Kotlin stdlib, the gRPC client).
-  Without it the test process crashes before any test starts.
+  `app/src/debug/keepRules/` keeps, for the minified debug build only, the exact members the
+  instrumentation test calls that the app itself never uses: request builders, response getters,
+  the gRPC client and a few stdlib and coroutines helpers. Without it the test fails on the device
+  (`NoClassDefFoundError`, `NoSuchMethodError`). `tools/instrumentation-keep/check.sh` lists what is
+  missing; run it after changing the test.
 - **`-PminifyDebug`** builds a minified debug app. The device lane runs it, so a stale keep rule fails
   there rather than on a user. Its `optimization` block must match release's.
 - **The device lane** (`device-smoke.yml`, never `ci.yml`): an emulator binds the Service across a real
