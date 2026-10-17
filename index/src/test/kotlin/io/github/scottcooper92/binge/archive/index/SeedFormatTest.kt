@@ -27,14 +27,19 @@ class SeedFormatTest {
     }
 
     @Test
-    fun `a file without the v1 header is refused`() {
+    fun `a file without the v2 header is refused`() {
         assertThrows(IOException::class.java) { read("") }
         assertThrows(IOException::class.java) { read("L\tmovie\t1\tx\t1\n") }
     }
 
     @Test
+    fun `a v1 seed is refused, since its film flag meant something else`() {
+        assertThrows(IOException::class.java) { read("# binge-archive index seed v1\nL\tmovie\t34372\tExecution_of_Mary_1895\t0\n") }
+    }
+
+    @Test
     fun `a malformed record is refused rather than half read`() {
-        val header = "# binge-archive index seed v1\n"
+        val header = "# binge-archive index seed v2\n"
         assertThrows(IOException::class.java) { read(header + "X\t1\n") }
         assertThrows(IOException::class.java) { read(header + "L\tfilm\t1\tx\t1\n") }
         assertThrows(IOException::class.java) { read(header + "L\tmovie\t0\tx\t1\n") }
@@ -43,6 +48,6 @@ class SeedFormatTest {
 
     @Test
     fun `blank lines are ignored`() {
-        assertEquals(IndexSnapshot(emptyList(), emptyList(), emptyList()), read("# binge-archive index seed v1\n\n"))
+        assertEquals(IndexSnapshot(emptyList(), emptyList(), emptyList()), read("# binge-archive index seed v2\n\n"))
     }
 }

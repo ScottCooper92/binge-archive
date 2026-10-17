@@ -26,7 +26,10 @@ internal fun series(tmdbId: Int): MediaId =
         .setTmdbId(tmdbId)
         .build()
 
-/** A small snapshot shaped like the real one: the two films the issue names, a series and a non-film. */
+/**
+ * A small snapshot shaped like the real one: the two films the issue names, a series, a film
+ * Wikidata classes only as a "video" (#26), and a television series episode with a TMDB movie id.
+ */
 internal val sampleSnapshot =
     IndexSnapshot(
         links =
@@ -35,7 +38,8 @@ internal val sampleSnapshot =
                 WikidataLink(LinkedMediaType.MOVIE, 653, "PhantasmagoriaTheater-Nosferatu1922909", isFilm = true),
                 WikidataLink(LinkedMediaType.MOVIE, 10331, "Night.Of.The.Living.Dead_1080p", isFilm = true),
                 WikidataLink(LinkedMediaType.TV, 894, "The_Prisoner", isFilm = false),
-                WikidataLink(LinkedMediaType.MOVIE, 34372, "Execution_of_Mary_1895", isFilm = false),
+                WikidataLink(LinkedMediaType.MOVIE, 34372, "Execution_of_Mary_1895", isFilm = true),
+                WikidataLink(LinkedMediaType.MOVIE, 146742, "silent-a-w-o-l-", isFilm = false),
             ),
         archiveItems =
             listOf(

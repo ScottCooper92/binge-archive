@@ -8,7 +8,7 @@ import okhttp3.Request
 import java.io.IOException
 
 /**
- * Fetches a whole [IndexSnapshot]: the Wikidata links (with which of them are films), the Archive
+ * Fetches a whole [IndexSnapshot]: the Wikidata links (with which of them may be films), the Archive
  * items with an IMDb id, and the TMDB ids Wikidata gives for those IMDb ids. Blocking; call it off the main thread.
  *
  * Any failure is an [IOException], and nothing partial is returned: a refresh either has the whole
@@ -20,8 +20,8 @@ class IndexFetcher(
     private val archiveSearch: HttpUrl = ARCHIVE_SEARCH.toHttpUrl(),
 ) {
     fun fetch(): IndexSnapshot {
-        val filmClasses = WikidataParsers.filmClasses(sparql(WikidataQueries.FILM_CLASSES))
-        val links = WikidataParsers.checkNotEmpty(WikidataParsers.links(sparql(WikidataQueries.LINKS), filmClasses))
+        val nonFilmClasses = WikidataParsers.nonFilmClasses(sparql(WikidataQueries.NON_FILM_CLASSES))
+        val links = WikidataParsers.checkNotEmpty(WikidataParsers.links(sparql(WikidataQueries.LINKS), nonFilmClasses))
         val archiveItems = archiveImdbItems()
         val imdbIds = archiveItems.map { it.imdbId }.distinct().sorted()
         val imdbLinks =
