@@ -12,8 +12,8 @@ https://github.com/ScottCooper92/binge-archive.
 - **The last ten films it found for Binge**, so the app's screen can show them. You can clear the
   list on that screen.
 - **Copies you reported**, when you tell Binge a copy did not play. The app offers that copy last
-  for 30 days. The report itself stays on your device until you clear it on the app's screen or
-  uninstall the app.
+  for 30 days. After that the app forgets the report. You can also clear reports on the app's
+  screen, or uninstall the app, at any time.
 - **A log of films it could not find**, written to the device's own system log to help improve
   the index. It is never sent anywhere.
 

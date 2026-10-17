@@ -76,7 +76,14 @@ class AppGraph(
             ): ListenableWorker? =
                 when (workerClassName) {
                     IndexRefreshWorker::class.java.name ->
-                        IndexRefreshWorker(appContext, workerParameters, index, IndexFetcher(http)::fetch, io)
+                        IndexRefreshWorker(
+                            appContext,
+                            workerParameters,
+                            index,
+                            IndexFetcher(http)::fetch,
+                            io,
+                            prune = records::pruneReports,
+                        )
                     else -> null
                 }
         }

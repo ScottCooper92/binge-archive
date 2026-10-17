@@ -37,9 +37,9 @@ to `privacy.md` and `data-safety.md` in the same PR. The claims that must stay t
 - No analytics, crash reporting or advertising SDK. Check `app/build.gradle.kts` before changing
   this claim.
 - What is stored: the public index (`index.db`) and `device-records.db` (source reports and the
-  last ten resolved titles). A report pushes its copy last for 30 days, but the report itself stays
-  until the user clears it on the status screen or uninstalls the app (`reports/DeviceRecords.kt`;
-  pruning is #17). Both lists can be cleared on the status screen.
+  last ten resolved titles). A report pushes its copy last for 30 days, then the weekly refresh
+  deletes it (`reports/DeviceRecords.kt`, `IndexRefreshWorker`). Both lists can be cleared on the
+  status screen.
 - Coverage misses go to logcat on the device and nowhere else (`resolve/CoverageLog.kt`).
 - `android:allowBackup="false"` and `data_extraction_rules.xml` exclude everything from cloud
   backup and device transfer. Keep both.
