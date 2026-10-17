@@ -109,7 +109,8 @@ class StatusViewModelTest {
             fail = false
             viewModel.retry()
 
+            // The read loaded the seed first, so the screen shows its time, not "Not yet".
             val ready = viewModel.ready()
-            assertEquals(null, ready.lastRefreshedAt)
+            assertEquals(5_000L, ready.lastRefreshedAt)
         }
 }
