@@ -58,7 +58,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
-    uses: ScottCooper92/binge-ci/.github/workflows/submodule-pins.yml@a802d4ad866837e53971f984980beeb88b937da1 # v1
+    uses: ScottCooper92/binge-ci/.github/workflows/submodule-pins.yml@0c5177c6b9f591bf2d4c87a2d0d48d2680b4c398 # v1
 
   # `build` minus what the three jobs below own. Everything else `check` pulls in lands here:
   # compile, lint, detekt, ktlint, the tv-material gate and the debug assemble.
@@ -244,7 +244,7 @@ jobs:
 
       # binge-ci's shared step: a pinned release verified against its published checksum, with
       # shellcheck at warning severity.
-      - uses: ScottCooper92/binge-ci/.github/actions/actionlint@a802d4ad866837e53971f984980beeb88b937da1 # v1
+      - uses: ScottCooper92/binge-ci/.github/actions/actionlint@0c5177c6b9f591bf2d4c87a2d0d48d2680b4c398 # v1
 
   # A red nightly has no PR or push to carry it, so without this it is a red mark in the
   # Actions tab that nothing points at. One issue stays open while the canary is red and
@@ -259,7 +259,7 @@ jobs:
     permissions:
       issues: write
     steps:
-      - uses: ScottCooper92/binge-ci/.github/actions/nightly-report@a802d4ad866837e53971f984980beeb88b937da1 # v1
+      - uses: ScottCooper92/binge-ci/.github/actions/nightly-report@0c5177c6b9f591bf2d4c87a2d0d48d2680b4c398 # v1
         with:
           result: ${{ needs.build.result }}
           title: Nightly CI is failing on main
