@@ -49,7 +49,7 @@ class IndexRefreshWorkerTest {
     fun `a successful fetch replaces the seed`() =
         runTest {
             repository.ensureSeeded()
-            val fresh = IndexSnapshot(listOf(WikidataLink(LinkedMediaType.MOVIE, 42, "fresh", true)), emptyList(), emptyList())
+            val fresh = IndexSnapshot(listOf(WikidataLink(LinkedMediaType.MOVIE, 42, "fresh", true)), sampleSnapshot.archiveItems, emptyList())
 
             assertEquals(ListenableWorker.Result.success(), worker { fresh }.doWork())
 
