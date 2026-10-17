@@ -210,7 +210,7 @@ class ItemFinderTest {
             val hit = IndexHit(isFilm = true, listOf("Nosferatu_DVD_quality", "Nosferatu_unlicensed_transfer"), emptyList())
             val http = archive.http()
 
-            val admitted = ItemReader(http).read(ItemFinder(http).find(653, hit))
+            val admitted = ItemReader(http).readEach(ItemFinder(http).find(653, hit)).toList()
 
             assertEquals(listOf("Nosferatu_DVD_quality"), admitted.map { it.item.identifier })
         }
