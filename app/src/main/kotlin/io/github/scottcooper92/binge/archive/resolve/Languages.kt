@@ -21,5 +21,8 @@ internal object Languages {
             "nl" to listOf("dutch", "dut", "nld", "nl"),
         ).flatMap { (tag, names) -> names.map { it to tag } }.toMap()
 
-    fun bcp47(language: String?): String = tags[language?.trim()?.lowercase()] ?: UNDETERMINED
+    fun bcp47(language: String?): String = tagOrNull(language) ?: UNDETERMINED
+
+    /** The tag for [language], a name, a two or three letter code, or null where this table does not know it. */
+    fun tagOrNull(language: String?): String? = tags[language?.trim()?.lowercase()]
 }

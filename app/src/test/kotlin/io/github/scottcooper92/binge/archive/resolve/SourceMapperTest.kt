@@ -2,6 +2,7 @@ package io.github.scottcooper92.binge.archive.resolve
 
 import com.binge.companion.contracts.stream.v1.LicenceKind
 import com.binge.companion.contracts.stream.v1.Resolution
+import com.binge.companion.contracts.stream.v1.StreamSource
 import io.github.scottcooper92.binge.archive.settings.MinimumQuality
 import io.github.scottcooper92.binge.archive.settings.SourceSettings
 import org.junit.Assert.assertEquals
@@ -88,6 +89,79 @@ class SourceMapperTest {
         assertEquals(10, source.subtitlesCount)
         assertEquals("und", source.subtitlesList.first().language)
         assertEquals("Film", source.label)
+    }
+
+    private fun withCaptions(
+        itemLanguage: String?,
+        vararg captions: Pair<String, Long>,
+    ): List<StreamSource> {
+        val files =
+            captions.map { (name, size) -> ArchiveFile(name, "SubRip", size, null, null) } +
+                ArchiveFile("film.mp4", "h.264", 1, 480, 100.0)
+        val item = ArchiveItem("item", "movies", "Film", null, itemLanguage, accessRestricted = false, dark = false, files = files)
+        return sources(item, TitleFacts.NONE)
+    }
+
+    private fun languages(source: StreamSource) = source.subtitlesList.map { it.language }
+
+    @Test
+    fun `a caption file takes the language its name gives, not the film's`() {
+        val source = withCaptions("Spanish", "film.en.srt" to 10, "film.eng.srt" to 11, "film.es.srt" to 12, "film_fra.srt" to 13).single()
+
+        assertEquals(listOf("en", "en", "es", "fr"), languages(source))
+    }
+
+    @Test
+    fun `a caption file that names no language takes the film's, and undetermined when that is unknown too`() {
+        assertEquals(listOf("es"), languages(withCaptions("Spanish", "film.srt" to 10).single()))
+        assertEquals(listOf("und"), languages(withCaptions(null, "film.srt" to 10).single()))
+        assertEquals(listOf("und"), languages(withCaptions("Klingon", "film.srt" to 10).single()))
+    }
+
+    @Test
+    fun `a caption file with a language in its name needs no language on the film`() {
+        assertEquals(listOf("en"), languages(withCaptions(null, "film.en.srt" to 10).single()))
+        assertEquals(listOf("de"), languages(withCaptions("Klingon", "film-German.srt" to 10).single()))
+    }
+
+    @Test
+    fun `automatic captions keep the language of the film`() {
+        val source = withCaptions("French", "film.asr.srt" to 10).single()
+
+        assertEquals(listOf("fr"), languages(source))
+        assertEquals("Automatic captions", source.subtitlesList.single().label)
+    }
+
+    @Test
+    fun `captions of the same size in two languages are two tracks, and one language uploaded twice is one`() {
+        val source = withCaptions("English", "film.en.srt" to 10, "film.es.srt" to 10, "film2.en.srt" to 10).single()
+
+        assertEquals(listOf("en", "es"), languages(source))
+    }
+
+    @Test
+    fun `a word that only looks like a language is not one`() {
+        // "it" is Italian, but "Hit" is not "it": the word has to be the whole last piece of the name.
+        assertEquals(listOf("en"), languages(withCaptions("English", "The.Hit.srt" to 10).single()))
+        assertEquals(listOf("und"), languages(withCaptions(null, "Spanishwords.srt" to 10).single()))
+    }
+
+    @Test
+    fun `a Spanish film with English captions is kept on an English device and dropped on a Spanish one`() {
+        val sources = withCaptions("Spanish", "film.en.srt" to 10)
+        val mine = SourceSettings(subtitlesInMyLanguage = true)
+
+        assertEquals(sources, SourceMapper(testStrings, deviceLanguage = { "en" }).kept(sources, mine))
+        assertEquals(emptyList<Any>(), SourceMapper(testStrings, deviceLanguage = { "es" }).kept(sources, mine))
+    }
+
+    @Test
+    fun `captions of undetermined language never count as the device's language`() {
+        val sources = withCaptions(null, "film.srt" to 10)
+        val mine = SourceSettings(subtitlesInMyLanguage = true)
+
+        assertEquals(emptyList<Any>(), SourceMapper(testStrings, deviceLanguage = { "en" }).kept(sources, mine))
+        assertEquals(sources, SourceMapper(testStrings, deviceLanguage = { "en" }).kept(sources, SourceSettings.DEFAULT))
     }
 
     @Test

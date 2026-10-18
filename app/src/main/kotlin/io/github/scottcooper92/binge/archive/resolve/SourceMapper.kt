@@ -109,14 +109,20 @@ class SourceMapper(
             .addAllSubtitles(subtitles)
             .build()
 
+    /**
+     * The caption files as tracks, each in its own language (#51): the language the file's name gives, else the item's own,
+     * else undetermined. The item's language is the film's spoken language, which is what an automatic caption is in
+     * and the best guess for a caption file that says nothing, but not what a file named `.en.srt` on a Spanish film is in.
+     */
     private fun subtitles(item: ArchiveItem): List<SubtitleTrack> {
-        val language = Languages.bcp47(item.language)
+        val itemLanguage = Languages.bcp47(item.language)
         return item.files
             .filter { it.format.equals(SUBRIP, ignoreCase = true) || it.format.equals(WEBVTT, ignoreCase = true) }
-            // The same captions are often uploaded once per encode; one copy is enough.
-            .distinctBy { it.sizeBytes to it.name.substringAfterLast('.') }
+            .map { it to captionLanguage(it.name, itemLanguage) }
+            // The same captions are often uploaded once per encode; one copy of each language is enough.
+            .distinctBy { (file, language) -> Triple(file.sizeBytes, file.name.substringAfterLast('.'), language) }
             .take(MAX_SUBTITLES)
-            .map { file ->
+            .map { (file, language) ->
                 SubtitleTrack
                     .newBuilder()
                     .setUrl(downloadUrl(item.identifier, file.name))
@@ -124,6 +130,19 @@ class SourceMapper(
                     .setLabel(if (file.name.contains(".asr.")) strings.automaticCaptions else "")
                     .build()
             }
+    }
+
+    /**
+     * A caption file's language: [itemLanguage] for an automatic caption (`.asr.`), which is in the speech's language; else the
+     * language its name ends in before the extension (`film.en.srt`, `film.eng.srt`, `film_spa.vtt`); else [itemLanguage].
+     */
+    private fun captionLanguage(
+        name: String,
+        itemLanguage: String,
+    ): String {
+        if (name.contains(".asr.")) return itemLanguage
+        val token = TRAILING_WORD.find(name.substringBeforeLast('.'))?.groupValues?.get(1)
+        return Languages.tagOrNull(token) ?: itemLanguage
     }
 
     /** What `licence_label` and `licence_kind` carry for one item's sources. */
@@ -154,6 +173,7 @@ class SourceMapper(
         const val MAX_SUBTITLES = 10
         const val MAX_LABEL = 120
         private const val MINIMUM_SHARE_OF_RUNTIME = 0.5
+        private val TRAILING_WORD = Regex("[._-]([A-Za-z]+)$")
         private const val SUBRIP = "SubRip"
         private const val WEBVTT = "Web Video Text Tracks"
 
