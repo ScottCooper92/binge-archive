@@ -29,6 +29,12 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
+/**
+ * The mappers' clock, pinned: a source carries the second it expires at, so two resolves compared with each other
+ * differ whenever the wall clock crosses a second between them, which failed `main`'s CI once.
+ */
+private const val NOW_MILLIS = 1_000_000L
+
 /** The resolver end to end, against the index and a fake Wikidata and Archive serving real responses. */
 @RunWith(RobolectricTestRunner::class)
 class ResolverTest {
@@ -57,7 +63,7 @@ class ResolverTest {
                 IndexRepository(database.indexDao(), seed = { seed }),
                 ItemFinder(http),
                 ItemReader(http),
-                SourceMapper(testStrings),
+                SourceMapper(testStrings, clock = { NOW_MILLIS }),
                 misses::add,
                 recordResolved = { tmdbId, title, identifier -> resolved += Triple(tmdbId, title, identifier) },
             )
@@ -105,7 +111,7 @@ class ResolverTest {
         IndexRepository(database.indexDao(), seed = { seed }),
         ItemFinder(http),
         ItemReader(http),
-        SourceMapper(testStrings, deviceLanguage = { deviceLanguage }),
+        SourceMapper(testStrings, clock = { NOW_MILLIS }, deviceLanguage = { deviceLanguage }),
         misses::add,
         deranked = deranked,
         recordResolved = recordResolved,
@@ -329,7 +335,7 @@ class ResolverTest {
                         IndexRepository(database.indexDao(), seed = { seed }),
                         ItemFinder(http),
                         ItemReader(http),
-                        SourceMapper(testStrings),
+                        SourceMapper(testStrings, clock = { NOW_MILLIS }),
                         misses::add,
                         settings = {
                             reads++
@@ -354,7 +360,7 @@ class ResolverTest {
                         IndexRepository(database.indexDao(), seed = { seed }),
                         ItemFinder(http),
                         ItemReader(http),
-                        SourceMapper(testStrings),
+                        SourceMapper(testStrings, clock = { NOW_MILLIS }),
                         misses::add,
                         settings = { throw java.io.IOException("datastore") },
                     )
@@ -402,7 +408,7 @@ class ResolverTest {
                         IndexRepository(database.indexDao(), seed = { seed }),
                         ItemFinder(http),
                         ItemReader(http),
-                        SourceMapper(testStrings),
+                        SourceMapper(testStrings, clock = { NOW_MILLIS }),
                         misses::add,
                         deranked = { setOf("Nosferatu_DVD_quality") },
                     )
