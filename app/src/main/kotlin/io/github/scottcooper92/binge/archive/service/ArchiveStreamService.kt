@@ -12,13 +12,12 @@ import com.binge.companion.contracts.stream.v1.ResolveResponse
 import com.binge.companion.contracts.stream.v1.SourceProblem
 import com.binge.companion.contracts.stream.v1.StreamServiceGrpcKt
 import com.binge.companion.contracts.v1.MediaType
+import com.binge.companion.sdk.requireDeclared
 import io.github.scottcooper92.binge.archive.index.IndexRepository
 import io.github.scottcooper92.binge.archive.reports.DeviceRecords
 import io.github.scottcooper92.binge.archive.resolve.ResolveOutcome
 import io.github.scottcooper92.binge.archive.resolve.TitleResolver
 import io.github.scottcooper92.binge.archive.resolve.unusableRequest
-import io.grpc.Status
-import io.grpc.StatusException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -123,16 +122,5 @@ class ArchiveStreamService(
         /** Fixed: nothing here depends on a user or a session. */
         val CAPABILITIES: Set<Capability> =
             setOf(Capability.CAPABILITY_PROBE, Capability.CAPABILITY_SUBTITLES, Capability.CAPABILITY_REPORT_SOURCE)
-    }
-}
-
-/**
- * Refuses a gated rpc this companion did not declare, as `PERMISSION_DENIED`, the contract's code for
- * it. The STREAM twin of the SDK's REQUEST-typed `requireDeclared`. binge-companions#239 adds a
- * STREAM-typed one to the SDK; once a release carries it, this goes and the SDK's is used.
- */
-internal fun Set<Capability>.requireDeclared(capability: Capability) {
-    if (capability !in this) {
-        throw StatusException(Status.PERMISSION_DENIED.withDescription("$capability was not declared in the handshake"))
     }
 }
