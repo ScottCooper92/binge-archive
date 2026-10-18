@@ -11,6 +11,7 @@ import com.binge.companion.contracts.stream.v1.StreamSource
 import com.binge.companion.contracts.v1.EpisodeRef
 import com.binge.companion.contracts.v1.MediaId
 import com.binge.companion.contracts.v1.MediaType
+import com.binge.companion.sdk.requireDeclared
 import com.binge.companion.sdk.userMessageOf
 import io.github.scottcooper92.binge.archive.index.IndexDatabase
 import io.github.scottcooper92.binge.archive.index.IndexRepository
