@@ -181,6 +181,8 @@ class StatusViewModelTest {
     fun `any licence saves at once, and any other level undoes it`() =
         runBlocking {
             val viewModel = StatusViewModel(index, records, FakeRefresher(), settings)
+            // Settle the first Ready before choosing, so a cold Room and DataStore start is not inside the write's wait.
+            viewModel.ready()
 
             viewModel.chooseLicences(LicenceLevel.ANY)
             assertEquals(LicenceLevel.ANY, viewModel.ready { it.sources.licences == LicenceLevel.ANY }.sources.licences)
