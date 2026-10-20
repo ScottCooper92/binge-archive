@@ -36,10 +36,11 @@ own emerald `ArchiveBrand` in place of Binge's amber (`theme/ArchiveTheme.kt`).
 **By default, only openly licensed items are returned. Anything wider is the user's own choice.**
 
 An Archive item becomes a source only if the user's licence level admits its licence
-(`LicenceLevel`, set in Sources). The default is `PUBLIC_DOMAIN_AND_CC_BY`: the Public Domain Mark,
-the Creative Commons public-domain URL, CC0 and CC BY. The user may narrow it to the public domain
-only, or widen it to every Creative Commons licence, or to "Any, whatever the licence", which only
-a confirm can set (#48). That widest level admits every item: no licence stated, licence text this
+(`LicenceLevel`, set in Sources on a three-stop slider). The default is `CREATIVE_COMMONS`: the
+Public Domain Mark, the Creative Commons public-domain URL, CC0 and every Creative Commons licence.
+Every one of them allows watching; NC, ND and SA limit reuse, not viewing. The user may narrow it to
+the public domain only, or widen it to "Any licence", which Sources marks with a warning in the
+error colour. That widest level admits every item: no licence stated, licence text this
 app does not recognise, and text that reserves the rights. Restricted and dark items stay out at
 every level, because that is the Archive's own access control, not a licence. Public Domain Mark
 items are returned everywhere.
@@ -56,8 +57,8 @@ the wire as `OPEN`, and the rest as `NONE_STATED`, `RESTRICTED` or `UNKNOWN`.
   or a setting this build does not know reads as it.
 - **Never skip the check.** Every item goes through `LicenceAllowlist` at the user's level, on
   every route and every fallback. No code path admits an item without it.
-- **Nothing chooses a wider level for the user.** Only the user's own pick does, and "Any" only
-  after its confirm.
+- **Nothing chooses a wider level for the user.** Only the user's own pick does, and "Any" always
+  shows its warning.
 
 This rule is why the app may exist at all. Widening the default, a level the user did not choose,
 or a code path that skips the check, is never a fix for a test or a coverage gap. It is a decision
@@ -243,15 +244,17 @@ with the Sources settings, its licence page, and the hand-off Binge's "manage" r
   with the SDK's `HandOffPolicy` (the same pins as the Service) and opens `MainActivity`. A start
   with no calling package opens nothing.
 - **Sources** (`settings/SourceSettingsStore`, a DataStore on the device, saved as made with no Save
-  button): title matches (a switch, default on), licences (a level, default public domain and CC
-  BY), minimum quality (any, 720p, 1080p; default any) and "only copies with subtitles in my
-  language" (default off). "Any, whatever the licence" asks first, on the design system's confirm,
-  focus on Cancel on the TV; `StatusViewModel` saves it only on confirm. These four are the only
-  settings that change what is resolved; adding another is a decision for the maintainer in an
-  issue.
+  button): title matches (a switch, default on), licences (a slider of three levels, default openly
+  licensed), minimum quality (any, 720p, 1080p; default any) and "only copies with subtitles in my
+  language" (default off). Under the licence slider, the chosen level's name and what it means sit in
+  a cell sized to the longest level's text, so nothing moves as it changes; "Any" reads as a warning
+  in the error colour. On the TV the slider is the design system's `TvNumberStepper`. These four
+  are the only settings that change what is resolved; adding another is a decision for the
+  maintainer in an issue.
 - **No browse and no search.**
 - Everything is the design system's: `ItemGroup` rows on the phone, `TvTwoPanePage` and
-  `TvOptionRow` on the television. The brand colour is chosen once, in `theme/`.
+  `TvOptionRow` on the television. The one exception is the phone's licence slider, Material 3's
+  `Slider` (`ui/status/LicenceLevelSlider.kt`), until the design system has a stepped slider. The brand colour is chosen once, in `theme/`.
 
 ## Talking to Wikidata and the Archive
 

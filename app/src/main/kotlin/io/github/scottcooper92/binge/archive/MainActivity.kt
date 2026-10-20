@@ -62,8 +62,6 @@ class MainActivity : ComponentActivity() {
                     onClearReported = viewModel::clearReported,
                     onTitleMatches = viewModel::setTitleMatches,
                     onLicences = viewModel::chooseLicences,
-                    onConfirmAnyLicence = viewModel::confirmAnyLicence,
-                    onCancelAnyLicence = viewModel::cancelAnyLicence,
                     onMinimumQuality = viewModel::setMinimumQuality,
                     onSubtitlesInMyLanguage = viewModel::setSubtitlesInMyLanguage,
                 )

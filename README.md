@@ -1,8 +1,8 @@
 # binge-archive
 
 Free films for [Binge](https://github.com/ScottCooper92), from the Internet Archive. By default this
-app only returns items with an open licence: the public domain, CC0 or CC BY. Its Sources settings
-let you narrow that, or widen it, and only your own choice ever widens it.
+app only returns items with an open licence: the public domain, CC0 or any Creative Commons licence.
+Its Sources settings let you narrow that, or widen it, and only your own choice ever widens it.
 
 ## For the person watching
 

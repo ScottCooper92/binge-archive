@@ -77,21 +77,21 @@ fun LicenceScreen(
     }
 }
 
-/** The four allowed licences, each with its name and what it means. Shared with the TV page. */
+/** The licences allowed by default, each with its name and what it means. Shared with the TV page. */
 @Composable
 internal fun allowedLicences(): List<Pair<String, String>> =
     listOf(
         stringResource(R.string.licence_public_domain) to stringResource(R.string.licences_pdm_detail),
         stringResource(R.string.licence_public_domain_us) to stringResource(R.string.licences_pd_us_detail),
         stringResource(R.string.licence_cc0) to stringResource(R.string.licences_cc0_detail),
-        stringResource(R.string.licences_cc_by) to stringResource(R.string.licences_cc_by_detail),
+        stringResource(R.string.licences_creative_commons) to stringResource(R.string.licences_creative_commons_detail),
     )
 
 @Composable
 private fun allowedRows(): List<ListItem> {
     val icons = listOf(Icons.Outlined.Public, Icons.Outlined.Public, Icons.Outlined.VolunteerActivism, Icons.Outlined.Copyright)
     return allowedLicences().zip(icons) { (name, detail), icon ->
-        ListItem(icon = icon, label = name, detail = detail, supportingMaxLines = 2, clickable = false)
+        ListItem(icon = icon, label = name, detail = detail, supportingMaxLines = INTRO_LINES, clickable = false)
     }
 }
 

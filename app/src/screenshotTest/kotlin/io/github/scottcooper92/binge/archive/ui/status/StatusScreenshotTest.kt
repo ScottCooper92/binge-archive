@@ -80,17 +80,17 @@ class StatusScreenshotTest {
     @PreviewTest
     @ArchiveScreenStatePreview
     @Composable
-    fun anyLicenceConfirm() = SectionFrame { AnyLicenceConfirm(StatusActions()) }
+    fun anyLicence() = SectionFrame { SourceSettingsGroup(previewAnyLicence, StatusActions()) }
 
     @PreviewTest
     @ArchiveSpanishPreviews
     @Composable
-    fun anyLicenceConfirmSpanish() = SectionFrame { AnyLicenceConfirm(StatusActions()) }
+    fun anyLicenceSpanish() = SectionFrame { SourceSettingsGroup(previewAnyLicence, StatusActions()) }
 
     @PreviewTest
     @ArchiveSettingsFontScalePreviews
     @Composable
-    fun anyLicenceConfirmFontScale() = SectionFrame { AnyLicenceConfirm(StatusActions()) }
+    fun anyLicenceFontScale() = SectionFrame { SourceSettingsGroup(previewAnyLicence, StatusActions()) }
 
     @PreviewTest
     @ArchiveScreenPreviews

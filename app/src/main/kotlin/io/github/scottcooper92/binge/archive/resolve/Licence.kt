@@ -48,10 +48,7 @@ enum class LicenceLevel(
     /** The Public Domain Mark, the Creative Commons public-domain URL and CC0. */
     PUBLIC_DOMAIN(PUBLIC_DOMAIN_KINDS),
 
-    /** Public domain and CC BY: the default. */
-    PUBLIC_DOMAIN_AND_CC_BY(PUBLIC_DOMAIN_KINDS + Licence.Kind.CC_BY),
-
-    /** Public domain and every Creative Commons licence. */
+    /** Public domain and every Creative Commons licence: the default. Every one of them allows watching. */
     CREATIVE_COMMONS(
         Licence.Kind.entries
             .filter { it.code.isNotEmpty() }
@@ -59,8 +56,7 @@ enum class LicenceLevel(
     ),
 
     /**
-     * Every item, whatever its licence: none stated, unrecognised or restrictive. Chosen only through a
-     * confirm. Restricted and dark items still stay out: that is the Archive's access control, not a licence.
+     * Every item, whatever its licence: none stated, unrecognised or restrictive. Sources warns on it. Restricted and dark items still stay out: that is the Archive's access control, not a licence.
      */
     ANY(Licence.Kind.entries.toSet()),
     ;
@@ -68,7 +64,7 @@ enum class LicenceLevel(
     fun admits(kind: Licence.Kind): Boolean = kind in kinds
 
     companion object {
-        val DEFAULT = PUBLIC_DOMAIN_AND_CC_BY
+        val DEFAULT = CREATIVE_COMMONS
     }
 }
 

@@ -29,15 +29,17 @@
     <string name="settings_title_matches_detail">Pueden hallar copias mal licenciadas</string>
     <string name="settings_licences">Licencias</string>
     <string name="settings_licences_public_domain">Solo dominio público</string>
-    <string name="settings_licences_default">Dominio público y CC BY</string>
-    <string name="settings_licences_creative_commons">Cualquier licencia Creative Commons</string>
-    <string name="settings_licences_any">Cualquiera, sea cual sea la licencia</string>
+    <string name="settings_licences_creative_commons">Con licencia abierta</string>
+    <string name="settings_licences_any">Cualquier licencia</string>
+    <string name="settings_licences_public_domain_explain">Películas sin derechos de autor, o cuyos autores renunciaron a todos ellos. Es la opción con menos películas.</string>
+    <string name="settings_licences_creative_commons_explain">Dominio público y cualquier licencia Creative Commons. Todas permiten ver la película; algunas limitan compartirla o modificarla, lo que no afecta a verla.</string>
+    <string name="settings_licences_any_explain">También películas sin licencia indicada o con todos los derechos reservados. Puede que no tengan permiso para verse, así que decidir si puedes verlas depende de ti.</string>
+    <string name="settings_licences_stop_public_domain">Dominio público</string>
+    <string name="settings_licences_stop_open">Abierta</string>
+    <string name="settings_licences_stop_any">Cualquiera</string>
     <string name="settings_quality">Calidad mínima</string>
     <string name="settings_quality_any">Cualquiera</string>
     <string name="settings_subtitles">Solo copias con subtítulos en mi idioma</string>
-    <string name="settings_any_title">¿Incluir copias sea cual sea su licencia?</string>
-    <string name="settings_any_message">Puede que estas copias no tengan permiso para verse. Algunas no indican licencia y otras se reservan todos los derechos. Puedes volver a cambiarlo cuando quieras.</string>
-    <string name="settings_any_confirm">Incluirlas</string>
     <string name="status_recent_title">Resueltas hace poco</string>
     <string name="status_recent_empty">Nada todavía. Abre una película en Binge.</string>
     <string name="status_recent_clear">Borrar esta lista</string>
@@ -52,6 +54,6 @@
     <string name="licences_pdm_detail">Marca de dominio público: sin derechos de autor conocidos en ningún país</string>
     <string name="licences_pd_us_detail">Dominio público de Creative Commons: sin derechos de autor en Estados Unidos</string>
     <string name="licences_cc0_detail">El titular renunció a todos sus derechos</string>
-    <string name="licences_cc_by_detail">Se puede compartir, citando al autor</string>
-    <string name="licences_not_allowed">No se ofrecen de forma predeterminada: licencias de compartir igual, no comerciales o sin obras derivadas, ni obras sin licencia.</string>
+    <string name="licences_creative_commons_detail">Cualquier licencia Creative Commons. Todas permiten ver la película; algunas limitan compartirla o modificarla</string>
+    <string name="licences_not_allowed">No se ofrecen de forma predeterminada: obras sin licencia indicada o con todos los derechos reservados.</string>
 </resources>
