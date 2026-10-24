@@ -15,7 +15,7 @@ class SourceSettingChoicesTest {
     @Test
     fun `each choice has its own icon`() {
         assertEquals(
-            4,
+            3,
             SourceSettingChoices.licences
                 .map { it.icon }
                 .distinct()

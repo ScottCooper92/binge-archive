@@ -2,6 +2,7 @@ package io.github.scottcooper92.binge.archive.ui.status
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -26,8 +27,6 @@ import com.binge.designsystem.CenteredContent
 import com.binge.designsystem.ErrorKind
 import com.binge.designsystem.component.BingeChoice
 import com.binge.designsystem.component.BingeChoiceList
-import com.binge.designsystem.component.BingeConfirmDialog
-import com.binge.designsystem.component.BingeConfirmDialogContent
 import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
@@ -140,40 +139,19 @@ private fun aboutRows(
         ),
     )
 
-/**
- * The Sources settings, saved as made. "Any, whatever the licence" asks first, on [AnyLicenceConfirm],
- * shown while [StatusUiState.Ready.confirmingAnyLicence].
- */
+/** The Sources settings, saved as made, then the licence level on its own slider. */
 @Composable
 fun SourceSettingsGroup(
     state: StatusUiState.Ready,
     actions: StatusActions,
     title: String? = stringResource(R.string.settings_title),
 ) {
-    if (state.confirmingAnyLicence) {
-        BingeConfirmDialog(
-            title = stringResource(R.string.settings_any_title),
-            message = stringResource(R.string.settings_any_message),
-            confirmLabel = stringResource(R.string.settings_any_confirm),
-            onConfirm = actions.onConfirmAnyLicence,
-            onDismissRequest = actions.onCancelAnyLicence,
-            destructive = true,
-        )
+    Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
+        ItemGroup(title = title, rows = sourceSettingRows(state, actions))
+        ItemGroup(title = stringResource(R.string.settings_licences), rows = emptyList()) {
+            LicenceLevelSlider(selected = state.sources.licences, onSelect = actions.onLicences)
+        }
     }
-    ItemGroup(title = title, rows = sourceSettingRows(state, actions))
-}
-
-/** The confirm "Any, whatever the licence" asks, without its modal window, for a frame. */
-@Composable
-fun AnyLicenceConfirm(actions: StatusActions) {
-    BingeConfirmDialogContent(
-        title = stringResource(R.string.settings_any_title),
-        message = stringResource(R.string.settings_any_message),
-        confirmLabel = stringResource(R.string.settings_any_confirm),
-        onConfirm = actions.onConfirmAnyLicence,
-        onDismissRequest = actions.onCancelAnyLicence,
-        destructive = true,
-    )
 }
 
 @Composable
@@ -191,14 +169,6 @@ private fun sourceSettingRows(
             toggled = settings.titleMatches,
             onClick = { actions.onTitleMatches(!settings.titleMatches) },
         ),
-        bingeChoiceItem(
-            icon = SourceSettingChoices.licencesIcon,
-            title = stringResource(R.string.settings_licences),
-            choices = SourceSettingChoices.licences.toChoiceList(),
-            selected = settings.licences,
-            emptyLabel = "",
-            onSelect = actions.onLicences,
-        ).copy(supportingMaxLines = SETTING_DETAIL_LINES),
         bingeChoiceItem(
             icon = SourceSettingChoices.qualityIcon,
             title = stringResource(R.string.settings_quality),

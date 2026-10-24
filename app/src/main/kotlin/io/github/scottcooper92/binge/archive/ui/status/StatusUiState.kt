@@ -30,8 +30,6 @@ sealed interface StatusUiState {
         val reported: List<String>,
         /** The user's Sources settings, as saved. */
         val sources: SourceSettings = SourceSettings.DEFAULT,
-        /** Whether "Any, whatever the licence" was picked and waits on its confirm. Nothing is saved until then. */
-        val confirmingAnyLicence: Boolean = false,
     ) : StatusUiState
 
     /** The device's own records could not be read. */
@@ -49,10 +47,8 @@ data class StatusActions(
     val onClearRecent: () -> Unit = {},
     val onClearReported: () -> Unit = {},
     val onTitleMatches: (Boolean) -> Unit = {},
-    /** A licence level picked. [LicenceLevel.ANY] asks first: see [StatusUiState.Ready.confirmingAnyLicence]. */
+    /** A licence level picked, saved as it is. */
     val onLicences: (LicenceLevel) -> Unit = {},
-    val onConfirmAnyLicence: () -> Unit = {},
-    val onCancelAnyLicence: () -> Unit = {},
     val onMinimumQuality: (MinimumQuality) -> Unit = {},
     val onSubtitlesInMyLanguage: (Boolean) -> Unit = {},
 )
