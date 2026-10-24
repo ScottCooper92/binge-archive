@@ -2,7 +2,9 @@ package io.github.scottcooper92.binge.archive.resolve
 
 import io.github.scottcooper92.binge.archive.index.IndexHit
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
@@ -67,14 +69,14 @@ class ItemFinderTest {
 
     @Test
     fun `a download-count search that stalls past its budget keeps Wikidata's items, in Wikidata's order`() =
-        kotlinx.coroutines.runBlocking {
+        runBlocking {
             archive.sparql = { facts(ia = "first_item") + facts(ia = "second_item").lines()[1] + "\n" }
             archive.search = { searchResponse("second_item" to 9L) }
             archive.searchDelayMillis = 30_000
             val logged = mutableListOf<IOException>()
 
             val found =
-                kotlinx.coroutines.withTimeout(
+                withTimeout(
                     5_000,
                 ) { ItemFinder(archive.http(rankingBudgetMillis = 300)) { _, e -> logged += e }.find(1) }
 
@@ -154,7 +156,7 @@ class ItemFinderTest {
         archive.metadataStatus["flaky"] = 503
 
         assertThrows(IOException::class.java) {
-            kotlinx.coroutines.runBlocking { ItemFinder(archive.http()).find(1) }
+            runBlocking { ItemFinder(archive.http()).find(1) }
         }
     }
 
@@ -181,7 +183,7 @@ class ItemFinderTest {
         archive.metadataStatus["flaky"] = 503
 
         assertThrows(IOException::class.java) {
-            kotlinx.coroutines.runBlocking {
+            runBlocking {
                 val http = archive.http()
                 ItemReader(http).readEach(ItemFinder(http).find(1)).toList()
             }
@@ -274,7 +276,7 @@ class ItemFinderTest {
 
         listOf(null, IndexHit(isFilm = true, emptyList(), emptyList())).forEach { hit ->
             assertThrows(IOException::class.java) {
-                kotlinx.coroutines.runBlocking { ItemFinder(archive.http()).find(1, hit) }
+                runBlocking { ItemFinder(archive.http()).find(1, hit) }
             }
         }
         assertEquals(emptyList<String>(), archive.searches)

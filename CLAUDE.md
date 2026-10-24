@@ -265,8 +265,10 @@ with the Sources settings, its licence page, and the hand-off Binge's "manage" r
 - **Keyless.** No API key, no account and no sign-in, and no TMDB fallback: binge-companions#148
   measured what one could add, and the maintainer decided the app stays keyless.
 - One HTTP client for the whole app (`ArchiveHttp.client`), with fixed timeouts: 10 s to connect,
-  20 s to read. The weekly refresh keeps both. The resolver's Wikidata query alone gets a 4 s budget
-  (`ResolverHttp.SPARQL_BUDGET_MILLIS`), since the host cancels at 10 s. Every request names the app in its User-Agent, as Wikimedia asks. Both hosts are
+  20 s to read. The weekly refresh keeps both. The resolver shortens two calls, since the host cancels
+  at 10 s: its Wikidata query gets a 4 s budget (`ResolverHttp.SPARQL_BUDGET_MILLIS`) and its
+  download-count ranking search 1.5 s (`ResolverHttp.RANKING_BUDGET_MILLIS`). Every request names the
+  app in its User-Agent, as Wikimedia asks. Both hosts are
   public and served over HTTPS; the network security config trusts system CAs only and refuses
   cleartext.
 - Keep each Wikidata query well inside the read timeout. A subclass walk per row made the link query

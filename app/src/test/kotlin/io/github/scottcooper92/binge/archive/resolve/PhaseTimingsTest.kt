@@ -1,5 +1,6 @@
 package io.github.scottcooper92.binge.archive.resolve
 
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
@@ -31,7 +32,7 @@ class PhaseTimingsTest {
     fun `a phase that throws is still logged, and the failure goes on`() =
         runTest {
             assertThrows(IllegalStateException::class.java) {
-                kotlinx.coroutines.runBlocking {
+                runBlocking {
                     timings.time("wikidata_query") {
                         nowNanos += 7_000_000
                         error("down")
