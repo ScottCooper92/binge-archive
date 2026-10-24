@@ -35,6 +35,9 @@ internal class FakeArchive(
     /** Holds every SPARQL answer back this long, for the cancellation test. */
     var sparqlDelaySeconds = 0L
 
+    /** Holds every Archive search answer back this long, for the cold-start tests. */
+    var searchDelayMillis = 0L
+
     init {
         server.dispatcher =
             object : Dispatcher() {
@@ -51,7 +54,12 @@ internal class FakeArchive(
                         path == "/search" -> {
                             val query = request.url.queryParameter("q").orEmpty()
                             searches += query
-                            searchStatus?.let { MockResponse(code = it) } ?: MockResponse(body = search(query))
+                            searchStatus?.let { MockResponse(code = it) }
+                                ?: MockResponse
+                                    .Builder()
+                                    .body(search(query))
+                                    .headersDelay(searchDelayMillis, java.util.concurrent.TimeUnit.MILLISECONDS)
+                                    .build()
                         }
                         path.startsWith("/metadata/") -> metadata(request.url.pathSegments.last())
                         else -> MockResponse(code = 404)
@@ -69,13 +77,17 @@ internal class FakeArchive(
         return MockResponse(body = body)
     }
 
-    fun http(sparqlBudgetMillis: Long = ResolverHttp.SPARQL_BUDGET_MILLIS): ResolverHttp =
+    fun http(
+        sparqlBudgetMillis: Long = ResolverHttp.SPARQL_BUDGET_MILLIS,
+        rankingBudgetMillis: Long = ResolverHttp.RANKING_BUDGET_MILLIS,
+    ): ResolverHttp =
         ResolverHttp(
             client = ArchiveHttp.client("test"),
             wikidataEndpoint = server.url("/sparql"),
             archiveSearch = server.url("/search"),
             archiveMetadata = server.url("/metadata"),
             sparqlBudgetMillis = sparqlBudgetMillis,
+            rankingBudgetMillis = rankingBudgetMillis,
         )
 
     override fun close() {

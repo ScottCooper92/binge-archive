@@ -66,6 +66,23 @@ class ItemFinderTest {
         }
 
     @Test
+    fun `a download-count search that stalls past its budget keeps Wikidata's items, in Wikidata's order`() =
+        kotlinx.coroutines.runBlocking {
+            archive.sparql = { facts(ia = "first_item") + facts(ia = "second_item").lines()[1] + "\n" }
+            archive.search = { searchResponse("second_item" to 9L) }
+            archive.searchDelayMillis = 30_000
+            val logged = mutableListOf<IOException>()
+
+            val found =
+                kotlinx.coroutines.withTimeout(
+                    5_000,
+                ) { ItemFinder(archive.http(rankingBudgetMillis = 300)) { _, e -> logged += e }.find(1) }
+
+            assertEquals(listOf("first_item", "second_item"), found.candidates.map { it.identifier })
+            assertEquals(1, logged.size)
+        }
+
+    @Test
     fun `with no Archive id on Wikidata, the IMDb id is searched`() =
         runTest {
             archive.sparql = { facts(imdb = "tt0000001", runtime = "60") }
