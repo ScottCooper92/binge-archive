@@ -107,15 +107,17 @@ class ResolverTest {
         recordResolved: suspend (Int, String, String) -> Unit = { _, _, _ -> },
         settings: SourceSettings = SourceSettings.DEFAULT,
         deviceLanguage: String = "en",
+        timings: PhaseTimings = PhaseTimings.NONE,
     ) = Resolver(
         IndexRepository(database.indexDao(), seed = { seed }),
-        ItemFinder(http),
-        ItemReader(http),
+        ItemFinder(http, timings),
+        ItemReader(http, timings),
         SourceMapper(testStrings, clock = { NOW_MILLIS }, deviceLanguage = { deviceLanguage }),
         misses::add,
         deranked = deranked,
         recordResolved = recordResolved,
         settings = { settings },
+        timings = timings,
     )
 
     /** A film with a title, year and runtime and no linked Archive item: only the title route can place it. */
@@ -645,4 +647,29 @@ class ResolverTest {
             assertTrue(sources.all { it.id.startsWith("Night.Of.The.Living.Dead_1080p/") })
             assertEquals(listOf(CoverageMiss(10331, Route.WIKIDATA, CoverageMiss.Reason.WIKIDATA_FAILED)), misses)
         }
+
+    @Test
+    fun `a cold resolve answers its first source inside the host's deadline when the ranking search stalls`() =
+        kotlinx.coroutines.runBlocking {
+            archive.sparql = { resolveFixture("wikidata-10331.tsv") }
+            archive.search = { resolveFixture("search-downloads-10331.json") }
+            // A search that answers long after the host's 10 s deadline would; its own budget keeps it from gating the read.
+            archive.searchDelayMillis = 30_000
+            val phases = mutableListOf<Pair<String, Long>>()
+            val cold = resolverWith(http = archive.http(rankingBudgetMillis = 300), timings = PhaseTimings({ n, ms -> phases += n to ms }))
+
+            val first = withTimeout(COLD_START_BUDGET_MILLIS) { sources(cold.resolve(movie(10331), episode = null)).first() }
+
+            assertTrue(first.id, first.id.startsWith("Night.Of.The.Living.Dead_1080p/"))
+            assertEquals(PHASE_ORDER, phases.map { it.first }.distinct())
+            val firstSourceMillis = phases.single { it.first == "first_source" }.second
+            assertTrue("first source took $firstSourceMillis ms", firstSourceMillis < COLD_START_BUDGET_MILLIS)
+        }
+
+    private companion object {
+        /** Well under the host's 10 s deadline, with room for a slow CI machine. */
+        const val COLD_START_BUDGET_MILLIS = 5_000L
+        val PHASE_ORDER =
+            listOf("index_lookup", "settings_read", "wikidata_query", "ranking_search", "find_items", "metadata_read", "first_source")
+    }
 }

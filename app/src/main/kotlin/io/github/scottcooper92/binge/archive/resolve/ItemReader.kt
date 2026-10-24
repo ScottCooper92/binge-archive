@@ -30,6 +30,7 @@ data class LicensedItem(
  */
 class ItemReader(
     private val http: ResolverHttp,
+    private val timings: PhaseTimings = PhaseTimings.NONE,
 ) {
     /**
      * Each admitted item, in candidate order, as soon as it and every candidate ahead of it are read.
@@ -59,7 +60,8 @@ class ItemReader(
     private suspend fun load(
         candidate: Candidate,
         preloaded: Map<String, ArchiveItem>,
-    ): Result<ArchiveItem> = preloaded[candidate.identifier]?.let { Result.success(it) } ?: loadOne(http, candidate)
+    ): Result<ArchiveItem> =
+        preloaded[candidate.identifier]?.let { Result.success(it) } ?: timings.time("metadata_read") { loadOne(http, candidate) }
 
     private fun admit(
         candidate: Candidate,

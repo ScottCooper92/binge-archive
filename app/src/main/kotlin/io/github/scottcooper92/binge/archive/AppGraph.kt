@@ -9,6 +9,7 @@ import androidx.work.ListenableWorker
 import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
+import com.binge.companion.sdk.attempt
 import io.github.scottcooper92.binge.archive.index.ArchiveHttp
 import io.github.scottcooper92.binge.archive.index.IndexDatabase
 import io.github.scottcooper92.binge.archive.index.IndexFetcher
@@ -22,6 +23,8 @@ import io.github.scottcooper92.binge.archive.reports.DeviceRecordsDatabase
 import io.github.scottcooper92.binge.archive.resolve.ItemFinder
 import io.github.scottcooper92.binge.archive.resolve.ItemReader
 import io.github.scottcooper92.binge.archive.resolve.LogcatCoverageLog
+import io.github.scottcooper92.binge.archive.resolve.LogcatPhaseLog
+import io.github.scottcooper92.binge.archive.resolve.PhaseTimings
 import io.github.scottcooper92.binge.archive.resolve.Resolver
 import io.github.scottcooper92.binge.archive.resolve.ResolverHttp
 import io.github.scottcooper92.binge.archive.resolve.SourceMapper
@@ -29,6 +32,7 @@ import io.github.scottcooper92.binge.archive.resolve.SourceStrings
 import io.github.scottcooper92.binge.archive.settings.SourceSettingsStore
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 
 /**
@@ -74,16 +78,32 @@ class AppGraph(
     /** Resolves a title to sources: the index, then Wikidata and the Archive. */
     val resolver: Resolver by lazy {
         val http = ResolverHttp(http)
+        val timings = PhaseTimings(LogcatPhaseLog)
         Resolver(
             index,
-            ItemFinder(http),
-            ItemReader(http),
+            ItemFinder(http, timings),
+            ItemReader(http, timings),
             SourceMapper(SourceStrings.from(appContext)),
             LogcatCoverageLog,
             deranked = records::deranked,
             recordResolved = records::recordResolved,
             settings = sourceSettings::current,
+            timings = timings,
         )
+    }
+
+    /**
+     * Gets the first `Resolve` of a cold process off the critical path: opens the index and loads the seed,
+     * reads the settings and builds the resolver and its HTTP client, all on [io], before a host binds.
+     * A failure here is only a missed head start: the first `Resolve` does the same work itself.
+     */
+    suspend fun warmUp() {
+        val timings = PhaseTimings(LogcatPhaseLog)
+        withContext(io) {
+            attempt { timings.time("warm_index") { index.ensureSeeded() } }
+            attempt { timings.time("warm_settings") { sourceSettings.current() } }
+            attempt { timings.time("warm_resolver") { resolver } }
+        }
     }
 
     /** Builds the workers this app schedules, with their collaborators from this graph. */

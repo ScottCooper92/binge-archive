@@ -33,6 +33,8 @@ class ResolverHttp(
     private val io: CoroutineDispatcher = Dispatchers.IO,
     /** The Wikidata query's own budget: well inside the host's 10 s deadline, so the index fallback has time to run. */
     private val sparqlBudgetMillis: Long = SPARQL_BUDGET_MILLIS,
+    /** The budget of the search that only orders candidates: its answer is never worth holding the first read for. */
+    val rankingBudgetMillis: Long = RANKING_BUDGET_MILLIS,
 ) {
     /**
      * Running out of [sparqlBudgetMillis] is an [IOException], like any other Wikidata failure. The budget is
@@ -49,10 +51,14 @@ class ResolverHttp(
             callTimeoutMillis = sparqlBudgetMillis,
         )
 
-    /** An advancedsearch query, best-downloaded first, returning identifier and downloads. */
+    /**
+     * An advancedsearch query, best-downloaded first, returning identifier and downloads. [callTimeoutMillis]
+     * bounds the whole call like [sparql]'s budget does; running out of it is an [IOException].
+     */
     suspend fun search(
         query: String,
         rows: Int,
+        callTimeoutMillis: Long? = null,
     ): String {
         val url =
             archiveSearch
@@ -64,7 +70,7 @@ class ResolverHttp(
                 .addQueryParameter("rows", rows.toString())
                 .addQueryParameter("output", "json")
                 .build()
-        return body(Request.Builder().url(url).build())
+        return body(Request.Builder().url(url).build(), callTimeoutMillis)
     }
 
     suspend fun metadata(identifier: String): String =
@@ -107,6 +113,9 @@ class ResolverHttp(
     companion object {
         /** About 4 s: the resolver's Wikidata budget. The weekly refresh keeps the shared client's 20 s read timeout. */
         const val SPARQL_BUDGET_MILLIS = 4_000L
+
+        /** About 1.5 s: the ranking search's budget, so a slow answer costs the first read little. */
+        const val RANKING_BUDGET_MILLIS = 1_500L
         const val ARCHIVE_METADATA = "https://archive.org/metadata"
         const val ARCHIVE_DOWNLOAD = "https://archive.org/download"
     }

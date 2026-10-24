@@ -69,6 +69,7 @@ class Resolver(
     private val recordResolved: suspend (tmdbId: Int, title: String, identifier: String) -> Unit = { _, _, _ -> },
     /** The user's settings now. A failure to read them is an `IOException`, so the resolve fails. */
     private val settings: suspend () -> SourceSettings = { SourceSettings.DEFAULT },
+    private val timings: PhaseTimings = PhaseTimings.NONE,
 ) : TitleResolver {
     override suspend fun resolve(
         media: MediaId,
@@ -77,17 +78,18 @@ class Resolver(
         val invalidReason = unusableRequest(media, episode)
         if (invalidReason != null) return ResolveOutcome.Invalid(invalidReason)
         if (media.mediaType == MediaType.MEDIA_TYPE_TV) return ResolveOutcome.NotFound
-        val hit = index.lookup(media)
+        val started = timings.mark()
+        val hit = timings.time("index_lookup") { index.lookup(media) }
         if (hit != null && !hit.isFilm) return ResolveOutcome.NotAFilm
         val tmdbId = media.tmdbId
-        val settings = settings()
-        val found = finder.find(tmdbId, hit, titleMatches = settings.titleMatches)
+        val settings = timings.time("settings_read") { settings() }
+        val found = timings.time("find_items") { finder.find(tmdbId, hit, titleMatches = settings.titleMatches) }
         val inIndex = hit != null
         return when {
             found.candidates.isNotEmpty() -> {
                 if (found.fromIndex) coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.WIKIDATA_FAILED))
                 if (!inIndex) coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.NOT_IN_INDEX))
-                ResolveOutcome.Sources(sources(tmdbId, found, settings))
+                ResolveOutcome.Sources(sources(tmdbId, found, settings, started))
             }
             found.titleSkipped -> {
                 coverage.miss(CoverageMiss(tmdbId, Route.TITLE, CoverageMiss.Reason.FILTERED_BY_SETTINGS))
@@ -113,6 +115,7 @@ class Resolver(
         tmdbId: Int,
         found: Found,
         settings: SourceSettings,
+        started: Long,
     ): Flow<StreamSource> =
         flow {
             val derankedIds = attempt { deranked() }.onFailure { bookkeepingFailed("deranking", it) }.getOrDefault(emptySet())
@@ -129,6 +132,7 @@ class Resolver(
                 for (source in kept) {
                     if (sent == SourceMapper.MAX_SOURCES) return
                     if (sent == 0) {
+                        timings.since("first_source", started)
                         attempt {
                             recordResolved(
                                 tmdbId,

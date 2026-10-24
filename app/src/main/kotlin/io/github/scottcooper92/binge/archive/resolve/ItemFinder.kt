@@ -50,11 +50,13 @@ data class Found(
  * its IMDb-tagged ids as route 2, with [TitleFacts.NONE]. Neither route checks a runtime, so nothing
  * is lost but the label's title and year and [SourceMapper]'s minimum length. The licence check is
  * [ItemReader]'s and still applies. With no index ids to fall back on, the failure is the find's.
- * On the Wikidata route the search only orders the candidates. If it fails, they keep Wikidata's
- * order, the failure goes to [log], and the find goes on.
+ * On the Wikidata route the search only orders the candidates, within its own short budget
+ * ([ResolverHttp.rankingBudgetMillis]). If it fails or runs out, they keep Wikidata's order, the
+ * failure goes to [log], and the find goes on.
  */
 class ItemFinder(
     private val http: ResolverHttp,
+    private val timings: PhaseTimings = PhaseTimings.NONE,
     private val log: (String, IOException) -> Unit = { message, e -> Log.w(TAG, message, e) },
 ) {
     /**
@@ -68,7 +70,7 @@ class ItemFinder(
     ): Found {
         val facts =
             try {
-                WikidataTitle.parse(http.sparql(WikidataTitle.query(tmdbId)))
+                timings.time("wikidata_query") { WikidataTitle.parse(http.sparql(WikidataTitle.query(tmdbId))) }
             } catch (e: IOException) {
                 return fromIndex(hit) ?: throw e
             }
@@ -148,7 +150,11 @@ class ItemFinder(
 
     private suspend fun downloads(identifiers: List<String>): Map<String, Long> {
         val query = identifiers.joinToString(" OR ", prefix = "identifier:(", postfix = ")") { "\"${quoted(it)}\"" }
-        return parseSearch(http.search(query, rows = identifiers.size)).associate { it.identifier to it.downloads }
+        val answer =
+            timings.time(
+                "ranking_search",
+            ) { http.search(query, rows = identifiers.size, callTimeoutMillis = http.rankingBudgetMillis) }
+        return parseSearch(answer).associate { it.identifier to it.downloads }
     }
 
     private suspend fun search(query: String): List<Candidate> = parseSearch(http.search(query, rows = MAX_CANDIDATES))
