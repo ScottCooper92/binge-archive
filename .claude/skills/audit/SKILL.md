@@ -30,12 +30,13 @@ Skip `binge-companions/`, `design-system/` and `binge-ci/` (submodules with thei
 - Every path from an Archive item to a `StreamSource` classes its licence with
   `LicenceAllowlist.identify` and admits it only if the user's `LicenceLevel` does. Trace each one,
   fallbacks included. A path that skips the check is a bug at every level.
-- The default level (`LicenceLevel.DEFAULT`, `SourceSettings.DEFAULT`) is exactly the four licences
-  `CLAUDE.md` names. A prefix or substring match that lets a non-commercial, no-derivatives or
-  share-alike variant into the default is a bug.
+- The default level (`LicenceLevel.DEFAULT`, `SourceSettings.DEFAULT`) is exactly
+  `CREATIVE_COMMONS`: public domain and every Creative Commons licence, as `CLAUDE.md` names them.
+  A prefix or substring match that lets anything else into the default is a bug.
 - At the default, a missing, unparseable or restrictive licence is a rejection, never a default.
-  Only `LicenceLevel.ANY` admits them, and only `StatusViewModel.confirmAnyLicence` sets it. Any
-  other route to a wider level (a default, a migration, a stored value read leniently) is a bug.
+  Only `LicenceLevel.ANY` admits them, and only the user's own pick on the Sources slider sets it
+  (`StatusViewModel.chooseLicences`, through `onLicences`), with that stop shown in its warning.
+  Any other route to a wider level (a default, a migration, a stored value read leniently) is a bug.
 - Each source carries its licence in `licence_label` (at most 40 characters, no control or format
   characters) and `licence_kind`. Only public-domain and Creative Commons licences go as
   `LICENCE_KIND_OPEN`; nothing goes as `UNSPECIFIED`. The `label` never names the licence.

@@ -23,11 +23,12 @@ Roughly in order of how expensive they are to get wrong.
 
 **By default, only openly licensed items are returned; anything wider is the user's own choice.**
 An Archive item becomes a source only if the user's licence level admits its licence (`CLAUDE.md` >
-The one rule). The default is the four open licences `CLAUDE.md` names, and only the user widens it:
-"Any, whatever the licence" only through its confirm. A diff that widens the default, matches a
-licence loosely into it (a prefix that admits a non-commercial or no-derivatives licence, say), sets
-a wider level without the user's choice, or adds any path to a source that skips the check is a
-finding, whatever the PR says it is for. So is a source whose `licence_kind` calls a licence open
+The one rule). The default is `CREATIVE_COMMONS`: public domain and every Creative Commons licence,
+as `CLAUDE.md` names them. Only the user widens it, to "Any licence", by their own pick on the
+Sources slider, which shows that stop with its warning. A diff that widens the default, matches text
+loosely into it (a prefix that admits something that is not public domain or Creative Commons, say),
+sets a wider level without the user's pick, drops the warning, or adds any path to a source that
+skips the check is a finding, whatever the PR says it is for. So is a source whose `licence_kind` calls a licence open
 that is not public domain or Creative Commons, or a `label` that carries the licence instead of
 `licence_label`. This is the single most important thing to read for.
 
