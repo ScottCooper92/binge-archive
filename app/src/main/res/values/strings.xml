@@ -43,6 +43,14 @@
     <string name="settings_licences_default">Public domain and CC BY</string>
     <string name="settings_licences_creative_commons">Any Creative Commons licence</string>
     <string name="settings_licences_any">Any, whatever the licence</string>
+    <string name="settings_licences_public_domain_explain">Films with no copyright, or whose makers gave every right away. The fewest films.</string>
+    <string name="settings_licences_default_explain">Public domain and CC BY: free to share, with credit to the maker. This is the default.</string>
+    <string name="settings_licences_creative_commons_explain">Public domain and every Creative Commons licence. All are free to watch; some limit sharing or remixing, which doesn\'t affect watching.</string>
+    <string name="settings_licences_any_explain">Also films with no licence stated, or with all rights reserved. They may not be licensed for viewing, so whether you may watch them is up to you.</string>
+    <string name="settings_licences_stop_public_domain">Public domain</string>
+    <string name="settings_licences_stop_default" translatable="false">CC BY</string>
+    <string name="settings_licences_stop_creative_commons">All CC</string>
+    <string name="settings_licences_stop_any">Any</string>
     <string name="settings_quality">Minimum quality</string>
     <string name="settings_quality_any">Any</string>
     <string name="settings_quality_720" translatable="false">720p</string>

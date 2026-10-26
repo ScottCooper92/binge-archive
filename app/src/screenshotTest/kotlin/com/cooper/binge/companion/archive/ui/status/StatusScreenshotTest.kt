@@ -77,6 +77,22 @@ class StatusScreenshotTest {
     @Composable
     fun sourcesFontScale() = SectionFrame { SourceSettingsGroup(previewSourcesChanged, StatusActions()) }
 
+    /** The slider on its warning stop, "Any" saved. */
+    @PreviewTest
+    @ArchiveScreenStatePreview
+    @Composable
+    fun anyLicence() = SectionFrame { SourceSettingsGroup(previewAnyLicence, StatusActions()) }
+
+    @PreviewTest
+    @ArchiveSpanishPreviews
+    @Composable
+    fun anyLicenceSpanish() = SectionFrame { SourceSettingsGroup(previewAnyLicence, StatusActions()) }
+
+    @PreviewTest
+    @ArchiveSettingsFontScalePreviews
+    @Composable
+    fun anyLicenceFontScale() = SectionFrame { SourceSettingsGroup(previewAnyLicence, StatusActions()) }
+
     @PreviewTest
     @ArchiveScreenStatePreview
     @Composable

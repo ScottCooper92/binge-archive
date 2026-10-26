@@ -53,3 +53,6 @@ val previewSourcesChanged =
 
 /** "Any, including no licence" picked, waiting on its confirm. */
 val previewConfirmingAny = previewReady.copy(confirmingAnyLicence = true)
+
+/** "Any licence" saved: the slider on its warning stop. */
+val previewAnyLicence = previewReady.copy(sources = SourceSettings(licences = LicenceLevel.ANY))

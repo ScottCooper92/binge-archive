@@ -32,6 +32,13 @@
     <string name="settings_licences_default">Dominio público y CC BY</string>
     <string name="settings_licences_creative_commons">Cualquier licencia Creative Commons</string>
     <string name="settings_licences_any">Cualquiera, sea cual sea la licencia</string>
+    <string name="settings_licences_public_domain_explain">Películas sin derechos de autor, o cuyos autores renunciaron a todos ellos. Es la opción con menos películas.</string>
+    <string name="settings_licences_default_explain">Dominio público y CC BY: se pueden compartir, citando al autor. Es la opción predeterminada.</string>
+    <string name="settings_licences_creative_commons_explain">Dominio público y cualquier licencia Creative Commons. Todas permiten ver la película; algunas limitan compartirla o modificarla, lo que no afecta a verla.</string>
+    <string name="settings_licences_any_explain">También películas sin licencia indicada o con todos los derechos reservados. Puede que no tengan permiso para verse, así que decidir si puedes verlas depende de ti.</string>
+    <string name="settings_licences_stop_public_domain">Dominio público</string>
+    <string name="settings_licences_stop_creative_commons">Todas CC</string>
+    <string name="settings_licences_stop_any">Cualquiera</string>
     <string name="settings_quality">Calidad mínima</string>
     <string name="settings_quality_any">Cualquiera</string>
     <string name="settings_subtitles">Solo copias con subtítulos en mi idioma</string>

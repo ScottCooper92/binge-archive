@@ -40,6 +40,15 @@ object SourceSettingChoices {
             SettingChoice(LicenceLevel.ANY, R.string.settings_licences_any, Icons.Outlined.ReportProblem),
         )
 
+    /** What each licence level means, shown under the slider. */
+    val licenceExplanations: Map<LicenceLevel, Int> =
+        mapOf(
+            LicenceLevel.PUBLIC_DOMAIN to R.string.settings_licences_public_domain_explain,
+            LicenceLevel.PUBLIC_DOMAIN_AND_CC_BY to R.string.settings_licences_default_explain,
+            LicenceLevel.CREATIVE_COMMONS to R.string.settings_licences_creative_commons_explain,
+            LicenceLevel.ANY to R.string.settings_licences_any_explain,
+        )
+
     val qualities: List<SettingChoice<MinimumQuality>> =
         listOf(
             SettingChoice(MinimumQuality.ANY, R.string.settings_quality_any, Icons.Outlined.AllInclusive),

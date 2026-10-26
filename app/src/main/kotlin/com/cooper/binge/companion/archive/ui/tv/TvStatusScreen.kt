@@ -171,12 +171,7 @@ fun TvSourceSettings(
         icon = SourceSettingChoices.titleMatchesIcon,
         supportingText = stringResource(R.string.settings_title_matches_detail),
     )
-    TvSettingGroup(
-        title = stringResource(R.string.settings_licences),
-        choices = SourceSettingChoices.licences,
-        selected = settings.licences,
-        onSelect = actions.onLicences,
-    )
+    TvLicenceSlider(selected = settings.licences, onSelect = actions.onLicences)
     TvSettingGroup(
         title = stringResource(R.string.settings_quality),
         choices = SourceSettingChoices.qualities,

@@ -18,9 +18,16 @@ app:settings_any_message  aadf4d8416b3
 app:settings_any_title  248a1e0aa5ea
 app:settings_licences  c00fc4b36627
 app:settings_licences_any  29c4e0485317
+app:settings_licences_any_explain  97ec97eaf78e
 app:settings_licences_creative_commons  e1c126f62f4a
+app:settings_licences_creative_commons_explain  5ffa6f6369cc
 app:settings_licences_default  a2899640d1f9
+app:settings_licences_default_explain  6e075b181c9f
 app:settings_licences_public_domain  19144e2bbeb8
+app:settings_licences_public_domain_explain  d5adbdddc5ed
+app:settings_licences_stop_any  2b505597daa7
+app:settings_licences_stop_creative_commons  8fde82bccce4
+app:settings_licences_stop_public_domain  8c3ff64bb211
 app:settings_quality  76f8a1ce5f38
 app:settings_quality_any  2b505597daa7
 app:settings_subtitles  f6983e994ff0

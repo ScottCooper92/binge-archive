@@ -36,7 +36,7 @@ own emerald `ArchiveBrand` in place of Binge's amber (`theme/ArchiveTheme.kt`).
 **By default, only openly licensed items are returned. Anything wider is the user's own choice.**
 
 An Archive item becomes a source only if the user's licence level admits its licence
-(`LicenceLevel`, set in Sources). The default is `PUBLIC_DOMAIN_AND_CC_BY`: the Public Domain Mark,
+(`LicenceLevel`, set in Sources on a slider). The default is `PUBLIC_DOMAIN_AND_CC_BY`: the Public Domain Mark,
 the Creative Commons public-domain URL, CC0 and CC BY. The user may narrow it to the public domain
 only, or widen it to every Creative Commons licence, or to "Any, whatever the licence", which only
 a confirm can set (#48). That widest level admits every item: no licence stated, licence text this
@@ -250,15 +250,19 @@ with the Sources settings, its licence page, and the hand-off Binge's "manage" r
   with the SDK's `HandOffPolicy` (the same pins as the Service) and opens `MainActivity`. A start
   with no calling package opens nothing.
 - **Sources** (`settings/SourceSettingsStore`, a DataStore on the device, saved as made with no Save
-  button): title matches (a switch, default on), licences (a level, default public domain and CC
-  BY), minimum quality (any, 720p, 1080p; default any) and "only copies with subtitles in my
-  language" (default off). "Any, whatever the licence" asks first, on the design system's confirm,
-  focus on Cancel on the TV; `StatusViewModel` saves it only on confirm. These four are the only
+  button): title matches (a switch, default on), licences (a slider of four levels, default public
+  domain and CC BY), minimum quality (any, 720p, 1080p; default any) and "only copies with subtitles
+  in my language" (default off). Under the slider, the chosen level's name and what it means sit in a
+  cell sized to the longest level's text, so nothing moves as it changes. "Any, whatever the licence"
+  asks first, on the design system's confirm, focus on Cancel on the TV; `StatusViewModel` saves it
+  only on confirm, and until then the slider shows the saved level. On the TV the slider is the
+  design system's `TvNumberStepper`. These four are the only
   settings that change what is resolved; adding another is a decision for the maintainer in an
   issue.
 - **No browse and no search.**
 - Everything is the design system's: `ItemGroup` rows on the phone, `TvTwoPanePage` and
-  `TvOptionRow` on the television. The brand colour is chosen once, in `theme/`.
+  `TvOptionRow` on the television. The one exception is the phone's licence slider, Material 3's
+  `Slider` (`ui/status/LicenceLevelSlider.kt`), until the design system has a stepped slider. The brand colour is chosen once, in `theme/`.
 
 ## Talking to Wikidata and the Archive
 

@@ -18,6 +18,7 @@ import com.cooper.binge.companion.archive.preview.ArchiveTvSpanishScreenPreviews
 import com.cooper.binge.companion.archive.ui.status.PREVIEW_NOW
 import com.cooper.binge.companion.archive.ui.status.StatusActions
 import com.cooper.binge.companion.archive.ui.status.StatusUiState
+import com.cooper.binge.companion.archive.ui.status.previewAnyLicence
 import com.cooper.binge.companion.archive.ui.status.previewEmpty
 import com.cooper.binge.companion.archive.ui.status.previewFailedRefreshing
 import com.cooper.binge.companion.archive.ui.status.previewReady
@@ -100,6 +101,22 @@ class TvStatusScreenshotTest {
     @ArchiveTvSpanishScreenPreviews
     @Composable
     fun sourcesSectionSpanish() = SectionFrame { TvSourceSettings(previewSourcesChanged, StatusActions()) }
+
+    /** "Any licence" saved: the licence section's warning. */
+    @PreviewTest
+    @ArchiveTvScreenPreviews
+    @Composable
+    fun anyLicence() = SectionFrame { TvSourceSettings(previewAnyLicence, StatusActions()) }
+
+    @PreviewTest
+    @ArchiveTvSpanishScreenPreviews
+    @Composable
+    fun anyLicenceSpanish() = SectionFrame { TvSourceSettings(previewAnyLicence, StatusActions()) }
+
+    @PreviewTest
+    @ArchiveTvFontScalePreviews
+    @Composable
+    fun anyLicenceFontScale() = SectionFrame { TvSourceSettings(previewAnyLicence, StatusActions()) }
 
     /** The confirm as it first shows: focus on Cancel, the safe answer. */
     @PreviewTest
