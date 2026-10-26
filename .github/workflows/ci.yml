@@ -90,6 +90,10 @@ jobs:
           java-version: '21'
 
       - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+        # The one job that saves the Gradle cache. The jobs below restore it, so a push writes one copy of
+        # the Gradle home (1 to 3.5 GB) rather than one per job.
+        with:
+          cache-cleanup: on-success
 
       # --continue surfaces every failure in one run rather than stopping at the first,
       # which matters most to author-ci-fix: it gets exactly one repair attempt per
@@ -125,6 +129,8 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+        with:
+          cache-read-only: true
 
       - name: Unit tests and coverage
         run: ./gradlew :app:testDebugUnitTest :app:koverVerify --continue
@@ -155,6 +161,8 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+        with:
+          cache-read-only: true
 
       - name: Validate screenshots
         run: ./gradlew :app:validateDebugScreenshotTest --continue
@@ -184,6 +192,8 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+        with:
+          cache-read-only: true
 
       - name: Assemble the release build
         run: ./gradlew :app:assembleRelease --continue
