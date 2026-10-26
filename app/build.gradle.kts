@@ -19,7 +19,7 @@ room {
 }
 
 android {
-    namespace = "io.github.scottcooper92.binge.archive"
+    namespace = "com.cooper.binge.companion.archive"
     compileSdk = 37
 
     // What makes AGP create the screenshotTest source set. The matching flag is in gradle.properties;
@@ -27,7 +27,7 @@ android {
     experimentalProperties["android.experimental.enableScreenshotTest"] = true
 
     defaultConfig {
-        applicationId = "io.github.scottcooper92.binge.archive"
+        applicationId = "com.cooper.binge.companion.archive"
         minSdk = 26
         targetSdk = 36
         // A release workflow overrides both from the tag it builds; a local build keeps the placeholders.
@@ -159,7 +159,7 @@ translationStaleness {
 // tv-material's.
 tvMaterialSeparation {
     sources.from(fileTree("src") { include("**/*.kt") })
-    allowlist.add("app/src/main/kotlin/io/github/scottcooper92/binge/archive/theme/ArchiveTheme.kt")
+    allowlist.add("app/src/main/kotlin/com/cooper/binge/companion/archive/theme/ArchiveTheme.kt")
     themeTypeNames.addAll("ArchiveDarkColorScheme", "ArchiveLightColorScheme")
 }
 
@@ -242,7 +242,7 @@ val generateIndexSeed =
     tasks.register<GenerateIndexSeed>("generateIndexSeed") {
         description = "Fetches the seed index the APK ships."
         classpath = project(":index").extensions.getByType<SourceSetContainer>()["main"].runtimeClasspath
-        mainClass.set("io.github.scottcooper92.binge.archive.index.SeedMainKt")
+        mainClass.set("com.cooper.binge.companion.archive.index.SeedMainKt")
         outputDirectory.set(layout.buildDirectory.dir("generated/indexSeed"))
         versionName.set(android.defaultConfig.versionName ?: "build")
         onlyIf("archive.skipSeed is not set") { !project.hasProperty("archive.skipSeed") }
@@ -297,18 +297,18 @@ kover {
                 classes(
                     "*ComposableSingletons*",
                     "*PreviewData*",
-                    "io.github.scottcooper92.binge.archive.MainActivity*",
+                    "com.cooper.binge.companion.archive.MainActivity*",
                     // The exported Service: services() and hostPolicy() hand the SDK objects from the graph.
                     // What they choose is tested through ArchiveStreamService and selectHostPolicy.
-                    "io.github.scottcooper92.binge.archive.service.ArchiveCompanionService",
+                    "com.cooper.binge.companion.archive.service.ArchiveCompanionService",
                     // The Application and the hand-built graph: wiring, every member a constructed object.
-                    "io.github.scottcooper92.binge.archive.ArchiveApp",
-                    "io.github.scottcooper92.binge.archive.AppGraph*",
+                    "com.cooper.binge.companion.archive.ArchiveApp",
+                    "com.cooper.binge.companion.archive.AppGraph*",
                     // Generated: Room's DAO and database, with their inner classes, the DAO's default-method
                     // holder, and BuildConfig.
                     "*_Impl*",
                     "*\$DefaultImpls",
-                    "io.github.scottcooper92.binge.archive.BuildConfig",
+                    "com.cooper.binge.companion.archive.BuildConfig",
                 )
                 annotatedBy("androidx.compose.runtime.Composable")
             }
