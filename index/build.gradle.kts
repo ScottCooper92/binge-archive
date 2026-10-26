@@ -40,7 +40,7 @@ kover {
     reports {
         filters {
             excludes {
-                classes("io.github.scottcooper92.binge.archive.index.SeedMainKt")
+                classes("com.cooper.binge.companion.archive.index.SeedMainKt")
             }
         }
         // 95, measured at 98.8% when the module landed, the same floor as :app's.

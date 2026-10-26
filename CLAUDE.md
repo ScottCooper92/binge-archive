@@ -286,7 +286,7 @@ with the Sources settings, its licence page, and the hand-off Binge's "manage" r
 - The `org.jetbrains.kotlin.android` plugin is declared `apply false` in the root build and never
   applied. It puts the catalog's Kotlin on AGP's classpath. See the comment in `libs.versions.toml`.
 - The version catalog is `libs.versions.toml` at the repository root, not under `gradle/`.
-- Package `io.github.scottcooper92.binge.archive`; a debug build adds `.debug`.
+- Package `com.cooper.binge.companion.archive`; a debug build adds `.debug`.
 - Two modules: `:app` and `:index` (plain JVM, see The index). Tests are JUnit 4 in both. Scope
   Gradle to a module (`:index:test`, `:app:testDebugUnitTest`) when you are checking one thing.
 - No DI framework: `AppGraph` builds the handful of objects by hand, and `ArchiveApp` holds it and
