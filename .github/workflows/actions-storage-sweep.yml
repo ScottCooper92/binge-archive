@@ -1,8 +1,10 @@
 name: Actions storage sweep
 
-# Deletes this repository's Actions caches and artifacts that nobody has touched for three days, so
-# the quota does not fill and GitHub does not evict the entries a build wanted. Dry-run from the
-# Actions tab first: it logs what it would delete.
+# Deletes this repository's Actions caches and artifacts that nobody has touched for a week, so the
+# quota does not fill and GitHub does not evict the entries a build wanted. A week, not less: the
+# nightly's failure reports and the device lane's artifacts are kept seven days on purpose, and the
+# sweep deletes by age whatever retention the uploader chose. Dry-run from the Actions tab first:
+# it logs what it would delete.
 on:
   workflow_dispatch:
     inputs:
@@ -21,4 +23,5 @@ jobs:
   sweep:
     uses: ScottCooper92/binge-ci/.github/workflows/actions-storage-sweep.yml@494e473b01f083178315f3f723383fefba23c937 # v1
     with:
+      max_age_days: 7
       dry_run: ${{ inputs.dry_run == true }}
