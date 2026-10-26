@@ -150,8 +150,8 @@ the start, and answers a `ResolveOutcome`, which the Service
 maps to the contract: `Sources` (a flow, possibly empty), `NotFound`, `NotAFilm` or `Invalid`. A
 network failure is an `IOException`, thrown out of `resolve()` itself (the finder's Wikidata call, its
 IMDb and title searches, and the title route's loads) or out of the flow. The Service maps both to
-`UNAVAILABLE`. The Wikidata route's download-count search only orders its items: if it fails, they
-keep Wikidata's order. The same holds for the index's ids when they stand in for a failed Wikidata
+`UNAVAILABLE`. The Wikidata route's download-count search only orders its items, within its own budget
+of 1.5 s (`ResolverHttp.RANKING_BUDGET_MILLIS`): if it fails or runs out, they keep Wikidata's order. The same holds for the index's ids when they stand in for a failed Wikidata
 query (step 3): they keep the index's order.
 
 1. **The request.** An unusable `MediaId` or `EpisodeRef` is `Invalid` before anything is looked up.
@@ -196,6 +196,13 @@ because Wikidata failed, and a resolve that ends with nothing. A resolve that en
 because a setting narrower than the default removed something is `FILTERED_BY_SETTINGS`.
 `LogcatCoverageLog` writes them to logcat on the device and nowhere else.
 Every HTTP call is cancellable: when the host cancels, the call is cancelled with it.
+
+**The first `Resolve` of a cold process has to fit the host's 10 s deadline too** (#70). `ArchiveApp`
+warms the graph off the main thread at start (`AppGraph.warmUp`: the index and its seed, the settings,
+the resolver), so a bind that starts the process finds them open. `PhaseTimings` logs each phase of a
+resolve (`index_lookup`, `settings_read`, `wikidata_query`, `ranking_search`, `find_items`,
+`metadata_read`, `first_source`, and the `warm_*` ones) under the `Coverage` tag, on the device only,
+never with a title or a URL. Read them with `adb logcat -s Coverage` after a cold start.
 
 ## The Service
 
@@ -282,7 +289,7 @@ with the Sources settings, its licence page, and the hand-off Binge's "manage" r
 - The `org.jetbrains.kotlin.android` plugin is declared `apply false` in the root build and never
   applied. It puts the catalog's Kotlin on AGP's classpath. See the comment in `libs.versions.toml`.
 - The version catalog is `libs.versions.toml` at the repository root, not under `gradle/`.
-- Package `io.github.scottcooper92.binge.archive`; a debug build adds `.debug`.
+- Package `com.cooper.binge.companion.archive`; a debug build adds `.debug`.
 - Two modules: `:app` and `:index` (plain JVM, see The index). Tests are JUnit 4 in both. Scope
   Gradle to a module (`:index:test`, `:app:testDebugUnitTest`) when you are checking one thing.
 - No DI framework: `AppGraph` builds the handful of objects by hand, and `ArchiveApp` holds it and

@@ -11,7 +11,7 @@ detekt (type-resolved, zero findings), Android lint, `koverVerify` (95% in `:app
 anything that set decides. The audit's value is what it does not gate: the licence rule, `Resolve`'s
 four answers (sources, OK and empty, `NOT_FOUND`, `INVALID_ARGUMENT`), privacy, the exported Service, and doc drift.
 
-Scope to the whole repo, or to named packages under `app/src/main/kotlin/io/github/scottcooper92/binge/archive/`
+Scope to the whole repo, or to named packages under `app/src/main/kotlin/com/cooper/binge/companion/archive/`
 and `index/src/main/kotlin/…`.
 Skip `binge-companions/`, `design-system/` and `binge-ci/` (submodules with their own repos) and `build/`.
 
