@@ -1,11 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- A dark ground tinted towards this app's emerald, as binge-seerr's is towards its indigo. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+
+    <!--
+        Binge's launcher background, in this app's own emerald rather than its greys: the same dark
+        radial gradient lit from the top left, tinted towards the #0F1F1A the TV banner already
+        uses, so the apps read as a family without this one pretending to be another.
+    -->
+    <path android:pathData="M0,0 H108 V108 H0 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="30"
+                android:centerY="24"
+                android:gradientRadius="113">
+                <item android:offset="0.0" android:color="#FF16302A"/>
+                <item android:offset="0.6" android:color="#FF0F1F1A"/>
+                <item android:offset="1.0" android:color="#FF08120F"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Emerald bloom in the bottom-right corner, matching the amber one on Binge's at the same 5%. -->
     <path
-        android:fillColor="#FF0F1F1A"
-        android:pathData="M0,0 H108 V108 H0 Z" />
+        android:pathData="M136,92 A44,44,0,1,1,48,92 A44,44,0,1,1,136,92 Z"
+        android:fillColor="#0D34D399"/>
+
 </vector>
