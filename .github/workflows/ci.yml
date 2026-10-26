@@ -60,7 +60,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
-    uses: ScottCooper92/binge-ci/.github/workflows/submodule-pins.yml@9de74a880f7bfeef9e75a31cc72e790eb05f6511 # v1
+    uses: ScottCooper92/binge-ci/.github/workflows/submodule-pins.yml@494e473b01f083178315f3f723383fefba23c937 # v1
 
   # `build` minus what the three jobs below own. Everything else `check` pulls in lands here:
   # compile, lint, detekt, ktlint, the tv-material gate and the debug assemble.
