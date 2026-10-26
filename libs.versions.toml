@@ -37,7 +37,7 @@ workManager = "2.11.2"
 datastore = "1.2.1"
 # Must agree with binge-companions' catalog: the SDK brings grpc-binder at its version, and the
 # in-process transport the tests use has to be the same release.
-grpc = "1.76.3"
+grpc = "1.85.1"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
