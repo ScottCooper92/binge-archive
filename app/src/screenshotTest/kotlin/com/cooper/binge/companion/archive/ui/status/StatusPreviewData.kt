@@ -45,11 +45,14 @@ val previewSourcesChanged =
         sources =
             SourceSettings(
                 titleMatches = false,
-                licences = LicenceLevel.PUBLIC_DOMAIN,
+                licences = LicenceLevel.CREATIVE_COMMONS,
                 minimumQuality = MinimumQuality.HD_1080,
                 subtitlesInMyLanguage = true,
             ),
     )
 
-/** "Any licence" picked: the licence section's warning. */
+/** "Any, including no licence" picked, waiting on its confirm. */
+val previewConfirmingAny = previewReady.copy(confirmingAnyLicence = true)
+
+/** "Any licence" saved: the slider on its warning stop. */
 val previewAnyLicence = previewReady.copy(sources = SourceSettings(licences = LicenceLevel.ANY))

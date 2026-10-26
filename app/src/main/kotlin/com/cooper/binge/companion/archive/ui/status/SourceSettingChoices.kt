@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ManageSearch
 import androidx.compose.material.icons.outlined.AllInclusive
+import androidx.compose.material.icons.outlined.Attribution
 import androidx.compose.material.icons.outlined.ClosedCaption
 import androidx.compose.material.icons.outlined.Copyright
 import androidx.compose.material.icons.outlined.Hd
@@ -34,6 +35,7 @@ object SourceSettingChoices {
     val licences: List<SettingChoice<LicenceLevel>> =
         listOf(
             SettingChoice(LicenceLevel.PUBLIC_DOMAIN, R.string.settings_licences_public_domain, Icons.Outlined.LockOpen),
+            SettingChoice(LicenceLevel.PUBLIC_DOMAIN_AND_CC_BY, R.string.settings_licences_default, Icons.Outlined.Attribution),
             SettingChoice(LicenceLevel.CREATIVE_COMMONS, R.string.settings_licences_creative_commons, Icons.Outlined.Copyright),
             SettingChoice(LicenceLevel.ANY, R.string.settings_licences_any, Icons.Outlined.ReportProblem),
         )
@@ -42,6 +44,7 @@ object SourceSettingChoices {
     val licenceExplanations: Map<LicenceLevel, Int> =
         mapOf(
             LicenceLevel.PUBLIC_DOMAIN to R.string.settings_licences_public_domain_explain,
+            LicenceLevel.PUBLIC_DOMAIN_AND_CC_BY to R.string.settings_licences_default_explain,
             LicenceLevel.CREATIVE_COMMONS to R.string.settings_licences_creative_commons_explain,
             LicenceLevel.ANY to R.string.settings_licences_any_explain,
         )

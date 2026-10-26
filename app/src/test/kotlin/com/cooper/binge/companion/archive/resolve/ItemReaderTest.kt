@@ -124,7 +124,8 @@ class ItemReaderTest {
                 return items.map { it.item.identifier } to filtered
             }
 
-            assertEquals(listOf("PhantasmagoriaTheater-Nosferatu1922909") to 2, admitted(LicenceLevel.PUBLIC_DOMAIN))
+            assertEquals(listOf("PhantasmagoriaTheater-Nosferatu1922909") to 1, admitted(LicenceLevel.PUBLIC_DOMAIN))
+            assertEquals(listOf("by", "PhantasmagoriaTheater-Nosferatu1922909") to 0, admitted(LicenceLevel.PUBLIC_DOMAIN_AND_CC_BY))
             assertEquals(listOf("by_sa", "by", "PhantasmagoriaTheater-Nosferatu1922909") to 0, admitted(LicenceLevel.CREATIVE_COMMONS))
             assertEquals(
                 listOf("Nosferatu_unlicensed_transfer", "by_sa", "by", "reserved", "PhantasmagoriaTheater-Nosferatu1922909") to 0,

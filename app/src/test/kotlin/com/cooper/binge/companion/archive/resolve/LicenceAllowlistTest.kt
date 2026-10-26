@@ -33,6 +33,10 @@ class LicenceAllowlistTest {
     @Test
     fun `the default refuses every other licence, however close`() {
         listOf(
+            "https://creativecommons.org/licenses/by-sa/4.0/",
+            "https://creativecommons.org/licenses/by-nc/4.0/",
+            "https://creativecommons.org/licenses/by-nd/3.0/",
+            "https://creativecommons.org/licenses/by-nc-sa/3.0/us/",
             "https://creativecommons.org/licenses/by/4.0/extra",
             "https://creativecommons.org/licenses/sampling+/1.0/",
             "https://creativecommons.org/publicdomain/mark/2.0/",
@@ -78,6 +82,7 @@ class LicenceAllowlistTest {
         val admitted =
             mapOf(
                 LicenceLevel.PUBLIC_DOMAIN to publicDomain,
+                LicenceLevel.PUBLIC_DOMAIN_AND_CC_BY to publicDomain + by,
                 LicenceLevel.CREATIVE_COMMONS to publicDomain + setOf(by, bySa, byNc, byNd, byNcSa, byNcNd),
                 LicenceLevel.ANY to labels.keys,
             )
@@ -129,7 +134,7 @@ class LicenceAllowlistTest {
     }
 
     @Test
-    fun `the default is public domain and every Creative Commons licence`() {
-        assertEquals(LicenceLevel.CREATIVE_COMMONS, LicenceLevel.DEFAULT)
+    fun `the default is public domain and CC BY`() {
+        assertEquals(LicenceLevel.PUBLIC_DOMAIN_AND_CC_BY, LicenceLevel.DEFAULT)
     }
 }

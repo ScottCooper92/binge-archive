@@ -26,6 +26,8 @@ import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.ErrorKind
 import com.binge.designsystem.formatRelativeOrAbsolute
 import com.binge.designsystem.tv.component.TvCheckboxRow
+import com.binge.designsystem.tv.component.TvConfirmDialog
+import com.binge.designsystem.tv.component.TvConfirmDialogContent
 import com.binge.designsystem.tv.component.TvOptionGroup
 import com.binge.designsystem.tv.component.TvOptionRow
 import com.binge.designsystem.tv.component.TvSectionTitle
@@ -151,6 +153,16 @@ fun TvSourceSettings(
     actions: StatusActions,
 ) {
     val settings = state.sources
+    if (state.confirmingAnyLicence) {
+        TvConfirmDialog(
+            title = stringResource(R.string.settings_any_title),
+            message = stringResource(R.string.settings_any_message),
+            confirmLabel = stringResource(R.string.settings_any_confirm),
+            onConfirm = actions.onConfirmAnyLicence,
+            onDismissRequest = actions.onCancelAnyLicence,
+            destructive = true,
+        )
+    }
     TvSectionTitle(stringResource(R.string.settings_title))
     TvCheckboxRow(
         label = stringResource(R.string.settings_title_matches),
@@ -189,6 +201,21 @@ private fun <T> TvSettingGroup(
         // The group sizes itself to a text field; the rows above it span the column, so it does too.
         modifier = Modifier.fillMaxWidth(),
         choiceIcon = { value -> choices.first { it.value == value }.icon },
+    )
+}
+
+/** The confirm "Any, whatever the licence" asks, without its window, as it first shows: focus on Cancel. */
+@Composable
+fun TvAnyLicenceConfirm(actions: StatusActions) {
+    TvConfirmDialogContent(
+        title = stringResource(R.string.settings_any_title),
+        message = stringResource(R.string.settings_any_message),
+        confirmLabel = stringResource(R.string.settings_any_confirm),
+        dismissLabel = stringResource(DesR.string.action_cancel),
+        destructive = true,
+        onConfirm = actions.onConfirmAnyLicence,
+        onDismissRequest = actions.onCancelAnyLicence,
+        initiallyDismissFocused = true,
     )
 }
 

@@ -28,7 +28,8 @@ import com.binge.designsystem.tv.R as TvR
 
 /**
  * The licence level on the television: one focus stop that ← and → step through, narrowest first, saved as each
- * press lands. Under it, what the level means; "Any" reads in the error colour as the warning.
+ * press lands, except "Any", which asks first and leaves the stepper on the saved level until it is confirmed.
+ * Under it, what the level means; "Any" reads in the error colour as the warning.
  */
 @Composable
 fun TvLicenceSlider(

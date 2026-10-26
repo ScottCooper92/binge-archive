@@ -8,6 +8,7 @@ import com.cooper.binge.companion.archive.index.RefreshLogEntity
 import com.cooper.binge.companion.archive.reports.DeviceRecords
 import com.cooper.binge.companion.archive.resolve.LicenceLevel
 import com.cooper.binge.companion.archive.settings.MinimumQuality
+import com.cooper.binge.companion.archive.settings.SourceSettings
 import com.cooper.binge.companion.archive.settings.SourceSettingsStore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,6 +35,7 @@ class StatusViewModel(
     private val sourceSettings: SourceSettingsStore,
 ) : ViewModel() {
     private val attempts = MutableStateFlow(0)
+    private val confirmingAnyLicence = MutableStateFlow(false)
 
     // Each attempt starts at Loading, so a retry that fails again visibly lands on Error again
     // rather than being conflated into the Error the flow already holds.
@@ -61,8 +63,23 @@ class StatusViewModel(
         viewModelScope.launch { sourceSettings.setTitleMatches(on) }
     }
 
+    /** Saves [level], except [LicenceLevel.ANY], which waits on [confirmAnyLicence]. */
     fun chooseLicences(level: LicenceLevel) {
-        viewModelScope.launch { sourceSettings.setLicences(level) }
+        if (level == LicenceLevel.ANY) {
+            confirmingAnyLicence.value = true
+        } else {
+            viewModelScope.launch { sourceSettings.setLicences(level) }
+        }
+    }
+
+    fun confirmAnyLicence() {
+        if (!confirmingAnyLicence.value) return
+        confirmingAnyLicence.value = false
+        viewModelScope.launch { sourceSettings.setLicences(LicenceLevel.ANY) }
+    }
+
+    fun cancelAnyLicence() {
+        confirmingAnyLicence.value = false
     }
 
     fun setMinimumQuality(quality: MinimumQuality) {
@@ -79,7 +96,7 @@ class StatusViewModel(
             refresher.refreshing,
             records.recent(),
             records.reported(),
-            sourceSettings.settings,
+            combine(sourceSettings.settings, confirmingAnyLicence, ::SourcesFacts),
         ) { facts, refreshing, recent, reported, sources ->
             StatusUiState.Ready(
                 filmCount = facts.filmCount,
@@ -88,7 +105,8 @@ class StatusViewModel(
                 refreshing = refreshing,
                 recent = recent.map { RecentTitle(it.tmdbId, it.title, it.identifier, it.resolvedAt) },
                 reported = reported,
-                sources = sources,
+                sources = sources.settings,
+                confirmingAnyLicence = sources.confirmingAny,
             ) as StatusUiState
         }.catch { emit(StatusUiState.Error) }
 
@@ -100,6 +118,11 @@ class StatusViewModel(
         val lastSuccessAt: Long? = lastSuccess?.finishedAt
         val latestFailed: Boolean = latest?.succeeded == false
     }
+
+    private class SourcesFacts(
+        val settings: SourceSettings,
+        val confirmingAny: Boolean,
+    )
 
     private companion object {
         const val STOP_TIMEOUT_MILLIS = 5_000L

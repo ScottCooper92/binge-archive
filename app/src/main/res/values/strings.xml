@@ -40,19 +40,25 @@
     <string name="settings_title_matches_detail">May find wrongly licensed copies</string>
     <string name="settings_licences">Licences</string>
     <string name="settings_licences_public_domain">Public domain only</string>
+    <string name="settings_licences_default">Public domain and CC BY</string>
+    <string name="settings_licences_creative_commons">Any Creative Commons licence</string>
+    <string name="settings_licences_any">Any, whatever the licence</string>
     <string name="settings_licences_public_domain_explain">Films with no copyright, or whose makers gave every right away. The fewest films.</string>
+    <string name="settings_licences_default_explain">Public domain and CC BY: free to share, with credit to the maker. This is the default.</string>
     <string name="settings_licences_creative_commons_explain">Public domain and every Creative Commons licence. All are free to watch; some limit sharing or remixing, which doesn\'t affect watching.</string>
     <string name="settings_licences_any_explain">Also films with no licence stated, or with all rights reserved. They may not be licensed for viewing, so whether you may watch them is up to you.</string>
     <string name="settings_licences_stop_public_domain">Public domain</string>
-    <string name="settings_licences_stop_open">Open</string>
+    <string name="settings_licences_stop_default" translatable="false">CC BY</string>
+    <string name="settings_licences_stop_creative_commons">All CC</string>
     <string name="settings_licences_stop_any">Any</string>
-    <string name="settings_licences_creative_commons">Openly licensed</string>
-    <string name="settings_licences_any">Any licence</string>
     <string name="settings_quality">Minimum quality</string>
     <string name="settings_quality_any">Any</string>
     <string name="settings_quality_720" translatable="false">720p</string>
     <string name="settings_quality_1080" translatable="false">1080p</string>
     <string name="settings_subtitles">Only copies with subtitles in my language</string>
+    <string name="settings_any_title">Include copies whatever their licence?</string>
+    <string name="settings_any_message">These copies may not be licensed for viewing. Some state no licence, and some reserve all rights. You can change this back at any time.</string>
+    <string name="settings_any_confirm">Include them</string>
     <string name="status_archive" translatable="false">Internet Archive</string>
     <string name="status_archive_detail" translatable="false">archive.org</string>
     <string name="status_wikidata" translatable="false">Wikidata</string>
@@ -72,7 +78,7 @@
     <string name="licences_pdm_detail">Public Domain Mark: no known copyright anywhere</string>
     <string name="licences_pd_us_detail">Creative Commons public domain: no copyright in the United States</string>
     <string name="licences_cc0_detail">The rights holder gave up every right</string>
-    <string name="licences_creative_commons" translatable="false">Creative Commons</string>
-    <string name="licences_creative_commons_detail">Every Creative Commons licence. All allow watching; some limit sharing or remixing</string>
-    <string name="licences_not_allowed">Not offered by default: items with no licence stated, or with all rights reserved.</string>
+    <string name="licences_cc_by" translatable="false">CC BY</string>
+    <string name="licences_cc_by_detail">Free to share, with credit to the maker</string>
+    <string name="licences_not_allowed">Not offered by default: share-alike, non-commercial and no-derivatives licences, and items with no licence.</string>
 </resources>

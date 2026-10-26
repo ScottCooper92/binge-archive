@@ -178,18 +178,38 @@ class StatusViewModelTest {
         }
 
     @Test
-    fun `any licence saves at once, and any other level undoes it`() =
+    fun `any licence asks first, and saves nothing until confirmed`() =
         runBlocking {
             val viewModel = StatusViewModel(index, records, FakeRefresher(), settings)
-            // Settle the first Ready before choosing, so a cold Room and DataStore start is not inside the write's wait.
-            viewModel.ready()
 
             viewModel.chooseLicences(LicenceLevel.ANY)
-            assertEquals(LicenceLevel.ANY, viewModel.ready { it.sources.licences == LicenceLevel.ANY }.sources.licences)
+            val asking = viewModel.ready { it.confirmingAnyLicence }
+            assertEquals(LicenceLevel.DEFAULT, asking.sources.licences)
+            assertEquals(LicenceLevel.DEFAULT, settings.current().licences)
+
+            viewModel.confirmAnyLicence()
+            val confirmed = viewModel.ready { !it.confirmingAnyLicence && it.sources.licences == LicenceLevel.ANY }
+            assertEquals(LicenceLevel.ANY, confirmed.sources.licences)
             assertEquals(LicenceLevel.ANY, settings.current().licences)
 
+            // Easy to undo: any other level saves at once.
             viewModel.chooseLicences(LicenceLevel.DEFAULT)
             viewModel.ready { it.sources.licences == LicenceLevel.DEFAULT }
+            assertEquals(LicenceLevel.DEFAULT, settings.current().licences)
+        }
+
+    @Test
+    fun `cancelling the confirm keeps the licences as they were`() =
+        runBlocking {
+            val viewModel = StatusViewModel(index, records, FakeRefresher(), settings)
+
+            viewModel.chooseLicences(LicenceLevel.ANY)
+            viewModel.ready { it.confirmingAnyLicence }
+            viewModel.cancelAnyLicence()
+
+            assertEquals(LicenceLevel.DEFAULT, viewModel.ready { !it.confirmingAnyLicence }.sources.licences)
+            // A confirm with nothing asked saves nothing.
+            viewModel.confirmAnyLicence()
             assertEquals(LicenceLevel.DEFAULT, settings.current().licences)
         }
 }

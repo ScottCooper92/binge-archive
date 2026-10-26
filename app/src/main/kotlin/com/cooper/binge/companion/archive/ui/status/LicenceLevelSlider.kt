@@ -35,28 +35,31 @@ import com.cooper.binge.companion.archive.R
 import com.cooper.binge.companion.archive.resolve.LicenceLevel
 import com.binge.designsystem.R as DesR
 
-/** The short names under the slider's three stops, in [SourceSettingChoices.licences] order. */
+/** The short names under the slider's four stops, in [SourceSettingChoices.licences] order. */
 private val stopLabels =
     listOf(
         R.string.settings_licences_stop_public_domain,
-        R.string.settings_licences_stop_open,
+        R.string.settings_licences_stop_default,
+        R.string.settings_licences_stop_creative_commons,
         R.string.settings_licences_stop_any,
     )
 
 /**
- * The licence level as a three-stop slider, narrowest on the left. Under it, the level chosen and what it means,
- * in a cell sized to the longest level so nothing moves as it changes. The explanation follows the thumb while it is dragged, and the
- * level is saved once it lands. Each stop's label is also a tap target.
+ * The licence level as a four-stop slider, narrowest on the left. Under it, the level chosen and what it means,
+ * in a cell sized to the longest level so nothing moves as it changes. The explanation follows the thumb while it
+ * is dragged, and the level is offered once it lands: every level but "Any" is saved at once, and "Any" waits on its
+ * confirm ([confirming]), so the thumb returns to the saved level while that is asked. Each stop's label is also a tap target.
  */
 @Composable
 fun LicenceLevelSlider(
     selected: LicenceLevel,
+    confirming: Boolean,
     onSelect: (LicenceLevel) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val choices = SourceSettingChoices.licences
     val savedIndex = choices.indexOfFirst { it.value == selected }.coerceAtLeast(0)
-    var position by remember(savedIndex) { mutableFloatStateOf(savedIndex.toFloat()) }
+    var position by remember(savedIndex, confirming) { mutableFloatStateOf(savedIndex.toFloat()) }
     val shown = choices[position.toInt().coerceIn(choices.indices)]
     val warning = shown.value == LicenceLevel.ANY
     val accent = if (warning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary

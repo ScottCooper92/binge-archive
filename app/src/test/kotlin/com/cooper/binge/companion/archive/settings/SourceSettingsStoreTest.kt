@@ -39,7 +39,7 @@ class SourceSettingsStoreTest {
 
             assertEquals(SourceSettings.DEFAULT, settings)
             assertTrue(settings.titleMatches)
-            assertEquals(LicenceLevel.CREATIVE_COMMONS, settings.licences)
+            assertEquals(LicenceLevel.PUBLIC_DOMAIN_AND_CC_BY, settings.licences)
             assertEquals(MinimumQuality.ANY, settings.minimumQuality)
             assertFalse(settings.subtitlesInMyLanguage)
         }
@@ -89,14 +89,6 @@ class SourceSettingsStoreTest {
             }
 
             assertEquals(SourceSettings.DEFAULT, store.current())
-        }
-
-    @Test
-    fun `the retired public domain and CC BY level reads as the default`() =
-        runBlocking {
-            dataStore.edit { it[stringPreferencesKey("licences")] = "PUBLIC_DOMAIN_AND_CC_BY" }
-
-            assertEquals(LicenceLevel.DEFAULT, store.current().licences)
         }
 
     @Test

@@ -27,6 +27,8 @@ import com.binge.designsystem.CenteredContent
 import com.binge.designsystem.ErrorKind
 import com.binge.designsystem.component.BingeChoice
 import com.binge.designsystem.component.BingeChoiceList
+import com.binge.designsystem.component.BingeConfirmDialog
+import com.binge.designsystem.component.BingeConfirmDialogContent
 import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
@@ -139,19 +141,49 @@ private fun aboutRows(
         ),
     )
 
-/** The Sources settings, saved as made, then the licence level on its own slider. */
+/**
+ * The Sources settings, saved as made. "Any, whatever the licence" asks first, on [AnyLicenceConfirm],
+ * shown while [StatusUiState.Ready.confirmingAnyLicence].
+ */
 @Composable
 fun SourceSettingsGroup(
     state: StatusUiState.Ready,
     actions: StatusActions,
     title: String? = stringResource(R.string.settings_title),
 ) {
+    if (state.confirmingAnyLicence) {
+        BingeConfirmDialog(
+            title = stringResource(R.string.settings_any_title),
+            message = stringResource(R.string.settings_any_message),
+            confirmLabel = stringResource(R.string.settings_any_confirm),
+            onConfirm = actions.onConfirmAnyLicence,
+            onDismissRequest = actions.onCancelAnyLicence,
+            destructive = true,
+        )
+    }
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
         ItemGroup(title = title, rows = sourceSettingRows(state, actions))
         ItemGroup(title = stringResource(R.string.settings_licences), rows = emptyList()) {
-            LicenceLevelSlider(selected = state.sources.licences, onSelect = actions.onLicences)
+            LicenceLevelSlider(
+                selected = state.sources.licences,
+                confirming = state.confirmingAnyLicence,
+                onSelect = actions.onLicences,
+            )
         }
     }
+}
+
+/** The confirm "Any, whatever the licence" asks, without its modal window, for a frame. */
+@Composable
+fun AnyLicenceConfirm(actions: StatusActions) {
+    BingeConfirmDialogContent(
+        title = stringResource(R.string.settings_any_title),
+        message = stringResource(R.string.settings_any_message),
+        confirmLabel = stringResource(R.string.settings_any_confirm),
+        onConfirm = actions.onConfirmAnyLicence,
+        onDismissRequest = actions.onCancelAnyLicence,
+        destructive = true,
+    )
 }
 
 @Composable

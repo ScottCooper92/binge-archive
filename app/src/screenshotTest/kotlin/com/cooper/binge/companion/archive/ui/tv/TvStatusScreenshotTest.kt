@@ -1,11 +1,14 @@
 package com.cooper.binge.companion.archive.ui.tv
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import com.android.tools.screenshot.PreviewTest
@@ -99,7 +102,7 @@ class TvStatusScreenshotTest {
     @Composable
     fun sourcesSectionSpanish() = SectionFrame { TvSourceSettings(previewSourcesChanged, StatusActions()) }
 
-    /** "Any licence" picked: the licence section's warning. */
+    /** "Any licence" saved: the licence section's warning. */
     @PreviewTest
     @ArchiveTvScreenPreviews
     @Composable
@@ -115,6 +118,22 @@ class TvStatusScreenshotTest {
     @Composable
     fun anyLicenceFontScale() = SectionFrame { TvSourceSettings(previewAnyLicence, StatusActions()) }
 
+    /** The confirm as it first shows: focus on Cancel, the safe answer. */
+    @PreviewTest
+    @ArchiveTvScreenPreviews
+    @Composable
+    fun anyLicenceConfirm() = ConfirmFrame { TvAnyLicenceConfirm(StatusActions()) }
+
+    @PreviewTest
+    @ArchiveTvSpanishScreenPreviews
+    @Composable
+    fun anyLicenceConfirmSpanish() = ConfirmFrame { TvAnyLicenceConfirm(StatusActions()) }
+
+    @PreviewTest
+    @ArchiveTvFontScalePreviews
+    @Composable
+    fun anyLicenceConfirmFontScale() = ConfirmFrame { TvAnyLicenceConfirm(StatusActions()) }
+
     @PreviewTest
     @ArchiveTvScreenPreviews
     @Composable
@@ -124,6 +143,12 @@ class TvStatusScreenshotTest {
     @ArchiveTvSpanishScreenPreviews
     @Composable
     fun licencesSpanish() = TvLicenceScreen()
+}
+
+/** The confirm's card centred in the window, as its dialog shows it. */
+@Composable
+private fun ConfirmFrame(content: @Composable () -> Unit) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { content() }
 }
 
 /** A section of the page, scrolling, from its top or, [atEnd], its bottom: the window shows one screenful. */
