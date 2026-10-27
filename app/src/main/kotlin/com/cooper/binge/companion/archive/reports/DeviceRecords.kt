@@ -1,6 +1,7 @@
 package com.cooper.binge.companion.archive.reports
 
 import android.content.Context
+import androidx.room.AutoMigration
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Database
@@ -81,12 +82,20 @@ interface DeviceRecordsDao {
 }
 
 /**
- * What this device remembers of its own use: the user's source reports and the titles it recently
- * resolved. Its own database, so the index stays public data only.
+ * What this device remembers of its own use: the user's source reports, the titles it recently
+ * resolved and the watch progress the host reports. Its own database, so the index stays public
+ * data only. It holds what the user made, so it migrates and is never rebuilt: version 2 added
+ * `playback_progress`.
  */
-@Database(entities = [SourceReportEntity::class, RecentTitleEntity::class], version = 1)
+@Database(
+    entities = [SourceReportEntity::class, RecentTitleEntity::class, PlaybackProgressEntity::class],
+    version = 2,
+    autoMigrations = [AutoMigration(from = 1, to = 2)],
+)
 abstract class DeviceRecordsDatabase : RoomDatabase() {
     abstract fun dao(): DeviceRecordsDao
+
+    abstract fun progressDao(): PlaybackProgressDao
 
     companion object {
         fun open(context: Context): DeviceRecordsDatabase =

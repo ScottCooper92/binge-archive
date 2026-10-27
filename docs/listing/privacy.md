@@ -14,6 +14,9 @@ https://github.com/ScottCooper92/binge-archive.
 - **Copies you reported**, when you tell Binge a copy did not play. The app offers that copy last
   for 30 days. After that the app forgets the report. You can also clear reports on the app's
   screen, or uninstall the app, at any time.
+- **Where you got to in a film or episode**, when Binge reports it: the film or episode, your
+  position, its length, and when you last played it. Only Binge, which reports it, ever reads it
+  back. It stays on the device. Uninstalling the app or clearing its data removes it.
 - **Your Sources settings**: whether title matches are used, which licences are accepted, a minimum
   quality, and whether a copy must have subtitles in your language. They change what the app finds,
   and are never sent anywhere. Uninstalling the app removes them.

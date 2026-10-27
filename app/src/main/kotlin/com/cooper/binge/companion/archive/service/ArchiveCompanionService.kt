@@ -25,6 +25,7 @@ class ArchiveCompanionService : IntegrationService() {
                 resolver = graph.resolver,
                 index = graph.index,
                 records = graph.records,
+                progress = graph.progress,
                 versionName = BuildConfig.VERSION_NAME,
                 errors = ArchiveErrors(AndroidUserMessages(this)),
             ),

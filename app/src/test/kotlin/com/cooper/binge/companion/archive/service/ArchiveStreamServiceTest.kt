@@ -21,6 +21,7 @@ import com.cooper.binge.companion.archive.index.sampleSnapshot
 import com.cooper.binge.companion.archive.index.series
 import com.cooper.binge.companion.archive.reports.DeviceRecords
 import com.cooper.binge.companion.archive.reports.DeviceRecordsDatabase
+import com.cooper.binge.companion.archive.reports.PlaybackProgressStore
 import com.cooper.binge.companion.archive.resolve.ResolveOutcome
 import com.cooper.binge.companion.archive.resolve.TitleResolver
 import io.grpc.ManagedChannel
@@ -86,6 +87,7 @@ class ArchiveStreamServiceTest {
                     resolver = TitleResolver { media, episode -> outcome(media, episode) },
                     index = IndexRepository(indexDatabase.indexDao(), seed = { sampleSnapshot }),
                     records = reports,
+                    progress = PlaybackProgressStore(reportDatabase),
                     versionName = "1.2.3",
                     errors = ArchiveErrors(messages),
                     io = ioExecutor.asCoroutineDispatcher(),
@@ -139,7 +141,12 @@ class ArchiveStreamServiceTest {
             val response = stub.handshake(HandshakeRequest.getDefaultInstance())
 
             assertEquals(
-                listOf(Capability.CAPABILITY_PROBE, Capability.CAPABILITY_SUBTITLES, Capability.CAPABILITY_REPORT_SOURCE),
+                listOf(
+                    Capability.CAPABILITY_PROBE,
+                    Capability.CAPABILITY_SUBTITLES,
+                    Capability.CAPABILITY_REPORT_SOURCE,
+                    Capability.CAPABILITY_PLAYBACK_PROGRESS,
+                ),
                 response.capabilitiesList,
             )
             assertEquals("Internet Archive", response.providerName)
