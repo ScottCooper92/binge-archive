@@ -6,6 +6,7 @@ import com.binge.companion.contracts.stream.v1.StreamSource
 import com.cooper.binge.companion.archive.settings.MinimumQuality
 import com.cooper.binge.companion.archive.settings.SourceSettings
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -72,6 +73,7 @@ class SourceMapperTest {
         val source = sources(item("PhantasmagoriaTheater-Nosferatu1922909"), nosferatu).single()
 
         assertEquals("PhantasmagoriaTheater-Nosferatu1922909_512kb.mp4", source.id.substringAfter('/'))
+        assertEquals("PhantasmagoriaTheater-Nosferatu1922909_512kb.mp4", source.fileName)
         assertEquals("Nosferatu (1922)", source.label)
         assertEquals("Public domain (US)", source.licenceLabel)
         assertEquals("", source.quality.videoCodec)
@@ -89,6 +91,44 @@ class SourceMapperTest {
         assertEquals(10, source.subtitlesCount)
         assertEquals("und", source.subtitlesList.first().language)
         assertEquals("Film", source.label)
+    }
+
+    private fun onlyFile(name: String): StreamSource {
+        val file = ArchiveFile(name, "h.264", 1, 480, 100.0)
+        val item = ArchiveItem("item", "movies", "Film", null, null, accessRestricted = false, dark = false, files = listOf(file))
+        return sources(item, TitleFacts.NONE).single()
+    }
+
+    @Test
+    fun `file_name is the Archive file's name, and the label stays the title`() {
+        val source = onlyFile("Nosferatu_1922_512kb.mp4")
+
+        assertEquals("Nosferatu_1922_512kb.mp4", source.fileName)
+        assertEquals("Film", source.label)
+        assertEquals("item/Nosferatu_1922_512kb.mp4", source.id)
+        assertEquals("https://archive.org/download/item/Nosferatu_1922_512kb.mp4", source.source.url)
+    }
+
+    @Test
+    fun `file_name is the bare name, without the file's folder`() {
+        val source = onlyFile("sub/dir/x.mp4")
+
+        assertEquals("x.mp4", source.fileName)
+        assertEquals("item/sub/dir/x.mp4", source.id)
+        assertEquals("Film", source.label)
+    }
+
+    @Test
+    fun `a long file name is cut to 120 characters, and never cuts a character in two`() {
+        val source = onlyFile("A".repeat(196) + ".mp4")
+
+        assertEquals(SourceMapper.MAX_FILE_NAME, source.fileName.length)
+        assertEquals("A".repeat(120), source.fileName)
+        assertEquals("Film", source.label)
+        assertFalse(source.label.contains("AAAA"))
+
+        val emoji = "\uD83C\uDFAC"
+        assertEquals("a".repeat(119) + emoji, SourceMapper.fileName("a".repeat(119) + emoji + "tail.mp4"))
     }
 
     private fun withCaptions(

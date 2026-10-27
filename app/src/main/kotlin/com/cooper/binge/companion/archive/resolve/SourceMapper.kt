@@ -21,7 +21,8 @@ import java.util.concurrent.TimeUnit
  * - One source per resolution class per item. Among encodes of the same class, h.264 in MP4 wins,
  *   then any MP4 (the Archive's `512Kb MPEG4` does not name its codec), then the taller picture, the
  *   longer file and the larger one.
- * - Each source's label names the film. Its licence goes in `licence_label` and `licence_kind`, which
+ * - Each source's label names the film, and `file_name` names the file it plays (#75): the bare name, never its
+ *   folder, cut to [MAX_FILE_NAME] characters. The licence goes in `licence_label` and `licence_kind`, which
  *   the host shows on a line of its own, with a warning for anything but an open licence.
  * - SubRip and WebVTT files become subtitle tracks, at most ten per source.
  * - [kept] applies the user's minimum quality and subtitle-language settings to an item's sources.
@@ -104,6 +105,7 @@ class SourceMapper(
                     .setVideoCodec(encode.format.codec)
                     .setSizeBytes(encode.file.sizeBytes),
             ).setLabel(label)
+            .setFileName(fileName(encode.file.name))
             .setLicenceLabel(licence.label)
             .setLicenceKind(licence.kind)
             .addAllSubtitles(subtitles)
@@ -172,10 +174,23 @@ class SourceMapper(
         const val MAX_SOURCES = 50
         const val MAX_SUBTITLES = 10
         const val MAX_LABEL = 120
+
+        /** The host's cap on `file_name`, in characters. */
+        const val MAX_FILE_NAME = 120
         private const val MINIMUM_SHARE_OF_RUNTIME = 0.5
         private val TRAILING_WORD = Regex("[._-]([A-Za-z]+)$")
         private const val SUBRIP = "SubRip"
         private const val WEBVTT = "Web Video Text Tracks"
+
+        /**
+         * A file's bare name for `file_name`: what follows its last '/', cut to [MAX_FILE_NAME] code points so
+         * a surrogate pair stays whole.
+         */
+        fun fileName(name: String): String {
+            val bare = name.substringAfterLast('/')
+            if (bare.codePointCount(0, bare.length) <= MAX_FILE_NAME) return bare
+            return bare.substring(0, bare.offsetByCodePoints(0, MAX_FILE_NAME))
+        }
 
         fun downloadUrl(
             identifier: String,
