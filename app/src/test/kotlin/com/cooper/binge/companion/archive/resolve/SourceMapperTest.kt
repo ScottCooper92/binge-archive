@@ -94,6 +94,8 @@ class SourceMapperTest {
         assertEquals("Nosferatu (1922)", label("   "))
         assertEquals("Nosferatu (1922)", label("\u200B"))
         assertEquals("Night of the dead", label("Night of\nthe\t\u202Edead"))
+        assertEquals("Night of the dead", label("Night\u2028of\u2029the dead"))
+        assertEquals("a b", label("a \u200B b"))
         assertEquals(120, label("A".repeat(200)).length)
     }
 

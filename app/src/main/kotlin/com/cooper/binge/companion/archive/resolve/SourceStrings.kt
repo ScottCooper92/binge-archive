@@ -74,7 +74,7 @@ internal fun String.shortened(max: Int): String {
     return take(end).trimEnd() + "…"
 }
 
-private val whitespace = Regex("\\s+")
+private val whitespace = Regex("(?U)\\s+")
 
 /** Character types that draw nothing or reorder text, once whitespace is a plain space: controls and format marks. */
 private val invisible = setOf(Character.FORMAT.toInt(), Character.CONTROL.toInt())
@@ -86,4 +86,5 @@ private val invisible = setOf(Character.FORMAT.toInt(), Character.CONTROL.toInt(
 internal fun String.plainText(): String =
     replace(whitespace, " ")
         .filterNot { Character.getType(it) in invisible }
+        .replace(whitespace, " ")
         .trim()
