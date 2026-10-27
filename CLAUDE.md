@@ -210,18 +210,31 @@ action with the SDK's manifest meta-data (`com.binge.companion.name`, `.icon`, `
 `ArchiveStreamService` serves STREAM v1:
 
 - **`Handshake`** always succeeds: there is no sign-in. It declares `CAPABILITY_PROBE`,
-  `CAPABILITY_SUBTITLES` and `CAPABILITY_REPORT_SOURCE`, names "Internet Archive" as the provider,
-  and ignores `HostInfo`.
+  `CAPABILITY_SUBTITLES`, `CAPABILITY_REPORT_SOURCE` and `CAPABILITY_PLAYBACK_PROGRESS`, names
+  "Internet Archive" as the provider, and ignores `HostInfo`.
 - **`Resolve`** is the resolver's `ResolveOutcome`, mapped in one place, `ArchiveErrors`.
   `NOT_FOUND` carries a `LocalizedMessage`, "Not on the Internet Archive", in the device's locale.
   A Wikidata or Archive failure is `UNAVAILABLE` with a fixed description, never an exception's
-  message, before or after sources were sent.
+  message, before or after sources were sent. The first source carries `resume` when the device
+  holds progress for the title or episode, read once after the resolver accepts the request. A
+  completed episode has none, and a stream with no sources carries none.
 - **`Probe`** reads the index and never the network, and ignores the Sources settings. It refuses
   what `Resolve` refuses, and a valid series is `NOT_FOUND`.
 - **`ReportSource`** takes a `source_id` of the form `<identifier>/<file name>`, the identifier in
   the Archive's character set; anything else is `INVALID_ARGUMENT`. The index is not consulted, so
   an item found by any route can be reported. The report is stored on the device
   (`device-records.db`, separate from the index) and pushes that item after every other for 30 days.
+- **Watch progress** (`CAPABILITY_PLAYBACK_PROGRESS`) lives in `device-records.db`
+  (`reports/PlaybackProgress.kt`), keyed by media type, TMDB id, season and episode; a movie's
+  season and episode are -1, since season 0 is a series' specials. The SDK's helpers apply the
+  contract's rules, so none is restated here: `requireValid`, `applyReport`, `asResume`,
+  `effectivePageSize` and `ContinueWatchingPageToken`.
+  - **`ReportPlayback`** applies the report to what is held, in one transaction. A finished movie
+    and a position of 0 hold nothing. A finished episode is kept, `completed`, at its runtime.
+  - **`ListContinueWatching`** pages one entry per title, most recently played first: a series is
+    its most recently played episode. Entries are ids and progress only. Pages hold at most fifty.
+  - **`ForgetProgress`** forgets a movie, one episode, or with no episode a whole series. It is OK
+    when nothing is held.
 - A gated rpc checks its capability with a STREAM `requireDeclared`, the twin of the SDK's
   REQUEST-typed one.
 - **Who may bind:** a release build pins Binge's published certificate (`HostPolicy.pinned` with
@@ -278,9 +291,12 @@ with the Sources settings, its licence page, and the hand-off Binge's "manage" r
 - No caching beyond the on-device index.
 - **Coverage misses are logged on the device, by route**, for binge-companions#148's measurement.
   They never leave the device: no analytics, no crash reporting and no upload of any kind.
-- The app stores no user data beyond the user's own source reports and the last ten titles it
-  resolved, kept on the device in `device-records.db`, and the Sources settings in its DataStore.
-  The index is public metadata it can rebuild. Backup is off.
+- The app stores no user data beyond the user's own source reports, the last ten titles it
+  resolved and the watch progress the host reports, kept on the device in `device-records.db`, and
+  the Sources settings in its DataStore. The index is public metadata it can rebuild. Backup is off.
+- `device-records.db` holds what the user made, so it migrates and is never rebuilt: each version
+  is a Room auto-migration with its schema committed under `app/schemas`, and
+  `DeviceRecordsMigrationTest` opens the previous version's file with today's database.
 
 ## Kotlin, Gradle and Android
 

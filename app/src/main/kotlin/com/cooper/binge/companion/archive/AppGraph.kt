@@ -20,6 +20,7 @@ import com.cooper.binge.companion.archive.index.WorkManagerIndexRefresher
 import com.cooper.binge.companion.archive.index.readSeed
 import com.cooper.binge.companion.archive.reports.DeviceRecords
 import com.cooper.binge.companion.archive.reports.DeviceRecordsDatabase
+import com.cooper.binge.companion.archive.reports.PlaybackProgressStore
 import com.cooper.binge.companion.archive.resolve.ItemFinder
 import com.cooper.binge.companion.archive.resolve.ItemReader
 import com.cooper.binge.companion.archive.resolve.LogcatCoverageLog
@@ -55,8 +56,13 @@ class AppGraph(
         IndexRepository(database.indexDao(), seed = { appContext.assets.readSeed() }, seedContext = io)
     }
 
+    private val deviceRecords: DeviceRecordsDatabase by lazy { DeviceRecordsDatabase.open(appContext) }
+
     /** What this device remembers of its own use: source reports and recently resolved titles. */
-    val records: DeviceRecords by lazy { DeviceRecords(DeviceRecordsDatabase.open(appContext).dao()) }
+    val records: DeviceRecords by lazy { DeviceRecords(deviceRecords.dao()) }
+
+    /** The watch progress the host reports, in the same database. */
+    val progress: PlaybackProgressStore by lazy { PlaybackProgressStore(deviceRecords) }
 
     /**
      * The user's Sources settings, on the device. One store per process, as DataStore requires; the
