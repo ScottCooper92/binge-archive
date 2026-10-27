@@ -128,7 +128,10 @@ class AppGraph(
                             index,
                             IndexFetcher(http)::fetch,
                             io,
-                            prune = records::pruneReports,
+                            prune = {
+                                records.pruneReports()
+                                progress.pruneUnplayed()
+                            },
                         )
                     else -> null
                 }

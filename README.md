@@ -16,11 +16,12 @@ holds an openly licensed copy, Binge offers it to play, and names the licence on
 - **Nothing about you leaves your device.** The app asks Wikidata and the Internet Archive about the
   film you opened, and nothing else. It has no analytics and no crash reporting, and is left out of
   backups. If you tell Binge a copy did not play, this app remembers that on your device for 30 days
-  and offers that copy last.
+  and offers that copy last. Where you got to in a film stays on your device too, for Binge alone
+  to resume it, and is forgotten once you finish it or after 90 days unplayed.
 
 The app itself has a status screen and a licence page. The status screen shows what the app does,
-its Sources settings, how fresh its index is, the films it found for you recently and any copies
-you reported. Sources chooses whether title matches are used, which licences are accepted, a
+its Sources settings, how fresh its index is, the films it found for you recently, any copies
+you reported, and how many titles Binge can resume, with a button to clear them. Sources chooses whether title matches are used, which licences are accepted, a
 minimum quality, and whether a copy must have subtitles in your language. The licence
 page says which licences it accepts, and why. You find films from Binge. The app speaks English and Spanish.
 

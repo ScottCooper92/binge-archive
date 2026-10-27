@@ -11,6 +11,7 @@ import androidx.compose.material.icons.outlined.ClearAll
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Gavel
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Public
@@ -22,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.CenteredContent
 import com.binge.designsystem.ErrorKind
@@ -46,7 +48,7 @@ import com.binge.designsystem.R as DesR
 
 /**
  * The phone's status screen: what this app is, the Sources settings, the index, who the data comes
- * from, and this device's recently resolved titles and reports. [now] is a parameter so frames pass a
+ * from, this device's recently resolved titles and reports, and its watch progress. [now] is a parameter so frames pass a
  * fixed instant. On a window wider than the reading width the column is capped and centred.
  *
  * As the list pane of [StatusListDetail], [selected] names the detail open beside it: the Sources
@@ -98,6 +100,7 @@ private fun StatusGroups(
             item { ItemGroup(title = stringResource(R.string.status_sources_title), rows = sourceRows(actions)) }
             item { ItemGroup(title = stringResource(R.string.status_recent_title), rows = recentRows(state.recent, actions, now)) }
             item { ItemGroup(title = stringResource(R.string.status_reported_title), rows = reportedRows(state.reported, actions)) }
+            item { WatchProgressGroup(state.progressTitles, actions.onClearProgress) }
         }
     }
 }
@@ -338,6 +341,30 @@ private fun reportedRows(
             destination = ListItemDestination.Action,
             onClick = actions.onClearReported,
         )
+}
+
+/**
+ * How many titles hold watch progress for Binge, and one row that clears them all. With none, the
+ * row says so and does nothing, as the other lists' empty rows do.
+ */
+@Composable
+fun WatchProgressGroup(
+    titles: Int,
+    onClear: () -> Unit,
+) {
+    val row =
+        if (titles == 0) {
+            ListItem(icon = Icons.Outlined.History, label = stringResource(R.string.status_progress_empty), clickable = false)
+        } else {
+            ListItem(
+                icon = Icons.Outlined.ClearAll,
+                label = stringResource(R.string.status_progress_clear),
+                detail = pluralStringResource(R.plurals.status_progress_titles, titles, titles),
+                destination = ListItemDestination.Action,
+                onClick = onClear,
+            )
+        }
+    ItemGroup(title = stringResource(R.string.status_progress_title), rows = listOf(row))
 }
 
 /** Enough that the about text is never cut, even in a list pane at a large font. */

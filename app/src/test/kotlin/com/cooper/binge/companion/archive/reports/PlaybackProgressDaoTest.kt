@@ -9,6 +9,7 @@ import com.binge.companion.contracts.v1.MediaType
 import com.binge.companion.contracts.v1.PlaybackEvent
 import com.cooper.binge.companion.archive.index.movie
 import com.cooper.binge.companion.archive.index.series
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -18,6 +19,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.util.concurrent.TimeUnit
 
 @RunWith(RobolectricTestRunner::class)
 class PlaybackProgressDaoTest {
@@ -184,4 +186,55 @@ class PlaybackProgressDaoTest {
             assertEquals(567_000_000, held?.lastPlayed?.nanos)
             assertFalse(held!!.completed)
         }
+
+    @Test
+    fun `the count is titles, not rows, and clearing forgets every one`() =
+        runTest {
+            assertEquals(0, store.titleCount().first())
+            dao.upsert(row(653, lastPlayed = 1))
+            dao.upsert(row(894, lastPlayed = 1))
+            dao.upsert(episodeRow(894, season = 1, episode = 1, lastPlayed = 1))
+            dao.upsert(episodeRow(894, season = 1, episode = 2, lastPlayed = 2))
+
+            assertEquals("a movie, a movie with the same id as a series, and the series once", 3, store.titleCount().first())
+
+            store.clear()
+            assertEquals(0, store.titleCount().first())
+            assertEquals(emptyList<Any>(), store.continueWatching(10, 0))
+        }
+
+    @Test
+    fun `a title not played for 90 days is forgotten, one played 89 days ago is kept`() =
+        runTest {
+            now = days(200)
+            dao.upsert(row(653, lastPlayed = now - days(89)))
+            dao.upsert(row(10331, lastPlayed = now - days(91)))
+            dao.upsert(row(3082, lastPlayed = now - days(90)))
+
+            store.pruneUnplayed()
+
+            assertTrue(store.get(movie(653), null) != null)
+            assertNull(store.get(movie(10331), null))
+            assertTrue("exactly 90 days is still inside the window", store.get(movie(3082), null) != null)
+        }
+
+    @Test
+    fun `a series is judged by its latest episode, so one in progress keeps every episode`() =
+        runTest {
+            now = days(200)
+            dao.upsert(episodeRow(894, season = 1, episode = 1, lastPlayed = now - days(150)))
+            dao.upsert(episodeRow(894, season = 1, episode = 2, lastPlayed = now - days(10)))
+            dao.upsert(episodeRow(1399, season = 1, episode = 1, lastPlayed = now - days(120)))
+            dao.upsert(episodeRow(1399, season = 1, episode = 2, lastPlayed = now - days(91)))
+
+            store.pruneUnplayed()
+
+            assertTrue("an old episode of a series still in progress stays", store.get(series(894), ref(1, 1)) != null)
+            assertTrue(store.get(series(894), ref(1, 2)) != null)
+            assertNull(store.get(series(1399), ref(1, 1)))
+            assertNull(store.get(series(1399), ref(1, 2)))
+            assertEquals(1, store.titleCount().first())
+        }
+
+    private fun days(count: Long): Long = TimeUnit.DAYS.toMillis(count)
 }

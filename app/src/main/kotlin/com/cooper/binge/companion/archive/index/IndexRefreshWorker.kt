@@ -17,7 +17,7 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 /**
- * The weekly refresh: forget expired source reports, settle the seed decision, then fetch a whole snapshot, then swap it in. If the fetch fails, the failure is
+ * The weekly refresh: forget the device's expired records, settle the seed decision, then fetch a whole snapshot, then swap it in. If the fetch fails, the failure is
  * logged, the previous index stays, and WorkManager retries with backoff.
  */
 class IndexRefreshWorker(
@@ -26,12 +26,12 @@ class IndexRefreshWorker(
     private val repository: IndexRepository,
     private val fetch: () -> IndexSnapshot,
     private val io: CoroutineDispatcher,
-    /** Housekeeping that runs with the weekly refresh: the device's expired source reports. */
+    /** Housekeeping that runs with the weekly refresh: expired source reports and watch progress unplayed for 90 days. */
     private val prune: suspend () -> Unit = {},
 ) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result =
         try {
-            attempt { prune() }.onFailure { Log.w(TAG, "Could not prune the expired source reports", it) }
+            attempt { prune() }.onFailure { Log.w(TAG, "Could not prune the expired device records", it) }
             repository.ensureSeeded()
             val snapshot = withContext(io) { fetch() }
             repository.replace(snapshot, RefreshSource.NETWORK)

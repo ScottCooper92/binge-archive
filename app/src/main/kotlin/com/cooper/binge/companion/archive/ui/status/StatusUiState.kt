@@ -28,6 +28,8 @@ sealed interface StatusUiState {
         val recent: List<RecentTitle>,
         /** Archive items this device reported, pushed down for 30 days. */
         val reported: List<String>,
+        /** How many titles hold watch progress for the host; a series counts once. */
+        val progressTitles: Int = 0,
         /** The user's Sources settings, as saved. */
         val sources: SourceSettings = SourceSettings.DEFAULT,
         /** Whether "Any, whatever the licence" was picked and waits on its confirm. Nothing is saved until then. */
@@ -48,6 +50,7 @@ data class StatusActions(
     val onOpenUrl: (String) -> Unit = {},
     val onClearRecent: () -> Unit = {},
     val onClearReported: () -> Unit = {},
+    val onClearProgress: () -> Unit = {},
     val onTitleMatches: (Boolean) -> Unit = {},
     /** A licence level picked. [LicenceLevel.ANY] asks first: see [StatusUiState.Ready.confirmingAnyLicence]. */
     val onLicences: (LicenceLevel) -> Unit = {},

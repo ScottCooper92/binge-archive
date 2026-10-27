@@ -132,6 +132,23 @@ class StatusScreenshotTest {
     @ArchiveSpanishPreviews
     @Composable
     fun licencesSpanish() = LicenceScreen(onBack = {})
+
+    /** The watch progress row: a count to clear, and nothing held. */
+    @PreviewTest
+    @ArchiveScreenStatePreview
+    @ArchiveSettingsFontScalePreviews
+    @Composable
+    fun watchProgress() = SectionFrame { WatchProgressGroup(titles = 3, onClear = {}) }
+
+    @PreviewTest
+    @ArchiveSpanishPreviews
+    @Composable
+    fun watchProgressSpanish() = SectionFrame { WatchProgressGroup(titles = 3, onClear = {}) }
+
+    @PreviewTest
+    @ArchiveScreenStatePreview
+    @Composable
+    fun watchProgressEmpty() = SectionFrame { WatchProgressGroup(titles = 0, onClear = {}) }
 }
 
 /** A section or a dialog's card on the screen's background, scrolling so nothing is cut at a large font. */

@@ -9,6 +9,8 @@ import com.cooper.binge.companion.archive.index.inMemoryIndex
 import com.cooper.binge.companion.archive.index.sampleSnapshot
 import com.cooper.binge.companion.archive.reports.DeviceRecords
 import com.cooper.binge.companion.archive.reports.DeviceRecordsDatabase
+import com.cooper.binge.companion.archive.reports.PlaybackProgressEntity
+import com.cooper.binge.companion.archive.reports.PlaybackProgressStore
 import com.cooper.binge.companion.archive.resolve.LicenceLevel
 import com.cooper.binge.companion.archive.settings.MinimumQuality
 import com.cooper.binge.companion.archive.settings.SourceSettings
@@ -47,6 +49,7 @@ class StatusViewModelTest {
             .build()
     private val index = IndexRepository(indexDatabase.indexDao(), seed = { sampleSnapshot }, clock = { 5_000L })
     private val records = DeviceRecords(recordsDatabase.dao(), clock = { 9_000L })
+    private val progress = PlaybackProgressStore(recordsDatabase, clock = { 9_000L })
 
     @get:Rule
     val folder = TemporaryFolder()
@@ -90,7 +93,7 @@ class StatusViewModelTest {
             records.recordResolved(10331, "Night of the Living Dead", "Night.Of.The.Living.Dead_1080p")
             records.record("Nosferatu_DVD_quality", "SOURCE_PROBLEM_UNPLAYABLE")
 
-            val ready = StatusViewModel(index, records, FakeRefresher(MutableStateFlow(true)), settings).ready()
+            val ready = StatusViewModel(index, records, FakeRefresher(MutableStateFlow(true)), settings, progress).ready()
 
             assertEquals(4, ready.filmCount)
             assertEquals(5_000L, ready.lastRefreshedAt)
@@ -106,7 +109,7 @@ class StatusViewModelTest {
             records.recordResolved(653, "Nosferatu", "PhantasmagoriaTheater-Nosferatu1922909")
             records.record("x", "SOURCE_PROBLEM_OTHER")
             val refresher = FakeRefresher()
-            val viewModel = StatusViewModel(index, records, refresher, settings)
+            val viewModel = StatusViewModel(index, records, refresher, settings, progress)
             viewModel.ready { it.recent.isNotEmpty() && it.reported.isNotEmpty() }
 
             viewModel.refreshNow()
@@ -133,7 +136,7 @@ class StatusViewModelTest {
                         emit(false)
                     },
                 )
-            val viewModel = StatusViewModel(index, records, refresher, settings)
+            val viewModel = StatusViewModel(index, records, refresher, settings, progress)
 
             suspend fun awaitState(state: StatusUiState) = withTimeout(5_000) { viewModel.uiState.first { it == state } }
 
@@ -158,7 +161,7 @@ class StatusViewModelTest {
     @Test
     fun `the Sources settings start at the defaults, and each is saved as it is made`() =
         runBlocking {
-            val viewModel = StatusViewModel(index, records, FakeRefresher(), settings)
+            val viewModel = StatusViewModel(index, records, FakeRefresher(), settings, progress)
             assertEquals(SourceSettings.DEFAULT, viewModel.ready().sources)
 
             viewModel.setTitleMatches(false)
@@ -180,7 +183,7 @@ class StatusViewModelTest {
     @Test
     fun `any licence asks first, and saves nothing until confirmed`() =
         runBlocking {
-            val viewModel = StatusViewModel(index, records, FakeRefresher(), settings)
+            val viewModel = StatusViewModel(index, records, FakeRefresher(), settings, progress)
 
             viewModel.chooseLicences(LicenceLevel.ANY)
             val asking = viewModel.ready { it.confirmingAnyLicence }
@@ -201,7 +204,7 @@ class StatusViewModelTest {
     @Test
     fun `cancelling the confirm keeps the licences as they were`() =
         runBlocking {
-            val viewModel = StatusViewModel(index, records, FakeRefresher(), settings)
+            val viewModel = StatusViewModel(index, records, FakeRefresher(), settings, progress)
 
             viewModel.chooseLicences(LicenceLevel.ANY)
             viewModel.ready { it.confirmingAnyLicence }
@@ -212,4 +215,37 @@ class StatusViewModelTest {
             viewModel.confirmAnyLicence()
             assertEquals(LicenceLevel.DEFAULT, settings.current().licences)
         }
+
+    @Test
+    fun `the progress count is titles, and clearing it forgets them all`() =
+        runBlocking {
+            val dao = recordsDatabase.progressDao()
+            dao.upsert(progressRow(mediaType = 1, tmdbId = 653))
+            dao.upsert(progressRow(mediaType = 2, tmdbId = 894, season = 1, episode = 1))
+            dao.upsert(progressRow(mediaType = 2, tmdbId = 894, season = 1, episode = 2))
+            val viewModel = StatusViewModel(index, records, FakeRefresher(), settings, progress)
+
+            assertEquals(2, viewModel.ready { it.progressTitles > 0 }.progressTitles)
+
+            viewModel.clearProgress()
+
+            assertEquals(0, viewModel.ready { it.progressTitles == 0 }.progressTitles)
+            assertEquals(0, progress.continueWatching(10, 0).size)
+        }
+
+    private fun progressRow(
+        mediaType: Int,
+        tmdbId: Int,
+        season: Int = PlaybackProgressEntity.NO_EPISODE,
+        episode: Int = PlaybackProgressEntity.NO_EPISODE,
+    ) = PlaybackProgressEntity(
+        mediaType,
+        tmdbId,
+        season,
+        episode,
+        positionMillis = 60_000,
+        runtimeMillis = 600_000,
+        lastPlayed = 9_000,
+        completed = false,
+    )
 }

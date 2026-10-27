@@ -45,6 +45,10 @@ app:status_licences_detail  1a2be978163a
 app:status_licences_row  98f23bffb823
 app:status_loading  de96814f63b9
 app:status_never_refreshed  a9549d7d0636
+app:status_progress_clear  185e027c8db2
+app:status_progress_empty  44a3cc778bbf
+app:status_progress_title  281ea27ace34
+app:status_progress_titles  151908ec4e60
 app:status_recent_clear  2c8492fd9825
 app:status_recent_empty  60973aaa8ab8
 app:status_recent_title  c047368279b7

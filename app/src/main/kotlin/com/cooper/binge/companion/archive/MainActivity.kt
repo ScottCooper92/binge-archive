@@ -44,7 +44,7 @@ class MainActivity : ComponentActivity() {
         val graph = (application as ArchiveApp).graph
         val factory =
             viewModelFactory {
-                initializer { StatusViewModel(graph.index, graph.records, graph.refresher, graph.sourceSettings) }
+                initializer { StatusViewModel(graph.index, graph.records, graph.refresher, graph.sourceSettings, graph.progress) }
             }
         setContent {
             val viewModel: StatusViewModel = viewModel(factory = factory)
@@ -60,6 +60,7 @@ class MainActivity : ComponentActivity() {
                     onOpenUrl = ::openUrl,
                     onClearRecent = viewModel::clearRecent,
                     onClearReported = viewModel::clearReported,
+                    onClearProgress = viewModel::clearProgress,
                     onTitleMatches = viewModel::setTitleMatches,
                     onLicences = viewModel::chooseLicences,
                     onConfirmAnyLicence = viewModel::confirmAnyLicence,

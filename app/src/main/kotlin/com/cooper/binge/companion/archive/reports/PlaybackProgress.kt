@@ -15,7 +15,9 @@ import com.binge.companion.contracts.v1.MediaId
 import com.binge.companion.contracts.v1.MediaType
 import com.binge.companion.sdk.applyReport
 import com.google.protobuf.Timestamp
+import kotlinx.coroutines.flow.Flow
 import java.time.Instant
+import java.util.concurrent.TimeUnit
 
 /**
  * Where the user got to in one title, or one episode of a series, as the host reported it. Kept on
@@ -93,12 +95,32 @@ interface PlaybackProgressDao {
         limit: Int,
         offset: Int,
     ): List<PlaybackProgressEntity>
+
+    /** How many titles hold progress: a series counts once, however many of its episodes are held. */
+    @Query("SELECT COUNT(*) FROM (SELECT DISTINCT media_type, tmdb_id FROM playback_progress)")
+    fun titleCount(): Flow<Int>
+
+    @Query("DELETE FROM playback_progress")
+    suspend fun clear()
+
+    /**
+     * Forgets every title last played before [cutoff], judged by the title's latest row: a series
+     * with one episode played since keeps all of its episodes.
+     */
+    @Query(
+        "DELETE FROM playback_progress WHERE NOT EXISTS (" +
+            "SELECT 1 FROM playback_progress AS q " +
+            "WHERE q.media_type = playback_progress.media_type AND q.tmdb_id = playback_progress.tmdb_id " +
+            "AND q.last_played >= :cutoff)",
+    )
+    suspend fun deleteOlderThan(cutoff: Long)
 }
 
 /**
  * The user's watch progress for the titles this app resolves (CAPABILITY_PLAYBACK_PROGRESS), in
  * `device-records.db`. The host keeps no copy: clearing this app's data loses it, as the contract
- * intends. Reports are applied by the SDK's [applyReport], stamped with [clock].
+ * intends. Reports are applied by the SDK's [applyReport], stamped with [clock]. A title not played
+ * for [RETENTION_DAYS] days is forgotten ([pruneUnplayed]), and the status screen clears them all.
  */
 class PlaybackProgressStore(
     private val database: DeviceRecordsDatabase,
@@ -163,6 +185,19 @@ class PlaybackProgressStore(
                 }.setProgress(row.toProto())
                 .build()
         }
+
+    /** How many titles hold progress, for the status screen. */
+    fun titleCount(): Flow<Int> = dao.titleCount()
+
+    /** Forgets every title's progress: the status screen's clear. */
+    suspend fun clear() = dao.clear()
+
+    /** Forgets the titles not played for [RETENTION_DAYS] days, a series by its latest episode. */
+    suspend fun pruneUnplayed() = dao.deleteOlderThan(clock() - TimeUnit.DAYS.toMillis(RETENTION_DAYS))
+
+    companion object {
+        const val RETENTION_DAYS = 90L
+    }
 
     private data class Key(
         val mediaType: Int,

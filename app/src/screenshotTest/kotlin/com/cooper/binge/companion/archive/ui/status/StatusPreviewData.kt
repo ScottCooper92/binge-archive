@@ -23,6 +23,7 @@ val previewReady =
                 RecentTitle(3082, "Modern Times", "modern_times_1936", PREVIEW_NOW - 4 * DAY),
             ),
         reported = listOf("Nosferatu_DVD_quality"),
+        progressTitles = 3,
     )
 
 val previewEmpty =

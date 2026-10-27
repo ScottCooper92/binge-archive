@@ -10,6 +10,7 @@ import androidx.compose.material.icons.outlined.ClearAll
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Gavel
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Refresh
@@ -22,6 +23,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.ErrorKind
 import com.binge.designsystem.formatRelativeOrAbsolute
@@ -143,7 +145,28 @@ private fun ColumnScope.TvStatusRows(
             state.reported.forEach { TvRow(it, stringResource(R.string.status_reported_detail), Icons.Outlined.Flag) }
             TvRow(stringResource(R.string.status_reported_clear), null, Icons.Outlined.ClearAll, onClick = actions.onClearReported)
         }
+
+        TvWatchProgress(state.progressTitles, actions.onClearProgress)
     }
+}
+
+/**
+ * How many titles hold watch progress for Binge, on one row that clears them all. It is one row
+ * whatever the count, changed in place: clearing turns it into "Nothing in progress" under the
+ * remote's focus, rather than removing the row and losing the focus.
+ */
+@Composable
+fun TvWatchProgress(
+    titles: Int,
+    onClear: () -> Unit,
+) {
+    TvSectionTitle(stringResource(R.string.status_progress_title))
+    TvRow(
+        label = stringResource(if (titles == 0) R.string.status_progress_empty else R.string.status_progress_clear),
+        supporting = if (titles == 0) null else pluralStringResource(R.plurals.status_progress_titles, titles, titles),
+        icon = if (titles == 0) Icons.Outlined.History else Icons.Outlined.ClearAll,
+        onClick = if (titles == 0) ({}) else onClear,
+    )
 }
 
 /** The Sources settings on the television: a row or a group per setting, each applying as OK is pressed. */
