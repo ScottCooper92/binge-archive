@@ -16,6 +16,7 @@ import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -131,19 +132,27 @@ private fun ColumnScope.TvStatusRows(
         TvRow(stringResource(R.string.status_wikidata), stringResource(R.string.status_wikidata_detail), Icons.Outlined.Public)
 
         TvSectionTitle(stringResource(R.string.status_recent_title))
-        if (state.recent.isEmpty()) {
-            TvRow(stringResource(R.string.status_recent_empty), null, Icons.Filled.Movie)
-        } else {
-            state.recent.forEach { TvRow(it.title, formatRelativeOrAbsolute(it.resolvedAt, now), Icons.Filled.Movie) }
-            TvRow(stringResource(R.string.status_recent_clear), null, Icons.Outlined.ClearAll, onClick = actions.onClearRecent)
+        state.recent.forEach { TvRow(it.title, formatRelativeOrAbsolute(it.resolvedAt, now), Icons.Filled.Movie) }
+        key("recent-action") {
+            TvClearRow(
+                empty = state.recent.isEmpty(),
+                emptyLabel = stringResource(R.string.status_recent_empty),
+                clearLabel = stringResource(R.string.status_recent_clear),
+                emptyIcon = Icons.Filled.Movie,
+                onClear = actions.onClearRecent,
+            )
         }
 
         TvSectionTitle(stringResource(R.string.status_reported_title))
-        if (state.reported.isEmpty()) {
-            TvRow(stringResource(R.string.status_reported_empty), null, Icons.Outlined.Flag)
-        } else {
-            state.reported.forEach { TvRow(it, stringResource(R.string.status_reported_detail), Icons.Outlined.Flag) }
-            TvRow(stringResource(R.string.status_reported_clear), null, Icons.Outlined.ClearAll, onClick = actions.onClearReported)
+        state.reported.forEach { TvRow(it, stringResource(R.string.status_reported_detail), Icons.Outlined.Flag) }
+        key("reported-action") {
+            TvClearRow(
+                empty = state.reported.isEmpty(),
+                emptyLabel = stringResource(R.string.status_reported_empty),
+                clearLabel = stringResource(R.string.status_reported_clear),
+                emptyIcon = Icons.Outlined.Flag,
+                onClear = actions.onClearReported,
+            )
         }
 
         TvWatchProgress(state.progressTitles, actions.onClearProgress)
@@ -166,6 +175,27 @@ fun TvWatchProgress(
         supporting = if (titles == 0) null else pluralStringResource(R.plurals.status_progress_titles, titles, titles),
         icon = if (titles == 0) Icons.Outlined.History else Icons.Outlined.ClearAll,
         onClick = if (titles == 0) ({}) else onClear,
+    )
+}
+
+/**
+ * A list's one action row, after its items. It is the same row whether the list holds anything or not,
+ * changed in place: clearing turns it into the list's "nothing" line under the remote's focus, rather
+ * than removing the row and losing the focus. Empty, it still takes focus and asks for nothing.
+ */
+@Composable
+private fun TvClearRow(
+    empty: Boolean,
+    emptyLabel: String,
+    clearLabel: String,
+    emptyIcon: ImageVector,
+    onClear: () -> Unit,
+) {
+    TvRow(
+        label = if (empty) emptyLabel else clearLabel,
+        supporting = null,
+        icon = if (empty) emptyIcon else Icons.Outlined.ClearAll,
+        onClick = if (empty) ({}) else onClear,
     )
 }
 
