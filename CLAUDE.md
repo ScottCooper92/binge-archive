@@ -46,7 +46,7 @@ items are returned everywhere.
 
 Each source carries its licence in `licence_label` and `licence_kind` (binge-companions #248), so
 the host shows it on a line of its own and warns on anything but an open licence; the `label` is the
-film alone. A recognised licence keeps its short name ("Public domain (US)", "CC BY-SA 4.0"). A
+Archive item's own title, so two uploads of one film can be told apart ("Title (year)" when it has none). A recognised licence keeps its short name ("Public domain (US)", "CC BY-SA 4.0"). A
 missing or blank one reads "No licence stated". Anything else shows the item's own text, without
 control or format characters and shortened to 40 characters. `LicenceAllowlist.identify` classes
 every licence field as one `Licence.Kind`; public domain and every Creative Commons licence go on
@@ -179,7 +179,7 @@ query (step 3): they keep the index's order.
 5. **`SourceMapper`.** Video files only (`VideoFormats`). With a runtime, a file under half of it is
    dropped: a reel, a trailer or an extra is not the film. One source per resolution class per
    item, preferring h.264 in MP4, then any MP4, then height, length and size. The label is
-   "Title (year)", and the licence goes in `licence_label` and `licence_kind`. SubRip and WebVTT
+   the item's own Archive title, else "Title (year)", and the licence goes in `licence_label` and `licence_kind`. SubRip and WebVTT
    become subtitle tracks, at most ten. Each item's
    sources are sent as soon as the item is read, in download order; an item this device reported is
    held back and sent last. At most fifty sources. URLs are `https://archive.org/download/…`, with a

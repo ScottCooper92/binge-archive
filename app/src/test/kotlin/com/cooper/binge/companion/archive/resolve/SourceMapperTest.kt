@@ -35,7 +35,7 @@ class SourceMapperTest {
         )
         sources.forEach {
             assertEquals("H.264", it.quality.videoCodec)
-            assertEquals("Night of the Living Dead (1968)", it.label)
+            assertEquals("Night of the Living Dead", it.label)
             assertEquals("Public domain (US)", it.licenceLabel)
             assertEquals(LicenceKind.LICENCE_KIND_OPEN, it.licenceKind)
             assertTrue(it.source.url.startsWith("https://archive.org/download/Night.Of.The.Living.Dead_1080p/"))
@@ -77,6 +77,22 @@ class SourceMapperTest {
         assertEquals("Nosferatu (1922)", source.label)
         assertEquals("Public domain (US)", source.licenceLabel)
         assertEquals("", source.quality.videoCodec)
+    }
+
+    @Test
+    fun `the label is the item's own title, or Title (year) when it has none, and never past 120 characters`() {
+        val files = listOf(ArchiveFile("film.mp4", "h.264", 1, 480, 100.0))
+
+        fun label(title: String?) =
+            sources(
+                ArchiveItem("item", "movies", title, null, null, accessRestricted = false, dark = false, files = files),
+                WikidataTitle.parse(resolveFixture("wikidata-653.tsv")).copy(runtimeSeconds = null),
+            ).single().label
+
+        assertEquals("Nosferatu, 1922 (restored)", label("  Nosferatu, 1922 (restored) "))
+        assertEquals("Nosferatu (1922)", label(null))
+        assertEquals("Nosferatu (1922)", label("   "))
+        assertEquals(120, label("A".repeat(200)).length)
     }
 
     @Test
