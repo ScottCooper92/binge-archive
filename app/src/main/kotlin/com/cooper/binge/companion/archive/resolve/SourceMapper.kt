@@ -61,7 +61,7 @@ class SourceMapper(
         // The upload's own title tells two uploads of one film apart; "Title (year)" stands in without one.
         val label =
             item.title
-                ?.trim()
+                ?.plainText()
                 ?.takeIf { it.isNotEmpty() }
                 ?.shortened(MAX_LABEL)
                 ?: strings.label(facts.title ?: item.identifier, facts.year, MAX_LABEL)

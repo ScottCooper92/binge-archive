@@ -92,6 +92,8 @@ class SourceMapperTest {
         assertEquals("Nosferatu, 1922 (restored)", label("  Nosferatu, 1922 (restored) "))
         assertEquals("Nosferatu (1922)", label(null))
         assertEquals("Nosferatu (1922)", label("   "))
+        assertEquals("Nosferatu (1922)", label("\u200B"))
+        assertEquals("Night of the dead", label("Night of\nthe\t\u202Edead"))
         assertEquals(120, label("A".repeat(200)).length)
     }
 
