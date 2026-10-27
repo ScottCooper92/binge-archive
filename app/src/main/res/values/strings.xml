@@ -70,6 +70,13 @@
     <string name="status_reported_empty">No copies reported</string>
     <string name="status_reported_detail">Offered last for 30 days</string>
     <string name="status_reported_clear">Clear reports</string>
+    <string name="status_progress_title">Watch progress</string>
+    <string name="status_progress_empty">Nothing in progress</string>
+    <string name="status_progress_clear">Clear watch progress</string>
+    <plurals name="status_progress_titles">
+        <item quantity="one">%1$d title</item>
+        <item quantity="other">%1$d titles</item>
+    </plurals>
 
     <!-- The licence explainer. -->
     <string name="licences_title">Which licences</string>

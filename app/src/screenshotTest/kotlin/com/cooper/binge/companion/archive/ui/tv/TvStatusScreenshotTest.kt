@@ -143,6 +143,23 @@ class TvStatusScreenshotTest {
     @ArchiveTvSpanishScreenPreviews
     @Composable
     fun licencesSpanish() = TvLicenceScreen()
+
+    /** The watch progress row: a count to clear, and, after clearing, the same row with nothing held. */
+    @PreviewTest
+    @ArchiveTvScreenPreviews
+    @ArchiveTvFontScalePreviews
+    @Composable
+    fun watchProgress() = SectionFrame { TvWatchProgress(titles = 3, onClear = {}) }
+
+    @PreviewTest
+    @ArchiveTvSpanishScreenPreviews
+    @Composable
+    fun watchProgressSpanish() = SectionFrame { TvWatchProgress(titles = 3, onClear = {}) }
+
+    @PreviewTest
+    @ArchiveTvScreenPreviews
+    @Composable
+    fun watchProgressEmpty() = SectionFrame { TvWatchProgress(titles = 0, onClear = {}) }
 }
 
 /** The confirm's card centred in the window, as its dialog shows it. */

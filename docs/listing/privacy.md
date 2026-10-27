@@ -14,9 +14,11 @@ https://github.com/ScottCooper92/binge-archive.
 - **Copies you reported**, when you tell Binge a copy did not play. The app offers that copy last
   for 30 days. After that the app forgets the report. You can also clear reports on the app's
   screen, or uninstall the app, at any time.
-- **Where you got to in a film or episode**, when Binge reports it: the film or episode, your
-  position, its length, and when you last played it. Only Binge, which reports it, ever reads it
-  back. It stays on the device. Uninstalling the app or clearing its data removes it.
+- **Where you got to in films Binge played from this app's copies**, so Binge can resume them and
+  show them in Continue watching: the film or episode, your position, its length, and when you last
+  played it. A finished film is forgotten. A finished episode is kept, so Binge can offer the next
+  one. Anything you have not played for 90 days is forgotten too, a series by its latest episode.
+  Remove one in Binge, clear them all on the app's screen, or uninstall the app.
 - **Your Sources settings**: whether title matches are used, which licences are accepted, a minimum
   quality, and whether a copy must have subtitles in your language. They change what the app finds,
   and are never sent anywhere. Uninstalling the app removes them.
@@ -41,6 +43,9 @@ your IP address.
 
 When you play a copy, **Binge** fetches the video from `archive.org` itself. This app only hands
 Binge the address, over an Android service binding that never leaves your device.
+
+Your watch progress goes only to **Binge**, over the same on-device binding. It is never sent
+anywhere else.
 
 The app has no server of its own.
 

@@ -52,6 +52,14 @@
     <string name="status_reported_empty">No se ha denunciado ninguna copia</string>
     <string name="status_reported_detail">Se ofrece en último lugar durante 30 días</string>
     <string name="status_reported_clear">Borrar denuncias</string>
+    <string name="status_progress_title">Progreso de visionado</string>
+    <string name="status_progress_empty">Nada a medias</string>
+    <string name="status_progress_clear">Borrar el progreso</string>
+    <plurals name="status_progress_titles">
+        <item quantity="one">%1$d título</item>
+        <item quantity="many">%1$d títulos</item>
+        <item quantity="other">%1$d títulos</item>
+    </plurals>
 
     <string name="licences_title">Qué licencias</string>
     <string name="licences_intro">De forma predeterminada, solo se ofrece una copia si Internet Archive la publica con una de estas licencias. Fuentes, en la pantalla principal, permite restringirlo o ampliarlo.</string>

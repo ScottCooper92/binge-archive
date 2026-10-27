@@ -235,6 +235,9 @@ action with the SDK's manifest meta-data (`com.binge.companion.name`, `.icon`, `
     its most recently played episode. Entries are ids and progress only. Pages hold at most fifty.
   - **`ForgetProgress`** forgets a movie, one episode, or with no episode a whole series. It is OK
     when nothing is held.
+  - **Retention:** a title not played for 90 days is forgotten by the weekly refresh's prune
+    (`PlaybackProgressStore.pruneUnplayed`), a series by its latest episode, so one in progress
+    keeps every episode. The status screen counts the titles held and clears them all.
 - A gated rpc checks its capability with a STREAM `requireDeclared`, the twin of the SDK's
   REQUEST-typed one.
 - **Who may bind:** a release build pins Binge's published certificate (`HostPolicy.pinned` with
@@ -251,7 +254,8 @@ with the Sources settings, its licence page, and the hand-off Binge's "manage" r
   `Ready` or `Error`, never a set of flags. `StatusScreen` (phone) and `ui/tv/TvStatusScreen` take the
   state and a `StatusActions`, so every arm renders in a frame. Sections: what this is (and the
   licence page), Sources, the index (films linked, last refresh, a failed refresh, "Refresh now"),
-  who the data comes from, recently resolved titles, and reported copies.
+  who the data comes from, recently resolved titles, reported copies, and watch progress (a count
+  and one clear row; on the TV the row changes in place, so clearing keeps the focus).
 - **Wide windows** (#49): `PhoneStatusRoot` is the one place the phone's layout is chosen, from
   the window size class. Below 840dp it is `StatusScreen` or the licence page alone, capped at
   `content_max_width` and centred. From 840dp it is `StatusListDetail`: the status list and its
