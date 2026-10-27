@@ -157,7 +157,7 @@ class PlaybackProgressStore(
                         .setMediaTypeValue(row.mediaType)
                         .setTmdbId(row.tmdbId),
                 ).apply {
-                    if (row.season != PlaybackProgressEntity.NO_EPISODE) {
+                    if (row.mediaType == MediaType.MEDIA_TYPE_TV.number) {
                         setEpisode(EpisodeRef.newBuilder().setSeasonNumber(row.season).setEpisodeNumber(row.episode))
                     }
                 }.setProgress(row.toProto())

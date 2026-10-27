@@ -170,6 +170,9 @@ class ArchiveStreamServiceProgressTest {
                     report(movie(0)),
                     report(movie(653), ref(1, 1)),
                     report(series(894)),
+                    report(series(894), ref(-1, 1)),
+                    report(series(894), ref(-1, -1)),
+                    report(series(894), ref(1, 0)),
                     report(movie(653), event = PlaybackEvent.PLAYBACK_EVENT_UNSPECIFIED),
                     report(movie(653)).toBuilder().setEventValue(99).build(),
                     report(movie(653), position = -1),
@@ -284,6 +287,7 @@ class ArchiveStreamServiceProgressTest {
 
             assertEquals(Status.Code.INVALID_ARGUMENT, code { stub.forgetProgress(forget(movie(653), ref(1, 1))) })
             assertEquals(Status.Code.INVALID_ARGUMENT, code { stub.forgetProgress(forget(movie(-1))) })
+            assertEquals(Status.Code.INVALID_ARGUMENT, code { stub.forgetProgress(forget(series(894), ref(-1, 1))) })
         }
 
     @Test

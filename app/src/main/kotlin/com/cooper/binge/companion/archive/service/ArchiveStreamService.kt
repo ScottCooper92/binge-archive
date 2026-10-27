@@ -17,6 +17,8 @@ import com.binge.companion.contracts.stream.v1.ResolveRequest
 import com.binge.companion.contracts.stream.v1.ResolveResponse
 import com.binge.companion.contracts.stream.v1.SourceProblem
 import com.binge.companion.contracts.stream.v1.StreamServiceGrpcKt
+import com.binge.companion.contracts.v1.EpisodeRef
+import com.binge.companion.contracts.v1.MediaId
 import com.binge.companion.contracts.v1.MediaType
 import com.binge.companion.sdk.ContinueWatchingPageToken
 import com.binge.companion.sdk.MAX_LIST_PAGE_SIZE
@@ -151,6 +153,7 @@ class ArchiveStreamService(
         withContext(io) {
             CAPABILITIES.requireDeclared(Capability.CAPABILITY_PLAYBACK_PROGRESS)
             request.requireValid()
+            if (request.hasEpisode()) refuseUnusableEpisode(request.media, request.episode)
             progress.report(request)
             ReportPlaybackResponse.getDefaultInstance()
         }
@@ -177,9 +180,18 @@ class ArchiveStreamService(
         withContext(io) {
             CAPABILITIES.requireDeclared(Capability.CAPABILITY_PLAYBACK_PROGRESS)
             request.requireValid()
+            if (request.hasEpisode()) refuseUnusableEpisode(request.media, request.episode)
             progress.forget(request.media, if (request.hasEpisode()) request.episode else null)
             ForgetProgressResponse.getDefaultInstance()
         }
+
+    /** An episode `Resolve` would refuse is refused here too, so no row is kept for an episode never issued. */
+    private fun refuseUnusableEpisode(
+        media: MediaId,
+        episode: EpisodeRef,
+    ) {
+        unusableRequest(media, episode)?.let { throw errors.invalid(it) }
+    }
 
     companion object {
         private val ARCHIVE_IDENTIFIER = Regex("[A-Za-z0-9][A-Za-z0-9_.-]*")

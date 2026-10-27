@@ -29,7 +29,8 @@ here once it is known.
 
 Not asked by the form, but `privacy.md`'s reader will want it: the public film index; the last ten
 films resolved; copies the user reported (each offered last for 30 days, then deleted; the user can clear
-them sooner); and the user's Sources settings (which sources a resolve returns). None of it leaves the
+them sooner); the user's watch progress (title or episode, position, runtime and when last played, read
+back only by the host that reports it, and removed by uninstalling or clearing the app's data); and the user's Sources settings (which sources a resolve returns). None of it leaves the
 device. The recently resolved films and the reported copies can be cleared on the app's screen.
 Android's backup and device transfer copy none of it (`allowBackup="false"`, and
 `data_extraction_rules.xml` excludes every domain from both).
