@@ -21,7 +21,8 @@ import java.util.concurrent.TimeUnit
  * - One source per resolution class per item. Among encodes of the same class, h.264 in MP4 wins,
  *   then any MP4 (the Archive's `512Kb MPEG4` does not name its codec), then the taller picture, the
  *   longer file and the larger one.
- * - Each source's label names the film, and `file_name` names the file it plays (#75): the bare name, never its
+ * - Each source's label is the Archive item's own title, so two uploads of one film can be told apart;
+ *   without one it is "Title (year)". `file_name` names the file it plays (#75): the bare name, never its
  *   folder, cut to [MAX_FILE_NAME] characters. The licence goes in `licence_label` and `licence_kind`, which
  *   the host shows on a line of its own, with a warning for anything but an open licence.
  * - SubRip and WebVTT files become subtitle tracks, at most ten per source.
@@ -57,7 +58,13 @@ class SourceMapper(
             encodes
                 .groupBy { VideoFormats.resolutionOf(it.height) }
                 .mapValues { (_, group) -> group.maxWith(PREFERENCE) }
-        val label = strings.label(facts.title ?: item.title ?: item.identifier, facts.year, MAX_LABEL)
+        // The upload's own title tells two uploads of one film apart; "Title (year)" stands in without one.
+        val label =
+            item.title
+                ?.plainText()
+                ?.takeIf { it.isNotEmpty() }
+                ?.shortened(MAX_LABEL)
+                ?: strings.label(facts.title ?: item.identifier, facts.year, MAX_LABEL)
         val licence = Licensing(strings.licenceName(licensed.licence), licensed.licence.kind.onTheWire())
         val subtitles = subtitles(item)
         return best.entries

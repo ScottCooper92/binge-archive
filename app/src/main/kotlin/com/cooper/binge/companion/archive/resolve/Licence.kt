@@ -99,11 +99,7 @@ object LicenceAllowlist {
         val recognised = normalise(licenseUrl)?.let(::recognise)
         if (recognised != null) return recognised
         // Free text from the uploader reaches the host: no control or bidi-override characters.
-        val text =
-            licenseUrl
-                .replace(whitespace, " ")
-                .filterNot { Character.getType(it) in invisible }
-                .trim()
+        val text = licenseUrl.plainText()
         // Nothing left once the invisible characters are gone (a lone zero-width space, say) states no licence.
         if (text.isEmpty()) return Licence(Licence.Kind.NONE_STATED)
         return Licence(if (restrictive.containsMatchIn(text)) Licence.Kind.RESTRICTED else Licence.Kind.UNKNOWN, text)
@@ -144,11 +140,6 @@ object LicenceAllowlist {
         val detail = if (jurisdiction.isEmpty()) version else "$version ${jurisdiction.uppercase()}"
         return Licence(kind, detail)
     }
-
-    private val whitespace = Regex("\\s+")
-
-    /** Character types that draw nothing or reorder text, once whitespace is a plain space: controls and format marks. */
-    private val invisible = setOf(Character.FORMAT.toInt(), Character.CONTROL.toInt())
 
     /** Words that reserve the rights, as the Archive's free-text licence fields put it. */
     private val restrictive = Regex("all rights reserved|©|\\(c\\)\\s*\\d{4}|copyright\\s+(?:\\(c\\)\\s*)?\\d{4}", RegexOption.IGNORE_CASE)
