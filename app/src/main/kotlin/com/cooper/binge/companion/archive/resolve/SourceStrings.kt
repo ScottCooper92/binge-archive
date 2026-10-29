@@ -74,7 +74,11 @@ internal fun String.shortened(max: Int): String {
     return take(end).trimEnd() + "…"
 }
 
-private val whitespace = Regex("(?U)\\s+")
+/**
+ * Unicode whitespace, spelled out: `\s` plus the separators, vertical tab and next line. Not `(?U)\s`, which the JVM
+ * accepts and Android's ICU regex rejects, failing every lookup the moment this file loads.
+ */
+private val whitespace = Regex("[\\s\\p{Z}\\u000B\\u0085]+")
 
 /** Character types that draw nothing or reorder text, once whitespace is a plain space: controls and format marks. */
 private val invisible = setOf(Character.FORMAT.toInt(), Character.CONTROL.toInt())
