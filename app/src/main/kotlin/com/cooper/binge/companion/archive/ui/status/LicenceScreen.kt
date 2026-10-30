@@ -102,7 +102,7 @@ private data class LicenceType(
     val icon: ImageVector,
 )
 
-/** Every licence type, grouped by the Licences setting that first offers it, most open first. */
+/** Every licence type, grouped by the Licences setting that first offers it, narrowest setting first. */
 private fun licenceGroups(): List<Pair<Int, List<LicenceType>>> =
     listOf(
         R.string.licences_group_public_domain to

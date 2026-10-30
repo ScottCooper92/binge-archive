@@ -148,13 +148,20 @@ private fun StopLabels(
         },
         modifier = Modifier.fillMaxWidth(),
     ) { measurables, constraints ->
-        val loose = constraints.copy(minWidth = 0, minHeight = 0)
-        val placeables = measurables.map { it.measure(loose) }
-        val icons = placeables.filterIndexed { i, _ -> i % 2 == 0 }
-        val labels = placeables.filterIndexed { i, _ -> i % 2 == 1 }
         val width = constraints.maxWidth
         val inset = STOP_INSET.roundToPx()
-        val step = (width - 2 * inset).toFloat() / (icons.size - 1)
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        // `content` alternates an icon and its name, so even indexes are icons and odd ones are names.
+        val stops = measurables.size / 2
+        val step = (width - 2 * inset).toFloat() / (stops - 1)
+        val icons = measurables.filterIndexed { i, _ -> i % 2 == 0 }.map { it.measure(loose) }
+        // A name may use only the room its stop owns, so a long one wraps under its icon instead of running into
+        // the next: half a step either side of its tick, and at the ends from the row's edge.
+        val labels =
+            measurables.filterIndexed { i, _ -> i % 2 == 1 }.mapIndexed { i, measurable ->
+                val room = if (i == 0 || i == stops - 1) inset + step / 2 else step
+                measurable.measure(loose.copy(maxWidth = room.toInt().coerceAtMost(width)))
+            }
         val iconHeight = icons.maxOf { it.height }
         val height = iconHeight + labels.maxOf { it.height }
         layout(width, height) {
