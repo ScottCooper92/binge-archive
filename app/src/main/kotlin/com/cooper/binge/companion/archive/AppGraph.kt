@@ -30,6 +30,7 @@ import com.cooper.binge.companion.archive.resolve.Resolver
 import com.cooper.binge.companion.archive.resolve.ResolverHttp
 import com.cooper.binge.companion.archive.resolve.SourceMapper
 import com.cooper.binge.companion.archive.resolve.SourceStrings
+import com.cooper.binge.companion.archive.resolve.resolveLogFor
 import com.cooper.binge.companion.archive.settings.SourceSettingsStore
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -85,16 +86,18 @@ class AppGraph(
     val resolver: Resolver by lazy {
         val http = ResolverHttp(http)
         val timings = PhaseTimings(LogcatPhaseLog)
+        val resolveLog = resolveLogFor(BuildConfig.DEBUG)
         Resolver(
             index,
             ItemFinder(http, timings),
-            ItemReader(http, timings),
+            ItemReader(http, timings, resolveLog),
             SourceMapper(SourceStrings.from(appContext)),
             LogcatCoverageLog,
             deranked = records::deranked,
             recordResolved = records::recordResolved,
             settings = sourceSettings::current,
             timings = timings,
+            log = resolveLog,
         )
     }
 
