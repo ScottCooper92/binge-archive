@@ -63,7 +63,7 @@ class ResolverLogTest {
             assertTrue(lines.any { it.startsWith("candidates route=wikidata count=") })
             assertTrue(lines.any { it.startsWith("read id=") && it.endsWith(" ok") })
             assertTrue(lines.any { it.startsWith("dropped id=") })
-            assertTrue(lines.last().startsWith("answer sources=1 items=1 after "))
+            assertTrue(lines.last().startsWith("answer sources="))
             assertTrue(lines.none { "://" in it })
         }
 

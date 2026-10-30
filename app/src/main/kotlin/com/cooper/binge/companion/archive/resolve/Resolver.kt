@@ -6,6 +6,7 @@ import com.binge.companion.contracts.v1.EpisodeRef
 import com.binge.companion.contracts.v1.MediaId
 import com.binge.companion.contracts.v1.MediaType
 import com.binge.companion.sdk.attempt
+import com.cooper.binge.companion.archive.index.IndexHit
 import com.cooper.binge.companion.archive.index.IndexRepository
 import com.cooper.binge.companion.archive.settings.SourceSettings
 import kotlinx.coroutines.flow.Flow
@@ -89,13 +90,7 @@ class Resolver(
         val tmdbId = media.tmdbId
         val settings = timings.time("settings_read") { settings() }
         log.line { ResolveEvents.start(tmdbId, settings.licences.name, settings.titleMatches) }
-        val found =
-            try {
-                timings.time("find_items") { finder.find(tmdbId, hit, titleMatches = settings.titleMatches) }
-            } catch (e: IOException) {
-                log.line { ResolveEvents.failed(e, elapsedSince(begun)) }
-                throw e
-            }
+        val found = findLogged(tmdbId, hit, settings, begun)
         log.line { ResolveEvents.candidates(found.route, found.candidates.map { it.identifier }, found.fromIndex) }
         val inIndex = hit != null
         val outcome =
@@ -118,10 +113,49 @@ class Resolver(
                     ResolveOutcome.NotFound
                 }
             }
+        logAnswer(outcome, found, begun)
+        return outcome
+    }
+
+    /** [ItemFinder.find], with a failure written to the debug log before it goes on to the host. */
+    private suspend fun findLogged(
+        tmdbId: Int,
+        hit: IndexHit?,
+        settings: SourceSettings,
+        begun: Long,
+    ): Found =
+        try {
+            timings.time("find_items") { finder.find(tmdbId, hit, titleMatches = settings.titleMatches) }
+        } catch (e: IOException) {
+            log.line { ResolveEvents.failed(e, elapsedSince(begun)) }
+            throw e
+        }
+
+    /** The answer, unless a flow of sources will write it when it completes. */
+    private fun logAnswer(
+        outcome: ResolveOutcome,
+        found: Found,
+        begun: Long,
+    ) {
         if (outcome !is ResolveOutcome.Sources || found.candidates.isEmpty()) {
             log.line { ResolveEvents.answer(outcome.logWord(), elapsedSince(begun)) }
         }
-        return outcome
+    }
+
+    private fun logSettingsDrops(
+        identifier: String,
+        all: Int,
+        kept: Int,
+    ) {
+        if (all == 0) log.line { ResolveEvents.dropped(identifier, "no_video_file") }
+        if (kept < all) log.line { ResolveEvents.dropped(identifier, "settings_dropped_${all - kept}_of_$all") }
+    }
+
+    private fun logInterrupted(
+        cause: Throwable?,
+        begun: Long,
+    ) {
+        if (cause != null) log.line { ResolveEvents.answer("interrupted by ${cause.javaClass.simpleName}", elapsedSince(begun)) }
     }
 
     /**
@@ -147,11 +181,8 @@ class Resolver(
             suspend fun send(licensed: LicensedItem) {
                 val all = mapper.sources(licensed, found.facts, expiresAt)
                 val kept = mapper.kept(all, settings)
-                if (all.isEmpty()) log.line { ResolveEvents.dropped(licensed.item.identifier, "no_video_file") }
-                if (kept.size < all.size) {
-                    filtered = true
-                    log.line { ResolveEvents.dropped(licensed.item.identifier, "settings_dropped_${all.size - kept.size}_of_${all.size}") }
-                }
+                logSettingsDrops(licensed.item.identifier, all.size, kept.size)
+                if (kept.size < all.size) filtered = true
                 for (source in kept) {
                     if (sent == SourceMapper.MAX_SOURCES) return
                     if (sent == 0) {
@@ -180,9 +211,7 @@ class Resolver(
                 items == 0 -> coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.NO_LICIT_ITEM))
                 sent == 0 -> coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.NO_PLAYABLE_FILE))
             }
-        }.onCompletion { cause ->
-            if (cause != null) log.line { ResolveEvents.answer("interrupted by ${cause.javaClass.simpleName}", elapsedSince(begun)) }
-        }
+        }.onCompletion { cause -> logInterrupted(cause, begun) }
 }
 
 private const val TAG = "ArchiveResolver"
