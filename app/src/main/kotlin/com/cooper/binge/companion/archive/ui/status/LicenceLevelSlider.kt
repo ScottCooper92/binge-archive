@@ -1,7 +1,6 @@
 package com.cooper.binge.companion.archive.ui.status
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,6 +23,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -48,7 +49,7 @@ private val stopLabels =
  * The licence level as a four-stop slider, narrowest on the left. Under it, the level chosen and what it means,
  * in a cell sized to the longest level so nothing moves as it changes. The explanation follows the thumb while it
  * is dragged, and the level is offered once it lands: every level but "Any" is saved at once, and "Any" waits on its
- * confirm ([confirming]), so the thumb returns to the saved level while that is asked. Each stop's label is also a tap target.
+ * confirm ([confirming]); the thumb stays on "Any" while that is asked and returns to the saved level on a cancel. Each stop's label is also a tap target.
  */
 @Composable
 fun LicenceLevelSlider(
@@ -59,7 +60,9 @@ fun LicenceLevelSlider(
 ) {
     val choices = SourceSettingChoices.licences
     val savedIndex = choices.indexOfFirst { it.value == selected }.coerceAtLeast(0)
-    var position by remember(savedIndex, confirming) { mutableFloatStateOf(savedIndex.toFloat()) }
+    // While "Any" waits on its confirm, the thumb stays on it; a cancel returns it to the saved level.
+    val shownIndex = if (confirming) choices.indexOfFirst { it.value == LicenceLevel.ANY } else savedIndex
+    var position by remember(shownIndex) { mutableFloatStateOf(shownIndex.toFloat()) }
     val shown = choices[position.toInt().coerceIn(choices.indices)]
     val warning = shown.value == LicenceLevel.ANY
     val accent = if (warning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
@@ -87,45 +90,9 @@ fun LicenceLevelSlider(
                 ),
             modifier = Modifier.semantics { stateDescription = label },
         )
-        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-            choices.forEachIndexed { index, choice ->
-                val align =
-                    when (index) {
-                        0 -> Alignment.Start
-                        choices.lastIndex -> Alignment.End
-                        else -> Alignment.CenterHorizontally
-                    }
-                val on = index == position.toInt()
-                val tint =
-                    when {
-                        !on -> MaterialTheme.colorScheme.onSurfaceVariant
-                        else -> accent
-                    }
-                Column(
-                    horizontalAlignment = align,
-                    modifier =
-                        Modifier
-                            .weight(1f)
-                            .clickable {
-                                position = index.toFloat()
-                                onSelect(choice.value)
-                            }.clearAndSetSemantics { }
-                            .padding(vertical = dimensionResource(DesR.dimen.padding_xs)),
-                ) {
-                    Icon(choice.icon, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
-                    Text(
-                        text = stringResource(stopLabels[index]),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = tint,
-                        textAlign =
-                            when (index) {
-                                0 -> TextAlign.Start
-                                choices.lastIndex -> TextAlign.End
-                                else -> TextAlign.Center
-                            },
-                    )
-                }
-            }
+        StopLabels(selectedIndex = position.toInt(), accent = accent) { index ->
+            position = index.toFloat()
+            onSelect(choices[index].value)
         }
         Spacer(Modifier.size(dimensionResource(DesR.dimen.padding_m)))
         // Every level's copy is laid out in the same cell and only the chosen one is seen, so the cell is always as
@@ -137,6 +104,66 @@ fun LicenceLevelSlider(
                     level = choice.value,
                     modifier = if (visible) Modifier else Modifier.alpha(0f).clearAndSetSemantics { },
                 )
+            }
+        }
+    }
+}
+
+/** The stops' icons and names: each icon centred on its tick, its name centred under it and held inside the row at the ends. */
+@Composable
+private fun StopLabels(
+    selectedIndex: Int,
+    accent: Color,
+    onPick: (Int) -> Unit,
+) {
+    // Each stop's icon sits centred on its tick; its name is centred under the icon, held inside the row at the ends.
+    Layout(
+        content = {
+            SourceSettingChoices.licences.forEachIndexed { index, choice ->
+                val tint = if (index == selectedIndex) accent else MaterialTheme.colorScheme.onSurfaceVariant
+                val select = { onPick(index) }
+                Icon(
+                    choice.icon,
+                    contentDescription = null,
+                    tint = tint,
+                    modifier =
+                        Modifier
+                            .clickable(onClick = select)
+                            .clearAndSetSemantics { }
+                            .padding(top = dimensionResource(DesR.dimen.padding_xs))
+                            .size(20.dp),
+                )
+                Text(
+                    text = stringResource(stopLabels[index]),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = tint,
+                    textAlign = TextAlign.Center,
+                    modifier =
+                        Modifier
+                            .clickable(onClick = select)
+                            .clearAndSetSemantics { }
+                            .padding(bottom = dimensionResource(DesR.dimen.padding_xs)),
+                )
+            }
+        },
+        modifier = Modifier.fillMaxWidth(),
+    ) { measurables, constraints ->
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val placeables = measurables.map { it.measure(loose) }
+        val icons = placeables.filterIndexed { i, _ -> i % 2 == 0 }
+        val labels = placeables.filterIndexed { i, _ -> i % 2 == 1 }
+        val width = constraints.maxWidth
+        val inset = STOP_INSET.roundToPx()
+        val step = (width - 2 * inset).toFloat() / (icons.size - 1)
+        val iconHeight = icons.maxOf { it.height }
+        val height = iconHeight + labels.maxOf { it.height }
+        layout(width, height) {
+            icons.forEachIndexed { i, icon ->
+                val centre = inset + (step * i).toInt()
+                icon.placeRelative(centre - icon.width / 2, 0)
+                val label = labels[i]
+                val x = (centre - label.width / 2).coerceIn(0, (width - label.width).coerceAtLeast(0))
+                label.placeRelative(x, iconHeight)
             }
         }
     }
@@ -172,3 +199,6 @@ private fun LicenceExplanation(
 
 /** The unfilled part of the track, a tint of the filled part as Material draws it. */
 private const val INACTIVE_TRACK_ALPHA = 0.24f
+
+/** How far the slider draws its first and last tick in from its edges: half its thumb. */
+private val STOP_INSET = 10.dp

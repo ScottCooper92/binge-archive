@@ -4,13 +4,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.outlined.ClearAll
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.Flag
-import androidx.compose.material.icons.outlined.Gavel
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Inventory2
@@ -32,6 +34,7 @@ import com.binge.designsystem.component.BingeChoiceList
 import com.binge.designsystem.component.BingeConfirmDialog
 import com.binge.designsystem.component.BingeConfirmDialogContent
 import com.binge.designsystem.component.BingeLoadingIndicator
+import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemDestination
@@ -88,7 +91,7 @@ private fun StatusGroups(
             contentPadding = padding.screenListPadding(),
             verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
         ) {
-            item { ItemGroup(title = stringResource(R.string.status_about_title), rows = aboutRows(actions, selected)) }
+            item { ItemGroup(title = stringResource(R.string.status_about_title), rows = aboutRows()) }
             item {
                 if (selected == null) {
                     SourceSettingsGroup(state, actions)
@@ -122,10 +125,7 @@ private fun sourcesRow(
     )
 
 @Composable
-private fun aboutRows(
-    actions: StatusActions,
-    selected: StatusDetail?,
-): List<ListItem> =
+private fun aboutRows(): List<ListItem> =
     listOf(
         ListItem(
             icon = Icons.Outlined.Info,
@@ -133,14 +133,6 @@ private fun aboutRows(
             detail = stringResource(R.string.status_about_body),
             supportingMaxLines = ABOUT_LINES,
             clickable = false,
-        ),
-        ListItem(
-            icon = Icons.Outlined.Gavel,
-            label = stringResource(R.string.status_licences_row),
-            detail = stringResource(R.string.status_licences_detail),
-            supportingMaxLines = SETTING_DETAIL_LINES,
-            selected = selected == StatusDetail.Licences,
-            onClick = actions.onOpenLicences,
         ),
     )
 
@@ -172,6 +164,16 @@ fun SourceSettingsGroup(
                 confirming = state.confirmingAnyLicence,
                 onSelect = actions.onLicences,
             )
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxWidth().padding(bottom = dimensionResource(DesR.dimen.padding_xs)),
+            ) {
+                BingeTextButton(
+                    label = stringResource(R.string.licences_more),
+                    onClick = actions.onOpenLicences,
+                    trailingIcon = Icons.AutoMirrored.Outlined.ArrowForward,
+                )
+            }
         }
     }
 }

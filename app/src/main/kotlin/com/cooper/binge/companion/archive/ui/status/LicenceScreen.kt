@@ -6,10 +6,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.Copyright
 import androidx.compose.material.icons.outlined.Gavel
+import androidx.compose.material.icons.outlined.HelpOutline
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.MoneyOff
 import androidx.compose.material.icons.outlined.Public
+import androidx.compose.material.icons.outlined.Sync
+import androidx.compose.material.icons.outlined.TextSnippet
 import androidx.compose.material.icons.outlined.VolunteerActivism
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.CenteredContent
@@ -49,27 +55,29 @@ fun LicenceScreen(
                                     ListItem(
                                         icon = Icons.Outlined.Gavel,
                                         label = stringResource(R.string.licences_title),
-                                        detail = stringResource(R.string.licences_intro),
+                                        detail = stringResource(R.string.licences_intro_all),
                                         supportingMaxLines = INTRO_LINES,
                                         clickable = false,
                                     ),
                                 ),
                         )
                     }
-                    item { ItemGroup(title = stringResource(R.string.licences_allowed), rows = allowedRows()) }
-                    item {
-                        ItemGroup(
-                            title = null,
-                            rows =
-                                listOf(
-                                    ListItem(
-                                        icon = Icons.Outlined.Block,
-                                        label = stringResource(R.string.licences_not_allowed),
-                                        supportingMaxLines = INTRO_LINES,
-                                        clickable = false,
-                                    ),
-                                ),
-                        )
+                    licenceGroups().forEach { (title, types) ->
+                        item {
+                            ItemGroup(
+                                title = stringResource(title),
+                                rows =
+                                    types.map { type ->
+                                        ListItem(
+                                            icon = type.icon,
+                                            label = stringResource(type.name),
+                                            detail = stringResource(type.detail),
+                                            supportingMaxLines = 2,
+                                            clickable = false,
+                                        )
+                                    },
+                            )
+                        }
                     }
                 }
             }
@@ -87,12 +95,38 @@ internal fun allowedLicences(): List<Pair<String, String>> =
         stringResource(R.string.licences_cc_by) to stringResource(R.string.licences_cc_by_detail),
     )
 
-@Composable
-private fun allowedRows(): List<ListItem> {
-    val icons = listOf(Icons.Outlined.Public, Icons.Outlined.Public, Icons.Outlined.VolunteerActivism, Icons.Outlined.Copyright)
-    return allowedLicences().zip(icons) { (name, detail), icon ->
-        ListItem(icon = icon, label = name, detail = detail, supportingMaxLines = 2, clickable = false)
-    }
-}
+/** One licence type: its name, what it means, and its icon. */
+private data class LicenceType(
+    val name: Int,
+    val detail: Int,
+    val icon: ImageVector,
+)
+
+/** Every licence type, grouped by the Licences setting that first offers it, most open first. */
+private fun licenceGroups(): List<Pair<Int, List<LicenceType>>> =
+    listOf(
+        R.string.licences_group_public_domain to
+            listOf(
+                LicenceType(R.string.licence_public_domain, R.string.licences_pdm_detail, Icons.Outlined.Public),
+                LicenceType(R.string.licence_public_domain_us, R.string.licences_pd_us_detail, Icons.Outlined.Public),
+                LicenceType(R.string.licence_cc0, R.string.licences_cc0_detail, Icons.Outlined.VolunteerActivism),
+            ),
+        R.string.licences_group_cc_by to
+            listOf(LicenceType(R.string.licences_cc_by, R.string.licences_cc_by_detail, Icons.Outlined.Copyright)),
+        R.string.licences_group_other_cc to
+            listOf(
+                LicenceType(R.string.licences_cc_by_sa, R.string.licences_cc_by_sa_detail, Icons.Outlined.Sync),
+                LicenceType(R.string.licences_cc_by_nc, R.string.licences_cc_by_nc_detail, Icons.Outlined.MoneyOff),
+                LicenceType(R.string.licences_cc_by_nd, R.string.licences_cc_by_nd_detail, Icons.Outlined.Lock),
+                LicenceType(R.string.licences_cc_by_nc_sa, R.string.licences_cc_by_nc_sa_detail, Icons.Outlined.MoneyOff),
+                LicenceType(R.string.licences_cc_by_nc_nd, R.string.licences_cc_by_nc_nd_detail, Icons.Outlined.MoneyOff),
+            ),
+        R.string.licences_group_unclear to
+            listOf(
+                LicenceType(R.string.licence_none_stated, R.string.licences_none_stated_detail, Icons.Outlined.TextSnippet),
+                LicenceType(R.string.licences_restricted, R.string.licences_restricted_detail, Icons.Outlined.Block),
+                LicenceType(R.string.licences_unknown, R.string.licences_unknown_detail, Icons.Outlined.HelpOutline),
+            ),
+    )
 
 private const val INTRO_LINES = 4
