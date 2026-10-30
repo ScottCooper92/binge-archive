@@ -19,11 +19,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -69,9 +72,11 @@ class StatusViewModelTest {
         }
     }
 
+    private val mainDispatcher = UnconfinedTestDispatcher()
+
     @Before
     fun main() {
-        Dispatchers.setMain(UnconfinedTestDispatcher())
+        Dispatchers.setMain(mainDispatcher)
     }
 
     @After
@@ -156,6 +161,38 @@ class StatusViewModelTest {
             // The read loaded the seed first, so the screen shows its time, not "Not yet".
             val ready = viewModel.ready()
             assertEquals(5_000L, ready.lastRefreshedAt)
+        }
+
+    @Test
+    fun `coming back after the stream stopped keeps the last state, with no Loading in between`() =
+        runBlocking {
+            // The first start reads at once; a later start holds, as a slow read would, so a Loading put out on
+            // the way back would stay where the test can see it.
+            var starts = 0
+            val hold = Channel<Unit>()
+            val refresher =
+                FakeRefresher(
+                    flow {
+                        if (++starts > 1) hold.receive()
+                        emit(false)
+                    },
+                )
+            val viewModel = StatusViewModel(index, records, refresher, settings, progress)
+            val first = launch { viewModel.uiState.collect {} }
+            viewModel.ready()
+            first.cancelAndJoin()
+
+            // Past the view model's 5 s stop timeout, on its own clock, so the stream stops as in the background.
+            mainDispatcher.scheduler.advanceTimeBy(5_500)
+            mainDispatcher.scheduler.runCurrent()
+
+            val second = launch { viewModel.uiState.collect {} }
+            delay(500)
+            val shown = viewModel.uiState.value
+            second.cancel()
+            hold.close()
+
+            assertTrue("expected the last Ready to stay on return, saw $shown", shown is StatusUiState.Ready)
         }
 
     @Test

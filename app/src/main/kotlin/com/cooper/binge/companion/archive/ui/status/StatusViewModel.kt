@@ -41,13 +41,24 @@ class StatusViewModel(
     private val attempts = MutableStateFlow(0)
     private val confirmingAnyLicence = MutableStateFlow(false)
 
-    // Each attempt starts at Loading, so a retry that fails again visibly lands on Error again
-    // rather than being conflated into the Error the flow already holds.
+    /** The last attempt that showed Loading. Coming back after the stream stopped is not a new attempt. */
+    private var loadingShownFor = -1
+
+    // Each new attempt starts at Loading, so a retry that fails again visibly lands on Error again
+    // rather than being conflated into the Error the flow already holds. Resuming after the screen was away
+    // longer than the stop timeout is not an attempt: it keeps the last state, so nothing flashes and the list
+    // keeps its scroll.
     @OptIn(ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<StatusUiState> =
         attempts
-            .flatMapLatest { readyStates().onStart { emit(StatusUiState.Loading) } }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), StatusUiState.Loading)
+            .flatMapLatest { attempt ->
+                readyStates().onStart {
+                    if (attempt != loadingShownFor) {
+                        loadingShownFor = attempt
+                        emit(StatusUiState.Loading)
+                    }
+                }
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), StatusUiState.Loading)
 
     fun refreshNow() = refresher.refreshNow()
 
