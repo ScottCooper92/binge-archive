@@ -5,6 +5,7 @@
     <string name="companion_label" translatable="false">Internet Archive</string>
     <!-- Shown by Binge on this companion's row when a film is not on the Internet Archive. -->
     <string name="not_on_archive">Not on the Internet Archive</string>
+    <string name="lookup_took_too_long">The Internet Archive took too long to answer</string>
 
     <!-- Source labels and subtitles, as Binge shows them on a row. -->
     <string name="licence_public_domain">Public domain</string>

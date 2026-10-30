@@ -2,6 +2,8 @@ package com.cooper.binge.companion.archive.resolve
 
 import android.util.Log
 import com.cooper.binge.companion.archive.index.IndexHit
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -75,12 +77,40 @@ class ItemFinder(
                 return fromIndex(hit) ?: throw e
             }
         if (facts.archiveIds.isNotEmpty()) return Found(Route.WIKIDATA, ranked(facts.archiveIds), facts)
-        facts.imdbId?.let { imdb ->
-            val candidates = search("mediatype:movies AND external-identifier:\"urn:imdb:$imdb\"")
-            if (candidates.isNotEmpty()) return Found(Route.IMDB, candidates, facts)
-        }
-        return byTitle(facts, titleMatches) ?: Found(null, emptyList(), facts)
+        return imdbOrTitle(facts, titleMatches)
     }
+
+    /**
+     * Routes 2 and 3, asked together rather than one after the other, since each is a round trip and a mobile link
+     * pays for several of them. The routes keep their order: the IMDb route wins whenever it finds items, and the title
+     * route's answer, or its failure, is used only when it does not. An IMDb failure is the find's, as before.
+     */
+    private suspend fun imdbOrTitle(
+        facts: TitleFacts,
+        titleMatches: Boolean,
+    ): Found =
+        coroutineScope {
+            val imdb = facts.imdbId?.let { id -> async { search("mediatype:movies AND external-identifier:\"urn:imdb:$id\"") } }
+            val title = async { titleOutcome(facts, titleMatches) }
+            val imdbCandidates = imdb?.await().orEmpty()
+            if (imdbCandidates.isNotEmpty()) {
+                title.cancel()
+                Found(Route.IMDB, imdbCandidates, facts)
+            } else {
+                title.await().getOrThrow() ?: Found(null, emptyList(), facts)
+            }
+        }
+
+    /** [byTitle], with an [IOException] held as a failure so an IMDb find can win over it. */
+    private suspend fun titleOutcome(
+        facts: TitleFacts,
+        titleMatches: Boolean,
+    ): Result<Found?> =
+        try {
+            Result.success(byTitle(facts, titleMatches))
+        } catch (e: IOException) {
+            Result.failure(e)
+        }
 
     /**
      * Route 3, or null when it finds nothing or cannot run: with no title or runtime to check

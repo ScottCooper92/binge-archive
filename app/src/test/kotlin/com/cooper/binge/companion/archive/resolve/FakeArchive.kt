@@ -19,7 +19,9 @@ internal class FakeArchive(
     var search: (String) -> String = { error("No search answer set") },
 ) : Closeable {
     val server = MockWebServer()
-    val searches = mutableListOf<String>()
+
+    /** Every search query, in arrival order. Synchronised: the finder asks its IMDb and title routes together. */
+    val searches: MutableList<String> = java.util.Collections.synchronizedList(mutableListOf<String>())
     val metadataStatus = mutableMapOf<String, Int>()
 
     /** When set, every search answers with this status instead of a body. */

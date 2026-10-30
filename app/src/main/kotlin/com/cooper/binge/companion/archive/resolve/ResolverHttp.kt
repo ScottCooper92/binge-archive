@@ -3,6 +3,7 @@ package com.cooper.binge.companion.archive.resolve
 import com.cooper.binge.companion.archive.index.IndexFetcher
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import okhttp3.Call
@@ -86,13 +87,39 @@ class ResolverHttp(
         request: Request,
         callTimeoutMillis: Long? = null,
     ): String {
+        val deadline = currentCoroutineContext()[ResolveDeadline]
         val call = client.newCall(request)
-        if (callTimeoutMillis != null) call.timeout().timeout(callTimeoutMillis, TimeUnit.MILLISECONDS)
-        return call.await().use { response ->
+        val timeout = effectiveTimeout(callTimeoutMillis, deadline)
+        if (timeout != null) call.timeout().timeout(timeout, TimeUnit.MILLISECONDS)
+        try {
+            return read(call, request)
+        } catch (e: IOException) {
+            throw e.orBudgetTimeout(deadline)
+        }
+    }
+
+    private suspend fun read(
+        call: Call,
+        request: Request,
+    ): String =
+        call.await().use { response ->
             if (!response.isSuccessful) throw HttpStatusException(response.code, request.url.host)
             withContext(io) { response.body.string() }
         }
+
+    /** The tighter of the call's own budget and what is left of the resolve's; a spent resolve budget fails the call at once. */
+    private fun effectiveTimeout(
+        callTimeoutMillis: Long?,
+        deadline: ResolveDeadline?,
+    ): Long? {
+        val remaining = deadline?.remainingMillis()
+        if (remaining != null && remaining <= 0) throw ResolveTimeoutException()
+        return listOfNotNull(callTimeoutMillis, remaining).minOrNull()
     }
+
+    /** A call that ran out of the resolve's budget is the budget's doing, whatever OkHttp called it. */
+    private fun IOException.orBudgetTimeout(deadline: ResolveDeadline?): IOException =
+        if (deadline != null && deadline.remainingMillis() <= 0) ResolveTimeoutException(this) else this
 
     private suspend fun Call.await(): Response =
         suspendCancellableCoroutine { continuation ->

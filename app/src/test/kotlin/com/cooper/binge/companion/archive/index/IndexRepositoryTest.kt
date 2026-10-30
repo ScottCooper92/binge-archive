@@ -51,6 +51,48 @@ class IndexRepositoryTest {
         }
 
     @Test
+    fun `a seed that fails to load in the background answers null and escapes nowhere`() =
+        runTest {
+            val loaded = java.util.concurrent.CountDownLatch(1)
+            val index =
+                IndexRepository(dao, seed = { loaded.countDown().let { error("seed unreadable") } }, clock = { now })
+
+            assertNull(index.lookupWithoutWaiting(movie(10331)))
+            assertTrue(loaded.await(5, java.util.concurrent.TimeUnit.SECONDS))
+            assertNull(index.lookupWithoutWaiting(movie(10331)))
+        }
+
+    @Test
+    fun `a lookup that does not wait answers null before the seed is in, and finds the film after`() =
+        runTest {
+            val index = repository()
+
+            assertNull(index.lookupWithoutWaiting(movie(10331)))
+            index.ensureSeeded()
+
+            assertEquals(listOf("Night.Of.The.Living.Dead_1080p"), index.lookupWithoutWaiting(movie(10331))?.wikidataArchiveIds)
+        }
+
+    @Test
+    fun `a background seed load that fails answers null and throws nothing into the process`() {
+        val loading = java.util.concurrent.CountDownLatch(1)
+        val escaped = java.util.concurrent.CopyOnWriteArrayList<Throwable>()
+        val previous = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { _, failure -> escaped += failure }
+        try {
+            val index = IndexRepository(dao, seed = { loading.countDown().let { error("disk full") } }, clock = { now })
+
+            assertNull(runBlocking { index.lookupWithoutWaiting(movie(10331)) })
+            assertTrue(loading.await(5, java.util.concurrent.TimeUnit.SECONDS))
+            Thread.sleep(SETTLE_MILLIS)
+
+            assertEquals(emptyList<Throwable>(), escaped.toList())
+        } finally {
+            Thread.setDefaultUncaughtExceptionHandler(previous)
+        }
+    }
+
+    @Test
     fun `an id the index does not know is null`() =
         runTest {
             assertNull(repository().lookup(movie(1)))
@@ -255,3 +297,5 @@ class IndexRepositoryTest {
         }
     }
 }
+
+private const val SETTLE_MILLIS = 300L

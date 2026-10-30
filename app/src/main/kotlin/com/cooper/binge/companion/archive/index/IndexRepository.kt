@@ -2,8 +2,12 @@ package com.cooper.binge.companion.archive.index
 
 import com.binge.companion.contracts.v1.MediaId
 import com.binge.companion.contracts.v1.MediaType
+import com.binge.companion.sdk.attempt
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -28,6 +32,9 @@ class IndexRepository(
 ) {
     private val seeding = Mutex()
 
+    /** Loads the seed for a lookup that would not wait for it; a failed load is left for the next lookup, never thrown into the process. */
+    private val background = CoroutineScope(SupervisorJob())
+
     @Volatile
     private var seeded = false
 
@@ -40,6 +47,19 @@ class IndexRepository(
             MediaType.MEDIA_TYPE_TV -> series(tmdbId)
             else -> null
         }
+    }
+
+    /**
+     * [lookup], except that it never waits for the seed: until the seed is in, it starts loading it in the background and
+     * answers null, so a first `Resolve` on a cold install goes straight to the network routes (which place a film the
+     * index does not know) instead of spending the host's deadline on a load.
+     */
+    suspend fun lookupWithoutWaiting(media: MediaId): IndexHit? {
+        if (!seeded) {
+            background.launch { attempt { ensureSeeded() } }
+            return null
+        }
+        return lookup(media)
     }
 
     /** The most recent refresh, successful or not: a failed one is what the status screen warns about. */

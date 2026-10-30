@@ -101,6 +101,51 @@ class ResolverTest {
             slow.countDown()
         }
 
+    @Test
+    fun `a resolve that runs past its budget while finding items ends with a timeout, not a deadline`() =
+        runTest {
+            archive.sparqlDelaySeconds = 30
+            val tight = resolverWith(budgetMillis = 300)
+
+            val failure = runCatching { tight.resolve(movie(1), episode = null) }.exceptionOrNull()
+
+            assertTrue(failure.toString(), failure is ResolveTimeoutException)
+        }
+
+    @Test
+    fun `a resolve that runs past its budget while reading keeps the sources it sent and completes`() =
+        runTest {
+            archive.sparql = { resolveFixture("wikidata-653.tsv") }
+            archive.search = {
+                searchResponse(
+                    "PhantasmagoriaTheater-Nosferatu1922909" to 900L,
+                    "Nosferatu_DVD_quality" to 500L,
+                )
+            }
+            val never = java.util.concurrent.CountDownLatch(1)
+            archive.metadataGates["Nosferatu_DVD_quality"] = never
+            val tight = resolverWith(budgetMillis = 1_500)
+
+            val received = sources(tight.resolve(movie(653), episode = null)).toList().map { it.id }
+            never.countDown()
+
+            assertTrue(received.toString(), received.any { it.startsWith("PhantasmagoriaTheater-Nosferatu1922909/") })
+        }
+
+    @Test
+    fun `without waiting for the seed, a first resolve goes straight to the routes`() =
+        runBlocking {
+            archive.sparql = { resolveFixture("wikidata-10331.tsv") }
+            archive.search = { resolveFixture("search-downloads-10331.json") }
+            val cold = resolverWith(waitForSeed = false)
+
+            val sources = sources(cold.resolve(movie(10331), episode = null)).toList()
+
+            assertEquals(3, sources.size)
+            // The index had not been read, so the film was a gap in it for this resolve.
+            assertTrue(misses.toString(), misses.any { it.reason == CoverageMiss.Reason.NOT_IN_INDEX })
+        }
+
     private fun resolverWith(
         http: ResolverHttp = archive.http(),
         deranked: suspend () -> Set<String> = { emptySet() },
@@ -108,6 +153,8 @@ class ResolverTest {
         settings: SourceSettings = SourceSettings.DEFAULT,
         deviceLanguage: String = "en",
         timings: PhaseTimings = PhaseTimings.NONE,
+        budgetMillis: Long = RESOLVE_BUDGET_MILLIS,
+        waitForSeed: Boolean = true,
     ) = Resolver(
         IndexRepository(database.indexDao(), seed = { seed }),
         ItemFinder(http, timings),
@@ -118,6 +165,8 @@ class ResolverTest {
         recordResolved = recordResolved,
         settings = { settings },
         timings = timings,
+        budgetMillis = budgetMillis,
+        waitForSeed = waitForSeed,
     )
 
     /** A film with a title, year and runtime and no linked Archive item: only the title route can place it. */

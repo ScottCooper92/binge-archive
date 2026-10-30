@@ -98,6 +98,7 @@ class AppGraph(
             settings = sourceSettings::current,
             timings = timings,
             log = resolveLog,
+            waitForSeed = false,
         )
     }
 
