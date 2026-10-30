@@ -75,6 +75,8 @@ class AndroidUserMessages(
 ) : UserMessages {
     override fun notOnArchive(): String = context.getString(R.string.not_on_archive)
 
+    override fun tookTooLong(): String = context.getString(R.string.lookup_took_too_long)
+
     override fun locale(): String =
         context.resources.configuration.locales
             .get(0)

@@ -62,6 +62,8 @@ class ArchiveStreamServiceProgressTest {
         object : UserMessages {
             override fun notOnArchive() = "Not on the Internet Archive"
 
+            override fun tookTooLong() = "Took too long"
+
             override fun locale() = "en-GB"
         }
     private val ioExecutor = Executors.newSingleThreadExecutor()

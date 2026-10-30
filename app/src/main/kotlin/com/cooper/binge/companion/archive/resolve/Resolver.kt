@@ -9,10 +9,14 @@ import com.binge.companion.sdk.attempt
 import com.cooper.binge.companion.archive.index.IndexHit
 import com.cooper.binge.companion.archive.index.IndexRepository
 import com.cooper.binge.companion.archive.settings.SourceSettings
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.IOException
 
 /**
@@ -73,6 +77,10 @@ class Resolver(
     /** The user's settings now. A failure to read them is an `IOException`, so the resolve fails. */
     private val settings: suspend () -> SourceSettings = { SourceSettings.DEFAULT },
     private val timings: PhaseTimings = PhaseTimings.NONE,
+    /** How long a whole resolve may take, from its start, before it ends with a [ResolveTimeoutException]. */
+    private val budgetMillis: Long = RESOLVE_BUDGET_MILLIS,
+    /** False in the app: a first `Resolve` does not spend its deadline waiting for the seed (see [IndexRepository.lookupWithoutWaiting]). */
+    private val waitForSeed: Boolean = true,
     /** What a debug build writes about each resolve; [ResolveLog.NONE] in release. */
     private val log: ResolveLog = ResolveLog.NONE,
 ) : TitleResolver {
@@ -85,7 +93,7 @@ class Resolver(
         if (media.mediaType == MediaType.MEDIA_TYPE_TV) return ResolveOutcome.NotFound
         val started = timings.mark()
         val begun = System.nanoTime()
-        val hit = timings.time("index_lookup") { index.lookup(media) }
+        val hit = timings.time("index_lookup") { lookupIndex(media) }
         if (hit != null && !hit.isFilm) return ResolveOutcome.NotAFilm
         val tmdbId = media.tmdbId
         val settings = timings.time("settings_read") { settings() }
@@ -117,6 +125,8 @@ class Resolver(
         return outcome
     }
 
+    private suspend fun lookupIndex(media: MediaId): IndexHit? = if (waitForSeed) index.lookup(media) else index.lookupWithoutWaiting(media)
+
     /** [ItemFinder.find], with a failure written to the debug log before it goes on to the host. */
     private suspend fun findLogged(
         tmdbId: Int,
@@ -125,11 +135,16 @@ class Resolver(
         begun: Long,
     ): Found =
         try {
-            timings.time("find_items") { finder.find(tmdbId, hit, titleMatches = settings.titleMatches) }
+            withTimeoutOrNull(remainingMillis(begun)) {
+                timings.time("find_items") { finder.find(tmdbId, hit, titleMatches = settings.titleMatches) }
+            } ?: throw ResolveTimeoutException()
         } catch (e: IOException) {
             log.line { ResolveEvents.failed(e, elapsedSince(begun)) }
             throw e
         }
+
+    /** What is left of the budget, never below 1 ms so a spent one times out at once. */
+    private fun remainingMillis(begun: Long): Long = (budgetMillis - elapsedSince(begun)).coerceAtLeast(1L)
 
     /** The answer, unless a flow of sources will write it when it completes. */
     private fun logAnswer(
@@ -155,7 +170,17 @@ class Resolver(
         cause: Throwable?,
         begun: Long,
     ) {
-        if (cause != null) log.line { ResolveEvents.answer("interrupted by ${cause.javaClass.simpleName}", elapsedSince(begun)) }
+        when (cause) {
+            null -> Unit
+            is CancellationException ->
+                log.line {
+                    ResolveEvents.answer(
+                        "interrupted by ${cause.javaClass.simpleName}",
+                        elapsedSince(begun),
+                    )
+                }
+            else -> log.line { ResolveEvents.failed(cause, elapsedSince(begun)) }
+        }
     }
 
     /**
@@ -200,10 +225,16 @@ class Resolver(
                 }
             }
 
-            reader.readEach(found, settings.licences, onFiltered = { filtered = true }).collect { licensed ->
-                items++
-                if (licensed.item.identifier in derankedIds) heldBack += licensed else send(licensed)
-            }
+            reader
+                .readEach(
+                    found,
+                    settings.licences,
+                    onFiltered = { filtered = true },
+                ).withinBudget(remainingMillis(begun))
+                .collect { licensed ->
+                    items++
+                    if (licensed.item.identifier in derankedIds) heldBack += licensed else send(licensed)
+                }
             heldBack.forEach { send(it) }
             log.line { ResolveEvents.answer("sources=$sent items=$items", elapsedSince(begun)) }
             when {
@@ -244,6 +275,16 @@ fun unusableRequest(
 
 private fun elapsedSince(begun: Long): Long = (System.nanoTime() - begun) / NANOS_PER_MILLI
 
+/** Ends [this] with a [ResolveTimeoutException] once [millis] have passed, keeping whatever it emitted before. */
+private fun <T> Flow<T>.withinBudget(millis: Long): Flow<T> =
+    flow {
+        try {
+            withTimeout(millis) { collect { emit(it) } }
+        } catch (e: TimeoutCancellationException) {
+            throw ResolveTimeoutException(e)
+        }
+    }
+
 private const val NANOS_PER_MILLI = 1_000_000L
 
 /** The outcome as the debug log words it. A [ResolveOutcome.Sources] with no candidates is an empty, finished answer. */
@@ -254,3 +295,14 @@ private fun ResolveOutcome.logWord(): String =
         ResolveOutcome.NotAFilm -> "not_a_film"
         is ResolveOutcome.Invalid -> "invalid"
     }
+
+/**
+ * The resolve ran past its budget, which sits inside the host's 10 s deadline so the answer is ours rather than a deadline.
+ * An [IOException], so the Service answers `UNAVAILABLE`; [ArchiveErrors] words it as taking too long.
+ */
+class ResolveTimeoutException(
+    cause: Throwable? = null,
+) : IOException("The resolve ran past its budget", cause)
+
+/** About 8 s: well inside the host's 10 s deadline, so a slow lookup is told apart from a call the host gave up on. */
+const val RESOLVE_BUDGET_MILLIS = 8_000L

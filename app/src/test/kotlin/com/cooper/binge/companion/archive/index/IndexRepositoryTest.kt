@@ -51,6 +51,17 @@ class IndexRepositoryTest {
         }
 
     @Test
+    fun `a lookup that does not wait answers null before the seed is in, and finds the film after`() =
+        runTest {
+            val index = repository()
+
+            assertNull(index.lookupWithoutWaiting(movie(10331)))
+            index.ensureSeeded()
+
+            assertEquals(listOf("Night.Of.The.Living.Dead_1080p"), index.lookupWithoutWaiting(movie(10331))?.wikidataArchiveIds)
+        }
+
+    @Test
     fun `an id the index does not know is null`() =
         runTest {
             assertNull(repository().lookup(movie(1)))

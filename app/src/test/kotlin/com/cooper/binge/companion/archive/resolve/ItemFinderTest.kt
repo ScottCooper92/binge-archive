@@ -92,7 +92,31 @@ class ItemFinderTest {
 
             assertEquals(Route.IMDB, found.route)
             assertEquals(listOf("by_imdb"), found.candidates.map { it.identifier })
-            assertEquals("mediatype:movies AND external-identifier:\"urn:imdb:tt0000001\"", archive.searches.single())
+            assertTrue(archive.searches.contains("mediatype:movies AND external-identifier:\"urn:imdb:tt0000001\""))
+        }
+
+    @Test
+    fun `the IMDb and title routes are asked together, and an IMDb find wins`() =
+        runTest {
+            archive.sparql = { facts(imdb = "tt0000001", runtime = "60") }
+            archive.search = { searchResponse("by_imdb" to 10) }
+
+            val found = ItemFinder(archive.http()).find(1)
+
+            assertEquals(Route.IMDB, found.route)
+            assertEquals(2, archive.searches.size)
+            assertTrue(archive.searches.any { it.contains("title:") })
+        }
+
+    @Test
+    fun `a title route that fails does not fail an IMDb find`() =
+        runTest {
+            archive.sparql = { facts(imdb = "tt0000001", runtime = "60") }
+            archive.search = { query -> if (query.contains("title:")) "not a json search response" else searchResponse("by_imdb" to 10) }
+
+            val found = ItemFinder(archive.http()).find(1)
+
+            assertEquals(Route.IMDB, found.route)
         }
 
     @Test
@@ -107,7 +131,7 @@ class ItemFinderTest {
             assertEquals(Route.TITLE, found.route)
             assertEquals(listOf("by_title"), found.candidates.map { it.identifier })
             assertEquals(listOf("by_title"), found.preloaded.keys.toList())
-            assertEquals("mediatype:movies AND title:(\"Some  Film\") AND year:1950", archive.searches.last())
+            assertTrue(archive.searches.contains("mediatype:movies AND title:(\"Some  Film\") AND year:1950"))
         }
 
     @Test

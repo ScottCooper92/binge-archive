@@ -137,7 +137,9 @@ Rules that hold it together:
   Tests never depend on the live seed: `SeedAssetTest` skips itself when a build has none.
 - The seed is loaded before the first read of any kind (a lookup, Probe, the status screen or the
   refresh worker), off the caller's thread, and only when the log is empty, so it never overwrites a
-  newer index.
+  newer index. The one exception is the app's resolver (`waitForSeed = false`): a `Resolve` that finds the seed not yet in
+  starts loading it in the background and goes to the network routes without the index, rather than spend the host's
+  deadline on the load.
 - The status screen's freshness is `refresh_log`'s last success (`IndexRepository.lastSuccess()`).
 - The Room schema is exported to `app/schemas` and committed. The database falls back to a
   destructive migration: the index is rebuilt weekly and holds nothing anyone owns.
@@ -149,7 +151,10 @@ the start, and answers a `ResolveOutcome`, which the Service
 maps to the contract: `Sources` (a flow, possibly empty), `NotFound`, `NotAFilm` or `Invalid`. A
 network failure is an `IOException`, thrown out of `resolve()` itself (the finder's Wikidata call, its
 IMDb and title searches, and the title route's loads) or out of the flow. The Service maps both to
-`UNAVAILABLE`. The Wikidata route's download-count search only orders its items, within its own budget
+`UNAVAILABLE`. The whole resolve has a budget of 8 s (`RESOLVE_BUDGET_MILLIS`), inside the host's 10 s deadline: past it the
+resolve ends with a `ResolveTimeoutException`, which the Service answers as `UNAVAILABLE` with a "took too long" message the
+host can word apart from an unreachable server. Sources already sent are kept. It is never turned into `NOT_FOUND`: a slow
+film that is on the Archive must not read as absent. The Wikidata route's download-count search only orders its items, within its own budget
 of 1.5 s (`ResolverHttp.RANKING_BUDGET_MILLIS`): if it fails or runs out, they keep Wikidata's order. The same holds for the index's ids when they stand in for a failed Wikidata
 query (step 3): they keep the index's order.
 
@@ -159,7 +164,9 @@ query (step 3): they keep the index's order.
    `NotFound` only if none of them finds an Archive item.
 3. **`ItemFinder`.** Routes in a fixed order, stopping at the first that finds items: the Wikidata
    item's Archive ids, then Archive items tagged with its IMDb id, then a title-and-year search
-   (only with a Wikidata runtime to check against, and only with title matches on in Sources).
+   (only with a Wikidata runtime to check against, and only with title matches on in Sources). Routes 2 and 3 are asked
+   together, since each is a round trip a mobile link pays for; the IMDb route still wins whenever it finds items, and the
+   title route's failure counts only when it does not.
    At most five candidates, best-downloaded first.
    A title match counts as found only if a video file runs within 8% of the runtime, checked
    before any licence. If none qualifies and any failed to load, the resolve fails, never
@@ -295,8 +302,8 @@ with the Sources settings, its licence page, and the hand-off Binge's "manage" r
 - No caching beyond the on-device index.
 - **A debug build also logs each `Resolve` to logcat** under the `ArchiveResolve` tag: the candidates and the route
   that found them, each item dropped and why, each metadata read by HTTP status or exception class, and the answer with
-  its time (#94). Fields are numbers, Archive identifiers and reason words only, never a title or an exception's
-  message. A release build is given `ResolveLog.NONE` (`resolveLogFor(BuildConfig.DEBUG)`), so it logs nothing.
+  its time (#94). Fields are numbers, Archive identifiers (which can spell out a title) and reason words only, never a title of
+  its own or an exception's message. A release build is given `ResolveLog.NONE` (`resolveLogFor(BuildConfig.DEBUG)`), so it logs nothing.
 - **Coverage misses are logged on the device, by route**, for binge-companions#148's measurement.
   They never leave the device: no analytics, no crash reporting and no upload of any kind.
 - The app stores no user data beyond the user's own source reports, the last ten titles it

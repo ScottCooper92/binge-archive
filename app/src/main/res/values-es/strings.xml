@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="not_on_archive">No está en Internet Archive</string>
+    <string name="lookup_took_too_long">Internet Archive tardó demasiado en responder</string>
 
     <string name="licence_public_domain">Dominio público</string>
     <string name="licence_public_domain_us">Dominio público (EE. UU.)</string>
