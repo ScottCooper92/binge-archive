@@ -61,6 +61,22 @@
         <item quantity="other">%1$d títulos</item>
     </plurals>
 
+    <string name="licences_more">Más sobre las licencias</string>
+    <string name="licences_intro_all">Cada copia de Internet Archive se publica con una licencia. Las que se ofrecen dependen de Licencias, en Fuentes. Cada uno de sus cuatro ajustes añade las licencias que aparecen debajo a las anteriores.</string>
+    <string name="licences_group_public_domain">Solo dominio público</string>
+    <string name="licences_group_cc_by">Dominio público y CC BY · predeterminado</string>
+    <string name="licences_group_other_cc">Cualquier licencia Creative Commons</string>
+    <string name="licences_group_unclear">Cualquiera, sea cual sea la licencia</string>
+    <string name="licences_cc_by_sa_detail">Se puede compartir citando al autor; las versiones modificadas deben usar la misma licencia</string>
+    <string name="licences_cc_by_nc_detail">Se puede compartir citando al autor, pero no con fines comerciales</string>
+    <string name="licences_cc_by_nd_detail">Se puede compartir citando al autor, pero solo sin modificar</string>
+    <string name="licences_cc_by_nc_sa_detail">Citando al autor, sin uso comercial y con los cambios bajo la misma licencia</string>
+    <string name="licences_cc_by_nc_nd_detail">Citando al autor, sin uso comercial y sin versiones modificadas</string>
+    <string name="licences_none_stated_detail">Quien la subió no indicó licencia, así que la película aún puede tener derechos de autor</string>
+    <string name="licences_restricted">Todos los derechos reservados</string>
+    <string name="licences_restricted_detail">El titular conserva todos los derechos, incluido el de compartirla</string>
+    <string name="licences_unknown">Licencia no reconocida</string>
+    <string name="licences_unknown_detail">Un texto de licencia que esta aplicación no sabe leer, así que no puede saber qué permite</string>
     <string name="licences_title">Qué licencias</string>
     <string name="licences_intro">De forma predeterminada, solo se ofrece una copia si Internet Archive la publica con una de estas licencias. Fuentes, en la pantalla principal, permite restringirlo o ampliarlo.</string>
     <string name="licences_allowed">Permitidas</string>

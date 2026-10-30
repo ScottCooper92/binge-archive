@@ -22,12 +22,12 @@ class MainActivityTest {
 
     @Test
     fun `a phone opens on the status screen, and the licence page and back`() {
-        compose.waitUntil(TIMEOUT) { compose.onAllNodes(hasText(text(R.string.status_licences_row))).fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(TIMEOUT) { compose.onAllNodes(hasText(text(R.string.licences_more))).fetchSemanticsNodes().isNotEmpty() }
         // The phone groups its sections under titles; the television's two panes have none.
         compose.onNodeWithText(text(R.string.status_about_title).uppercase()).assertExists()
 
-        compose.onNodeWithText(text(R.string.status_licences_row)).performScrollTo().performClick()
-        compose.onNodeWithText(text(R.string.licences_intro)).assertExists()
+        compose.onNodeWithText(text(R.string.licences_more)).performScrollTo().performClick()
+        compose.onNodeWithText(text(R.string.licences_intro_all)).assertExists()
 
         compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
         compose.onNodeWithText(text(R.string.settings_title_matches)).assertExists()

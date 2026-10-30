@@ -87,5 +87,27 @@
     <string name="licences_cc0_detail">The rights holder gave up every right</string>
     <string name="licences_cc_by" translatable="false">CC BY</string>
     <string name="licences_cc_by_detail">Free to share, with credit to the maker</string>
+    <!-- The licence explainer: every licence type, grouped by the Licences setting that first offers it. -->
+    <string name="licences_more">More about licences</string>
+    <string name="licences_intro_all">Every copy on the Internet Archive is listed under a licence. Which ones are offered depends on Licences, in Sources. Each of its four settings adds the licences listed under it to the ones above.</string>
+    <string name="licences_group_public_domain">Public domain only</string>
+    <string name="licences_group_cc_by">Public domain and CC BY · default</string>
+    <string name="licences_group_other_cc">Any Creative Commons licence</string>
+    <string name="licences_group_unclear">Any, whatever the licence</string>
+    <string name="licences_cc_by_sa" translatable="false">CC BY-SA</string>
+    <string name="licences_cc_by_sa_detail">Free to share, with credit; changed versions must use the same licence</string>
+    <string name="licences_cc_by_nc" translatable="false">CC BY-NC</string>
+    <string name="licences_cc_by_nc_detail">Free to share, with credit, but not for commercial use</string>
+    <string name="licences_cc_by_nd" translatable="false">CC BY-ND</string>
+    <string name="licences_cc_by_nd_detail">Free to share, with credit, but only unchanged</string>
+    <string name="licences_cc_by_nc_sa" translatable="false">CC BY-NC-SA</string>
+    <string name="licences_cc_by_nc_sa_detail">Credit, no commercial use, and changes under the same licence</string>
+    <string name="licences_cc_by_nc_nd" translatable="false">CC BY-NC-ND</string>
+    <string name="licences_cc_by_nc_nd_detail">Credit, no commercial use, and no changed versions</string>
+    <string name="licences_none_stated_detail">The uploader gave no licence, so the film may still be under copyright</string>
+    <string name="licences_restricted">All rights reserved</string>
+    <string name="licences_restricted_detail">The rights holder has kept every right, including sharing</string>
+    <string name="licences_unknown">Unrecognised licence</string>
+    <string name="licences_unknown_detail">Licence text this app can\'t read, so it can\'t tell what it allows</string>
     <string name="licences_not_allowed">Not offered by default: share-alike, non-commercial and no-derivatives licences, and items with no licence.</string>
 </resources>

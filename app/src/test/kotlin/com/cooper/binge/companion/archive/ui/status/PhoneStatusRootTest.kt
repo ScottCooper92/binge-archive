@@ -43,13 +43,13 @@ class PhoneStatusRootTest {
 
     @Test
     @Config(qualifiers = "w1000dp-h800dp")
-    fun `a wide window shows the list with Sources open beside it, and the licence row opens the licences`() {
+    fun `a wide window shows the list with Sources open beside it, and More about licences opens the licences`() {
         val opened = mutableListOf<String>()
         show(actions = StatusActions(onOpenLicences = { opened += "licences" }, onOpenSources = { opened += "sources" }))
 
         compose.onNodeWithText(text(R.string.app_label)).assertExists()
         compose.onNodeWithText(text(R.string.settings_title_matches)).assertExists()
-        compose.onNodeWithText(text(R.string.status_licences_row)).performClick()
+        compose.onNodeWithText(text(R.string.licences_more)).performClick()
         compose.onNode(hasText(text(R.string.settings_title)) and hasClickAction()).performClick()
 
         assertEquals(listOf("licences", "sources"), opened)
@@ -61,7 +61,7 @@ class PhoneStatusRootTest {
         show(showingLicences = true)
 
         compose.onNodeWithText(text(R.string.app_label)).assertExists()
-        compose.onNodeWithText(text(R.string.licences_intro)).assertExists()
+        compose.onNodeWithText(text(R.string.licences_intro_all)).assertExists()
     }
 
     @Test
@@ -78,14 +78,14 @@ class PhoneStatusRootTest {
         show()
 
         compose.onNodeWithText(text(R.string.settings_title_matches)).assertExists()
-        compose.onNodeWithText(text(R.string.licences_intro)).assertDoesNotExist()
+        compose.onNodeWithText(text(R.string.licences_intro_all)).assertDoesNotExist()
     }
 
     @Test
     fun `a phone with the licence page open shows only that page`() {
         show(showingLicences = true)
 
-        compose.onNodeWithText(text(R.string.licences_intro)).assertExists()
+        compose.onNodeWithText(text(R.string.licences_intro_all)).assertExists()
         compose.onNodeWithText(text(R.string.app_label)).assertDoesNotExist()
     }
 }
