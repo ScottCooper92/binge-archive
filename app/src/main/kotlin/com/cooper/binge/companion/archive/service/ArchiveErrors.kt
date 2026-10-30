@@ -42,17 +42,24 @@ class ArchiveErrors(
      * should travel on as it is: a [StatusException] already, or a cancellation.
      */
     fun ofFailure(failure: Throwable): StatusException? =
-        when (failure) {
-            is ResolveTimeoutException ->
+        when {
+            failure.causedByTimeout() ->
                 Status.UNAVAILABLE
                     .withDescription(TOOK_TOO_LONG)
                     .withUserMessage(reason = REASON_TOOK_TOO_LONG, message = messages.tookTooLong(), locale = messages.locale())
-            is IOException -> StatusException(Status.UNAVAILABLE.withDescription(UNREACHABLE))
-            is SerializationException -> StatusException(Status.UNAVAILABLE.withDescription(UNREADABLE))
+            failure is IOException -> StatusException(Status.UNAVAILABLE.withDescription(UNREACHABLE))
+            failure is SerializationException -> StatusException(Status.UNAVAILABLE.withDescription(UNREADABLE))
             else -> null
         }
 
+    /** A reader or finder wraps what stopped it in a new [IOException], so the budget's timeout may be a few causes down. */
+    private fun Throwable.causedByTimeout(): Boolean =
+        generateSequence(this) { it.cause }
+            .take(MAX_CAUSE_DEPTH)
+            .any { it is ResolveTimeoutException }
+
     companion object {
+        private const val MAX_CAUSE_DEPTH = 6
         const val REASON_NOT_ON_ARCHIVE = "NOT_ON_ARCHIVE"
         const val REASON_TOOK_TOO_LONG = "LOOKUP_TOOK_TOO_LONG"
         const val TOOK_TOO_LONG = "The lookup ran past this companion's own time limit"

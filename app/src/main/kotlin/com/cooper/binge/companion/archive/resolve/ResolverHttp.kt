@@ -3,6 +3,7 @@ package com.cooper.binge.companion.archive.resolve
 import com.cooper.binge.companion.archive.index.IndexFetcher
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import okhttp3.Call
@@ -86,11 +87,21 @@ class ResolverHttp(
         request: Request,
         callTimeoutMillis: Long? = null,
     ): String {
+        val deadline = currentCoroutineContext()[ResolveDeadline]
+        val remaining = deadline?.remainingMillis()
+        if (remaining != null && remaining <= 0) throw ResolveTimeoutException()
         val call = client.newCall(request)
-        if (callTimeoutMillis != null) call.timeout().timeout(callTimeoutMillis, TimeUnit.MILLISECONDS)
-        return call.await().use { response ->
-            if (!response.isSuccessful) throw HttpStatusException(response.code, request.url.host)
-            withContext(io) { response.body.string() }
+        val timeout = listOfNotNull(callTimeoutMillis, remaining).minOrNull()
+        if (timeout != null) call.timeout().timeout(timeout, TimeUnit.MILLISECONDS)
+        try {
+            return call.await().use { response ->
+                if (!response.isSuccessful) throw HttpStatusException(response.code, request.url.host)
+                withContext(io) { response.body.string() }
+            }
+        } catch (e: IOException) {
+            // A call that ran out of the resolve's budget is the budget's doing, whatever OkHttp called it.
+            if (deadline != null && deadline.remainingMillis() <= 0) throw ResolveTimeoutException(e)
+            throw e
         }
     }
 

@@ -10,14 +10,15 @@ import com.cooper.binge.companion.archive.index.IndexHit
 import com.cooper.binge.companion.archive.index.IndexRepository
 import com.cooper.binge.companion.archive.settings.SourceSettings
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.withTimeout
-import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.withContext
 import java.io.IOException
+import kotlin.coroutines.AbstractCoroutineContextElement
+import kotlin.coroutines.CoroutineContext
 
 /**
  * What a `Resolve` comes to: `stream.proto`'s four answers. The Service maps each to the contract:
@@ -135,16 +136,16 @@ class Resolver(
         begun: Long,
     ): Found =
         try {
-            withTimeoutOrNull(remainingMillis(begun)) {
+            withContext(deadline(begun)) {
                 timings.time("find_items") { finder.find(tmdbId, hit, titleMatches = settings.titleMatches) }
-            } ?: throw ResolveTimeoutException()
+            }
         } catch (e: IOException) {
             log.line { ResolveEvents.failed(e, elapsedSince(begun)) }
             throw e
         }
 
-    /** What is left of the budget, never below 1 ms so a spent one times out at once. */
-    private fun remainingMillis(begun: Long): Long = (budgetMillis - elapsedSince(begun)).coerceAtLeast(1L)
+    /** The budget as a deadline every HTTP call of this resolve reads, so a call in flight is cancelled by the clock, not by the dispatcher. */
+    private fun deadline(begun: Long): ResolveDeadline = ResolveDeadline(begun + budgetMillis * NANOS_PER_MILLI)
 
     /** The answer, unless a flow of sources will write it when it completes. */
     private fun logAnswer(
@@ -230,7 +231,7 @@ class Resolver(
                     found,
                     settings.licences,
                     onFiltered = { filtered = true },
-                ).withinBudget(remainingMillis(begun))
+                ).flowOn(deadline(begun))
                 .collect { licensed ->
                     items++
                     if (licensed.item.identifier in derankedIds) heldBack += licensed else send(licensed)
@@ -275,16 +276,6 @@ fun unusableRequest(
 
 private fun elapsedSince(begun: Long): Long = (System.nanoTime() - begun) / NANOS_PER_MILLI
 
-/** Ends [this] with a [ResolveTimeoutException] once [millis] have passed, keeping whatever it emitted before. */
-private fun <T> Flow<T>.withinBudget(millis: Long): Flow<T> =
-    flow {
-        try {
-            withTimeout(millis) { collect { emit(it) } }
-        } catch (e: TimeoutCancellationException) {
-            throw ResolveTimeoutException(e)
-        }
-    }
-
 private const val NANOS_PER_MILLI = 1_000_000L
 
 /** The outcome as the debug log words it. A [ResolveOutcome.Sources] with no candidates is an empty, finished answer. */
@@ -298,11 +289,28 @@ private fun ResolveOutcome.logWord(): String =
 
 /**
  * The resolve ran past its budget, which sits inside the host's 10 s deadline so the answer is ours rather than a deadline.
- * An [IOException], so the Service answers `UNAVAILABLE`; [ArchiveErrors] words it as taking too long.
+ * An [IOException], so the Service answers `UNAVAILABLE`; [ArchiveErrors] words it as taking too long, also when it is the
+ * cause of the `IOException` a reader or finder raises after its calls ran out of time.
  */
 class ResolveTimeoutException(
     cause: Throwable? = null,
 ) : IOException("The resolve ran past its budget", cause)
+
+/**
+ * When a resolve must be over, on the monotonic clock, carried in the coroutine context so every HTTP call it makes reads
+ * it ([ResolverHttp]). A call's own timeout is the OkHttp clock, not a coroutine timer, so it runs in real time whichever
+ * dispatcher the caller is on, and cancels the call in flight.
+ */
+class ResolveDeadline(
+    val atNanos: Long,
+) : AbstractCoroutineContextElement(Key) {
+    companion object Key : CoroutineContext.Key<ResolveDeadline>
+
+    /** What is left, in milliseconds. Zero or less means the budget is spent. */
+    fun remainingMillis(now: Long = System.nanoTime()): Long = (atNanos - now) / NANOS_PER_MILLI_DEADLINE
+}
+
+private const val NANOS_PER_MILLI_DEADLINE = 1_000_000L
 
 /** About 8 s: well inside the host's 10 s deadline, so a slow lookup is told apart from a call the host gave up on. */
 const val RESOLVE_BUDGET_MILLIS = 8_000L

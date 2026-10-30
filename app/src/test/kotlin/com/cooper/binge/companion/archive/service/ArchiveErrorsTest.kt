@@ -28,4 +28,11 @@ class ArchiveErrorsTest {
         assertEquals(Status.Code.UNAVAILABLE, unreachable?.status?.code)
         assertEquals(ArchiveErrors.UNREACHABLE, unreachable?.status?.description)
     }
+
+    @Test
+    fun `a timeout inside the IOException a reader raises is still a timeout`() {
+        val wrapped = errors.ofFailure(IOException("No candidate item could be read", ResolveTimeoutException()))
+
+        assertEquals(ArchiveErrors.TOOK_TOO_LONG, wrapped?.status?.description)
+    }
 }
