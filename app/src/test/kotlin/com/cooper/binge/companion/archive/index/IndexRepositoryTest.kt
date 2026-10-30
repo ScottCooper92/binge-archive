@@ -51,6 +51,18 @@ class IndexRepositoryTest {
         }
 
     @Test
+    fun `a seed that fails to load in the background answers null and escapes nowhere`() =
+        runTest {
+            val loaded = java.util.concurrent.CountDownLatch(1)
+            val index =
+                IndexRepository(dao, seed = { loaded.countDown().let { error("seed unreadable") } }, clock = { now })
+
+            assertNull(index.lookupWithoutWaiting(movie(10331)))
+            assertTrue(loaded.await(5, java.util.concurrent.TimeUnit.SECONDS))
+            assertNull(index.lookupWithoutWaiting(movie(10331)))
+        }
+
+    @Test
     fun `a lookup that does not wait answers null before the seed is in, and finds the film after`() =
         runTest {
             val index = repository()
