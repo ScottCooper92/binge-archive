@@ -18,6 +18,12 @@ import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
+/** A response with a failure status. An [IOException], as every failed call is, that also names the status for the debug log. */
+class HttpStatusException(
+    val code: Int,
+    host: String,
+) : IOException("HTTP $code from $host")
+
 /**
  * The resolver's three calls: a Wikidata query, an Archive search and an Archive item's metadata.
  *
@@ -83,7 +89,7 @@ class ResolverHttp(
         val call = client.newCall(request)
         if (callTimeoutMillis != null) call.timeout().timeout(callTimeoutMillis, TimeUnit.MILLISECONDS)
         return call.await().use { response ->
-            if (!response.isSuccessful) throw IOException("HTTP ${response.code} from ${request.url.host}")
+            if (!response.isSuccessful) throw HttpStatusException(response.code, request.url.host)
             withContext(io) { response.body.string() }
         }
     }

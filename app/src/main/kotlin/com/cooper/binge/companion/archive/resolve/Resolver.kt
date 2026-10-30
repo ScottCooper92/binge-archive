@@ -6,11 +6,14 @@ import com.binge.companion.contracts.v1.EpisodeRef
 import com.binge.companion.contracts.v1.MediaId
 import com.binge.companion.contracts.v1.MediaType
 import com.binge.companion.sdk.attempt
+import com.cooper.binge.companion.archive.index.IndexHit
 import com.cooper.binge.companion.archive.index.IndexRepository
 import com.cooper.binge.companion.archive.settings.SourceSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onCompletion
+import java.io.IOException
 
 /**
  * What a `Resolve` comes to: `stream.proto`'s four answers. The Service maps each to the contract:
@@ -70,6 +73,8 @@ class Resolver(
     /** The user's settings now. A failure to read them is an `IOException`, so the resolve fails. */
     private val settings: suspend () -> SourceSettings = { SourceSettings.DEFAULT },
     private val timings: PhaseTimings = PhaseTimings.NONE,
+    /** What a debug build writes about each resolve; [ResolveLog.NONE] in release. */
+    private val log: ResolveLog = ResolveLog.NONE,
 ) : TitleResolver {
     override suspend fun resolve(
         media: MediaId,
@@ -79,31 +84,78 @@ class Resolver(
         if (invalidReason != null) return ResolveOutcome.Invalid(invalidReason)
         if (media.mediaType == MediaType.MEDIA_TYPE_TV) return ResolveOutcome.NotFound
         val started = timings.mark()
+        val begun = System.nanoTime()
         val hit = timings.time("index_lookup") { index.lookup(media) }
         if (hit != null && !hit.isFilm) return ResolveOutcome.NotAFilm
         val tmdbId = media.tmdbId
         val settings = timings.time("settings_read") { settings() }
-        val found = timings.time("find_items") { finder.find(tmdbId, hit, titleMatches = settings.titleMatches) }
+        log.line { ResolveEvents.start(tmdbId, settings.licences.name, settings.titleMatches) }
+        val found = findLogged(tmdbId, hit, settings, begun)
+        log.line { ResolveEvents.candidates(found.route, found.candidates.map { it.identifier }, found.fromIndex) }
         val inIndex = hit != null
-        return when {
-            found.candidates.isNotEmpty() -> {
-                if (found.fromIndex) coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.WIKIDATA_FAILED))
-                if (!inIndex) coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.NOT_IN_INDEX))
-                ResolveOutcome.Sources(sources(tmdbId, found, settings, started))
+        val outcome =
+            when {
+                found.candidates.isNotEmpty() -> {
+                    if (found.fromIndex) coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.WIKIDATA_FAILED))
+                    if (!inIndex) coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.NOT_IN_INDEX))
+                    ResolveOutcome.Sources(sources(tmdbId, found, settings, started, begun))
+                }
+                found.titleSkipped -> {
+                    coverage.miss(CoverageMiss(tmdbId, Route.TITLE, CoverageMiss.Reason.FILTERED_BY_SETTINGS))
+                    if (inIndex) ResolveOutcome.Sources(emptyFlow()) else ResolveOutcome.NotFound
+                }
+                inIndex -> {
+                    coverage.miss(CoverageMiss(tmdbId, route = null, reason = CoverageMiss.Reason.NO_ITEMS))
+                    ResolveOutcome.Sources(emptyFlow())
+                }
+                else -> {
+                    coverage.miss(CoverageMiss(tmdbId, route = null, reason = CoverageMiss.Reason.NOT_IN_CATALOGUE))
+                    ResolveOutcome.NotFound
+                }
             }
-            found.titleSkipped -> {
-                coverage.miss(CoverageMiss(tmdbId, Route.TITLE, CoverageMiss.Reason.FILTERED_BY_SETTINGS))
-                if (inIndex) ResolveOutcome.Sources(emptyFlow()) else ResolveOutcome.NotFound
-            }
-            inIndex -> {
-                coverage.miss(CoverageMiss(tmdbId, route = null, reason = CoverageMiss.Reason.NO_ITEMS))
-                ResolveOutcome.Sources(emptyFlow())
-            }
-            else -> {
-                coverage.miss(CoverageMiss(tmdbId, route = null, reason = CoverageMiss.Reason.NOT_IN_CATALOGUE))
-                ResolveOutcome.NotFound
-            }
+        logAnswer(outcome, found, begun)
+        return outcome
+    }
+
+    /** [ItemFinder.find], with a failure written to the debug log before it goes on to the host. */
+    private suspend fun findLogged(
+        tmdbId: Int,
+        hit: IndexHit?,
+        settings: SourceSettings,
+        begun: Long,
+    ): Found =
+        try {
+            timings.time("find_items") { finder.find(tmdbId, hit, titleMatches = settings.titleMatches) }
+        } catch (e: IOException) {
+            log.line { ResolveEvents.failed(e, elapsedSince(begun)) }
+            throw e
         }
+
+    /** The answer, unless a flow of sources will write it when it completes. */
+    private fun logAnswer(
+        outcome: ResolveOutcome,
+        found: Found,
+        begun: Long,
+    ) {
+        if (outcome !is ResolveOutcome.Sources || found.candidates.isEmpty()) {
+            log.line { ResolveEvents.answer(outcome.logWord(), elapsedSince(begun)) }
+        }
+    }
+
+    private fun logSettingsDrops(
+        identifier: String,
+        all: Int,
+        kept: Int,
+    ) {
+        if (all == 0) log.line { ResolveEvents.dropped(identifier, "no_video_file") }
+        if (kept < all) log.line { ResolveEvents.dropped(identifier, "settings_dropped_${all - kept}_of_$all") }
+    }
+
+    private fun logInterrupted(
+        cause: Throwable?,
+        begun: Long,
+    ) {
+        if (cause != null) log.line { ResolveEvents.answer("interrupted by ${cause.javaClass.simpleName}", elapsedSince(begun)) }
     }
 
     /**
@@ -116,6 +168,7 @@ class Resolver(
         found: Found,
         settings: SourceSettings,
         started: Long,
+        begun: Long,
     ): Flow<StreamSource> =
         flow {
             val derankedIds = attempt { deranked() }.onFailure { bookkeepingFailed("deranking", it) }.getOrDefault(emptySet())
@@ -128,6 +181,7 @@ class Resolver(
             suspend fun send(licensed: LicensedItem) {
                 val all = mapper.sources(licensed, found.facts, expiresAt)
                 val kept = mapper.kept(all, settings)
+                logSettingsDrops(licensed.item.identifier, all.size, kept.size)
                 if (kept.size < all.size) filtered = true
                 for (source in kept) {
                     if (sent == SourceMapper.MAX_SOURCES) return
@@ -151,12 +205,13 @@ class Resolver(
                 if (licensed.item.identifier in derankedIds) heldBack += licensed else send(licensed)
             }
             heldBack.forEach { send(it) }
+            log.line { ResolveEvents.answer("sources=$sent items=$items", elapsedSince(begun)) }
             when {
                 sent == 0 && filtered -> coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.FILTERED_BY_SETTINGS))
                 items == 0 -> coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.NO_LICIT_ITEM))
                 sent == 0 -> coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.NO_PLAYABLE_FILE))
             }
-        }
+        }.onCompletion { cause -> logInterrupted(cause, begun) }
 }
 
 private const val TAG = "ArchiveResolver"
@@ -185,4 +240,17 @@ fun unusableRequest(
             "no such episode"
         media.mediaType != MediaType.MEDIA_TYPE_MOVIE && media.mediaType != MediaType.MEDIA_TYPE_TV -> "unknown media type"
         else -> null
+    }
+
+private fun elapsedSince(begun: Long): Long = (System.nanoTime() - begun) / NANOS_PER_MILLI
+
+private const val NANOS_PER_MILLI = 1_000_000L
+
+/** The outcome as the debug log words it. A [ResolveOutcome.Sources] with no candidates is an empty, finished answer. */
+private fun ResolveOutcome.logWord(): String =
+    when (this) {
+        is ResolveOutcome.Sources -> "sources=0 (nothing to read)"
+        ResolveOutcome.NotFound -> "not_found"
+        ResolveOutcome.NotAFilm -> "not_a_film"
+        is ResolveOutcome.Invalid -> "invalid"
     }

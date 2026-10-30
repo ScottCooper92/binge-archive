@@ -31,6 +31,7 @@ data class LicensedItem(
 class ItemReader(
     private val http: ResolverHttp,
     private val timings: PhaseTimings = PhaseTimings.NONE,
+    private val log: ResolveLog = ResolveLog.NONE,
 ) {
     /**
      * Each admitted item, in candidate order, as soon as it and every candidate ahead of it are read.
@@ -48,6 +49,7 @@ class ItemReader(
                 var failure: Throwable? = null
                 for ((candidate, load) in loads) {
                     val result = load.await()
+                    log.line { ResolveEvents.read(candidate.identifier, result.exceptionOrNull()) }
                     result.exceptionOrNull()?.let { if (failure == null) failure = it }
                     val item = result.getOrNull()?.let { admit(candidate, it, found, licences, onFiltered) } ?: continue
                     admitted++
@@ -70,15 +72,29 @@ class ItemReader(
         licences: LicenceLevel,
         onFiltered: () -> Unit,
     ): LicensedItem? {
-        if (item.dark || item.accessRestricted || item.mediaType != MOVIES) return null
+        if (item.dark || item.accessRestricted || item.mediaType != MOVIES) {
+            log.line { ResolveEvents.dropped(item.identifier, droppedWhy(item)) }
+            return null
+        }
         val licence = LicenceAllowlist.identify(item.licenseUrl)
         if (!licences.admits(licence.kind)) {
             if (LicenceLevel.DEFAULT.admits(licence.kind)) onFiltered()
+            log.line { ResolveEvents.dropped(item.identifier, "licence_${licence.kind.name.lowercase()}") }
             return null
         }
-        if (found.route == Route.TITLE && !runsLike(item, found.facts.runtimeSeconds)) return null
+        if (found.route == Route.TITLE && !runsLike(item, found.facts.runtimeSeconds)) {
+            log.line { ResolveEvents.dropped(item.identifier, "runtime") }
+            return null
+        }
         return LicensedItem(item, licence, candidate.downloads)
     }
+
+    private fun droppedWhy(item: ArchiveItem): String =
+        when {
+            item.dark -> "dark"
+            item.accessRestricted -> "restricted"
+            else -> "not_movies"
+        }
 
     companion object {
         /** Each candidate's metadata, or the [IOException] that stopped it loading, read in parallel. */

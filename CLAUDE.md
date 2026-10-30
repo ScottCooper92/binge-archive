@@ -293,6 +293,10 @@ with the Sources settings, its licence page, and the hand-off Binge's "manage" r
 - Keep each Wikidata query well inside the read timeout. A subclass walk per row made the link query
   take up to 27 s, so the film classes are a separate query, joined on the device.
 - No caching beyond the on-device index.
+- **A debug build also logs each `Resolve` to logcat** under the `ArchiveResolve` tag: the candidates and the route
+  that found them, each item dropped and why, each metadata read by HTTP status or exception class, and the answer with
+  its time (#94). Fields are numbers, Archive identifiers and reason words only, never a title or an exception's
+  message. A release build is given `ResolveLog.NONE` (`resolveLogFor(BuildConfig.DEBUG)`), so it logs nothing.
 - **Coverage misses are logged on the device, by route**, for binge-companions#148's measurement.
   They never leave the device: no analytics, no crash reporting and no upload of any kind.
 - The app stores no user data beyond the user's own source reports, the last ten titles it
