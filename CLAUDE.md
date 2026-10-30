@@ -153,7 +153,7 @@ network failure is an `IOException`, thrown out of `resolve()` itself (the finde
 IMDb and title searches, and the title route's loads) or out of the flow. The Service maps both to
 `UNAVAILABLE`. The whole resolve has a budget of 8 s (`RESOLVE_BUDGET_MILLIS`), inside the host's 10 s deadline: past it the
 resolve ends with a `ResolveTimeoutException`, which the Service answers as `UNAVAILABLE` with a "took too long" message the
-host can word apart from an unreachable server. Sources already sent are kept. It is never turned into `NOT_FOUND`: a slow
+host can word apart from an unreachable server. A call in flight fails at the budget. The resolve is `UNAVAILABLE` only if no item was admitted; otherwise it completes with the sources already sent. It is never turned into `NOT_FOUND`: a slow
 film that is on the Archive must not read as absent. The Wikidata route's download-count search only orders its items, within its own budget
 of 1.5 s (`ResolverHttp.RANKING_BUDGET_MILLIS`): if it fails or runs out, they keep Wikidata's order. The same holds for the index's ids when they stand in for a failed Wikidata
 query (step 3): they keep the index's order.

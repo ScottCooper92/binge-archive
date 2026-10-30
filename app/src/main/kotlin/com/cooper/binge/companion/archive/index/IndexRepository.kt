@@ -2,6 +2,7 @@ package com.cooper.binge.companion.archive.index
 
 import com.binge.companion.contracts.v1.MediaId
 import com.binge.companion.contracts.v1.MediaType
+import com.binge.companion.sdk.attempt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
@@ -31,7 +32,7 @@ class IndexRepository(
 ) {
     private val seeding = Mutex()
 
-    /** Loads the seed for a lookup that would not wait for it. */
+    /** Loads the seed for a lookup that would not wait for it; a failed load is left for the next lookup, never thrown into the process. */
     private val background = CoroutineScope(SupervisorJob())
 
     @Volatile
@@ -55,7 +56,7 @@ class IndexRepository(
      */
     suspend fun lookupWithoutWaiting(media: MediaId): IndexHit? {
         if (!seeded) {
-            background.launch { ensureSeeded() }
+            background.launch { attempt { ensureSeeded() } }
             return null
         }
         return lookup(media)
