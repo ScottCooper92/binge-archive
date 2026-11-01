@@ -15,7 +15,6 @@ import com.binge.companion.contracts.stream.v1.ReportSourceRequest
 import com.binge.companion.contracts.stream.v1.ReportSourceResponse
 import com.binge.companion.contracts.stream.v1.ResolveRequest
 import com.binge.companion.contracts.stream.v1.ResolveResponse
-import com.binge.companion.contracts.stream.v1.SourceProblem
 import com.binge.companion.contracts.stream.v1.StreamServiceGrpcKt
 import com.binge.companion.contracts.v1.EpisodeRef
 import com.binge.companion.contracts.v1.MediaId
@@ -27,11 +26,11 @@ import com.binge.companion.sdk.effectivePageSize
 import com.binge.companion.sdk.requireDeclared
 import com.binge.companion.sdk.requireValid
 import com.cooper.binge.companion.archive.index.IndexRepository
-import com.cooper.binge.companion.archive.reports.DeviceRecords
 import com.cooper.binge.companion.archive.reports.PlaybackProgressStore
 import com.cooper.binge.companion.archive.resolve.ResolveOutcome
 import com.cooper.binge.companion.archive.resolve.TitleResolver
 import com.cooper.binge.companion.archive.resolve.unusableRequest
+import io.grpc.Status
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -43,12 +42,13 @@ import kotlinx.coroutines.withContext
 /**
  * STREAM v1, served from this app.
  *
- * - `Handshake` always succeeds: there is no sign-in. It declares Probe, subtitles, source
- *   reports and watch progress, names the Internet Archive as the provider, and ignores `HostInfo`.
+ * - `Handshake` always succeeds: there is no sign-in. It declares Probe, subtitles and
+ *   watch progress, names the Internet Archive as the provider, and ignores `HostInfo`.
  * - `Resolve` is the resolver's answer, mapped by [ArchiveErrors]. Its first message carries the
  *   title's resume point, when the device holds one.
  * - `Probe` reads the index and nothing else: it never touches the network.
- * - `ReportSource` records the report on the device and pushes the item down for 30 days.
+ * - `ReportSource` is no longer declared, so it is refused as `PERMISSION_DENIED` (the base class would
+ *   answer `UNIMPLEMENTED`, which the contract reads as "not installed").
  * - `ReportPlayback`, `ListContinueWatching` and `ForgetProgress` keep the user's watch progress
  *   on the device ([PlaybackProgressStore]), by the SDK's rules for it.
  *
@@ -57,7 +57,6 @@ import kotlinx.coroutines.withContext
 class ArchiveStreamService(
     private val resolver: TitleResolver,
     private val index: IndexRepository,
-    private val records: DeviceRecords,
     private val progress: PlaybackProgressStore,
     private val versionName: String,
     private val errors: ArchiveErrors,
@@ -118,32 +117,9 @@ class ArchiveStreamService(
         return ProbeResponse.newBuilder().setMayHaveSources(hit != null).build()
     }
 
-    /**
-     * Records a report against the Archive item the source came from. A `source_id` is
-     * `<identifier>/<file name>`, the identifier in the Archive's character set; one in another shape
-     * was not issued here and is `INVALID_ARGUMENT`. The index is not consulted: `Resolve` also serves
-     * items the routes found live, which the index may not hold.
-     */
-    override suspend fun reportSource(request: ReportSourceRequest): ReportSourceResponse = withContext(io) { reportOnIo(request) }
-
-    private suspend fun reportOnIo(request: ReportSourceRequest): ReportSourceResponse {
-        CAPABILITIES.requireDeclared(Capability.CAPABILITY_REPORT_SOURCE)
-        val identifier = request.sourceId.substringBefore('/', missingDelimiterValue = "")
-        val fileName = request.sourceId.substringAfter('/', missingDelimiterValue = "")
-        if (!ARCHIVE_IDENTIFIER.matches(identifier) || fileName.isEmpty()) throw errors.invalid("Not a source id this companion issues")
-        val problem =
-            when (request.problem) {
-                SourceProblem.SOURCE_PROBLEM_UNPLAYABLE,
-                SourceProblem.SOURCE_PROBLEM_WRONG_TITLE,
-                SourceProblem.SOURCE_PROBLEM_EXPIRED,
-                SourceProblem.SOURCE_PROBLEM_OTHER,
-                -> request.problem
-                // The contract lets an unknown or unspecified problem be read as OTHER.
-                else -> SourceProblem.SOURCE_PROBLEM_OTHER
-            }
-        records.record(identifier, problem.name)
-        return ReportSourceResponse.getDefaultInstance()
-    }
+    /** Not declared, so refused as the contract says an undeclared rpc is; never reached by a host that reads the handshake. */
+    override suspend fun reportSource(request: ReportSourceRequest): ReportSourceResponse =
+        throw Status.PERMISSION_DENIED.withDescription("Capability not declared").asException()
 
     /**
      * Applies one report of a sitting to the title's progress, by the SDK's `applyReport`: a finished
@@ -194,8 +170,6 @@ class ArchiveStreamService(
     }
 
     companion object {
-        private val ARCHIVE_IDENTIFIER = Regex("[A-Za-z0-9][A-Za-z0-9_.-]*")
-
         const val PROVIDER_NAME = "Internet Archive"
 
         /** Fixed: nothing here depends on a user or a session. */
@@ -203,7 +177,6 @@ class ArchiveStreamService(
             setOf(
                 Capability.CAPABILITY_PROBE,
                 Capability.CAPABILITY_SUBTITLES,
-                Capability.CAPABILITY_REPORT_SOURCE,
                 Capability.CAPABILITY_PLAYBACK_PROGRESS,
             )
     }

@@ -27,7 +27,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
-/** Clearing Recent or Reported on the television changes its last row in place, so the remote's focus stays on it. */
+/** Clearing Recent on the television changes its last row in place, so the remote's focus stays on it. */
 @RunWith(RobolectricTestRunner::class)
 class TvStatusClearFocusTest {
     @get:Rule
@@ -42,7 +42,6 @@ class TvStatusClearFocusTest {
             lastRefreshFailed = false,
             refreshing = false,
             recent = emptyList(),
-            reported = emptyList(),
         )
 
     @Test
@@ -63,26 +62,6 @@ class TvStatusClearFocusTest {
             actions = actions,
             clearLabel = R.string.status_recent_clear,
             emptyLabel = R.string.status_recent_empty,
-            clears = { clears },
-        )
-    }
-
-    @Test
-    fun `clearing Reported keeps the focus on its row, which then says none are reported`() {
-        var state by mutableStateOf(ready.copy(reported = listOf("nosferatu-1922")))
-        var clears = 0
-        val actions =
-            StatusActions(
-                onClearReported = {
-                    clears++
-                    state = state.copy(reported = emptyList())
-                },
-            )
-        clearKeepsFocus(
-            state = { state },
-            actions = actions,
-            clearLabel = R.string.status_reported_clear,
-            emptyLabel = R.string.status_reported_empty,
             clears = { clears },
         )
     }

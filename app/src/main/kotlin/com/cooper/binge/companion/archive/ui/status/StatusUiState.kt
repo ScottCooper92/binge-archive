@@ -26,8 +26,6 @@ sealed interface StatusUiState {
         /** Whether a "Refresh now" is waiting for a network or running. */
         val refreshing: Boolean,
         val recent: List<RecentTitle>,
-        /** Archive items this device reported, pushed down for 30 days. */
-        val reported: List<String>,
         /** How many titles hold watch progress for the host; a series counts once. */
         val progressTitles: Int = 0,
         /** The user's Sources settings, as saved. */
@@ -49,7 +47,6 @@ data class StatusActions(
     val onOpenSources: () -> Unit = {},
     val onOpenUrl: (String) -> Unit = {},
     val onClearRecent: () -> Unit = {},
-    val onClearReported: () -> Unit = {},
     val onClearProgress: () -> Unit = {},
     val onTitleMatches: (Boolean) -> Unit = {},
     /** A licence level picked. [LicenceLevel.ANY] asks first: see [StatusUiState.Ready.confirmingAnyLicence]. */

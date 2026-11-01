@@ -5,7 +5,6 @@ import com.binge.companion.contracts.stream.v1.HandshakeRequest
 import com.binge.companion.contracts.stream.v1.ProbeRequest
 import com.binge.companion.contracts.stream.v1.ReportSourceRequest
 import com.binge.companion.contracts.stream.v1.ResolveRequest
-import com.binge.companion.contracts.stream.v1.SourceProblem
 import com.binge.companion.contracts.stream.v1.StreamServiceGrpcKt
 import com.binge.companion.contracts.stream.v1.StreamSource
 import com.binge.companion.contracts.v1.EpisodeRef
@@ -19,7 +18,6 @@ import com.cooper.binge.companion.archive.index.inMemoryIndex
 import com.cooper.binge.companion.archive.index.movie
 import com.cooper.binge.companion.archive.index.sampleSnapshot
 import com.cooper.binge.companion.archive.index.series
-import com.cooper.binge.companion.archive.reports.DeviceRecords
 import com.cooper.binge.companion.archive.reports.DeviceRecordsDatabase
 import com.cooper.binge.companion.archive.reports.PlaybackProgressStore
 import com.cooper.binge.companion.archive.resolve.ResolveOutcome
@@ -63,7 +61,6 @@ class ArchiveStreamServiceTest {
                 DeviceRecordsDatabase::class.java,
             ).allowMainThreadQueries()
             .build()
-    private val reports = DeviceRecords(reportDatabase.dao(), clock = { 1_000L })
     private var outcome: suspend (MediaId, EpisodeRef?) -> ResolveOutcome = { _, _ -> error("No outcome set") }
     private val messages =
         object : UserMessages {
@@ -88,7 +85,6 @@ class ArchiveStreamServiceTest {
                 ArchiveStreamService(
                     resolver = TitleResolver { media, episode -> outcome(media, episode) },
                     index = IndexRepository(indexDatabase.indexDao(), seed = { sampleSnapshot }),
-                    records = reports,
                     progress = PlaybackProgressStore(reportDatabase),
                     versionName = "1.2.3",
                     errors = ArchiveErrors(messages),
@@ -146,7 +142,6 @@ class ArchiveStreamServiceTest {
                 listOf(
                     Capability.CAPABILITY_PROBE,
                     Capability.CAPABILITY_SUBTITLES,
-                    Capability.CAPABILITY_REPORT_SOURCE,
                     Capability.CAPABILITY_PLAYBACK_PROGRESS,
                 ),
                 response.capabilitiesList,
@@ -334,47 +329,10 @@ class ArchiveStreamServiceTest {
     }
 
     @Test
-    fun `a report against an indexed item is recorded and pushes it down`() =
-        runBlocking {
-            stub.reportSource(
-                ReportSourceRequest
-                    .newBuilder()
-                    .setSourceId("Night.Of.The.Living.Dead_1080p/NightOfTheLivingDead_PS3.mp4")
-                    .setProblem(SourceProblem.SOURCE_PROBLEM_UNPLAYABLE)
-                    .build(),
-            )
-            stub.reportSource(
-                ReportSourceRequest
-                    .newBuilder()
-                    .setSourceId("silent-aelita-queen-of-mars/a.mp4")
-                    .setProblem(SourceProblem.SOURCE_PROBLEM_UNSPECIFIED)
-                    .build(),
-            )
+    fun `ReportSource is no longer declared, so a call to it is PERMISSION_DENIED`() {
+        val failure = status { stub.reportSource(ReportSourceRequest.newBuilder().setSourceId("item/a.mp4").build()) }
 
-            assertEquals(setOf("Night.Of.The.Living.Dead_1080p", "silent-aelita-queen-of-mars"), reports.deranked())
-        }
-
-    @Test
-    fun `a report against a well-formed id whose item is not in the index is recorded and deranked`() =
-        runBlocking {
-            stub.reportSource(
-                ReportSourceRequest
-                    .newBuilder()
-                    .setSourceId("found_by_title_route/a.mp4")
-                    .setProblem(SourceProblem.SOURCE_PROBLEM_UNPLAYABLE)
-                    .build(),
-            )
-
-            assertEquals(setOf("found_by_title_route"), reports.deranked())
-        }
-
-    @Test
-    fun `a source id this companion never issued is INVALID_ARGUMENT`() {
-        listOf("", "no-slash", "/name.mp4", "item/", "bad id/a.mp4", "-lead/a.mp4").forEach { id ->
-            val failure = status { stub.reportSource(ReportSourceRequest.newBuilder().setSourceId(id).build()) }
-            assertEquals(id, Status.Code.INVALID_ARGUMENT, failure.status.code)
-        }
-        runBlocking { assertEquals(emptySet<String>(), reports.deranked()) }
+        assertEquals(Status.Code.PERMISSION_DENIED, failure.status.code)
     }
 
     @Test
@@ -382,10 +340,10 @@ class ArchiveStreamServiceTest {
         val failure =
             assertThrows(
                 StatusException::class.java,
-            ) { setOf(Capability.CAPABILITY_PROBE).requireDeclared(Capability.CAPABILITY_REPORT_SOURCE) }
+            ) { setOf(Capability.CAPABILITY_PROBE).requireDeclared(Capability.CAPABILITY_PLAYBACK_PROGRESS) }
 
         assertEquals(Status.Code.PERMISSION_DENIED, failure.status.code)
-        ArchiveStreamService.CAPABILITIES.requireDeclared(Capability.CAPABILITY_REPORT_SOURCE)
+        ArchiveStreamService.CAPABILITIES.requireDeclared(Capability.CAPABILITY_PLAYBACK_PROGRESS)
     }
 
     @Test

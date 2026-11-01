@@ -41,7 +41,6 @@ class TvWatchProgressFocusTest {
             lastRefreshFailed = false,
             refreshing = false,
             recent = emptyList(),
-            reported = emptyList(),
         )
 
     @Test

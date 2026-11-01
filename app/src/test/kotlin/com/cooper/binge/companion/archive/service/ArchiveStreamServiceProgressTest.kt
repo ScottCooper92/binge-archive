@@ -21,7 +21,6 @@ import com.cooper.binge.companion.archive.index.inMemoryIndex
 import com.cooper.binge.companion.archive.index.movie
 import com.cooper.binge.companion.archive.index.sampleSnapshot
 import com.cooper.binge.companion.archive.index.series
-import com.cooper.binge.companion.archive.reports.DeviceRecords
 import com.cooper.binge.companion.archive.reports.DeviceRecordsDatabase
 import com.cooper.binge.companion.archive.reports.PlaybackProgressStore
 import com.cooper.binge.companion.archive.resolve.ResolveOutcome
@@ -77,7 +76,6 @@ class ArchiveStreamServiceProgressTest {
                 ArchiveStreamService(
                     resolver = TitleResolver { media, episode -> outcome(media, episode) },
                     index = IndexRepository(indexDatabase.indexDao(), seed = { sampleSnapshot }),
-                    records = DeviceRecords(recordsDatabase.dao(), clock = { now }),
                     progress = PlaybackProgressStore(recordsDatabase, clock = { now }),
                     versionName = "1.2.3",
                     errors = ArchiveErrors(messages),

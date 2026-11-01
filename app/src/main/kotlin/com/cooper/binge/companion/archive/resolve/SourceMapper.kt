@@ -27,8 +27,8 @@ import java.util.concurrent.TimeUnit
  *   the host shows on a line of its own, with a warning for anything but an open licence.
  * - SubRip and WebVTT files become subtitle tracks, at most ten per source.
  * - [kept] applies the user's minimum quality and subtitle-language settings to an item's sources.
- * - An item's sources go by height. The order of items, holding back an item this device reported
- *   and the cap of [MAX_SOURCES] are the [Resolver]'s, which streams sources item by item.
+ * - An item's sources go by height. The order of items and the cap of [MAX_SOURCES] are the [Resolver]'s,
+ *   which streams sources item by item.
  */
 class SourceMapper(
     private val strings: SourceStrings,

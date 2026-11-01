@@ -8,7 +8,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.outlined.ClearAll
 import androidx.compose.material.icons.outlined.CloudOff
-import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Gavel
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Inventory2
@@ -140,18 +139,6 @@ private fun ColumnScope.TvStatusRows(
                 clearLabel = stringResource(R.string.status_recent_clear),
                 emptyIcon = Icons.Filled.Movie,
                 onClear = actions.onClearRecent,
-            )
-        }
-
-        TvSectionTitle(stringResource(R.string.status_reported_title))
-        state.reported.forEach { TvRow(it, stringResource(R.string.status_reported_detail), Icons.Outlined.Flag) }
-        key("reported-action") {
-            TvClearRow(
-                empty = state.reported.isEmpty(),
-                emptyLabel = stringResource(R.string.status_reported_empty),
-                clearLabel = stringResource(R.string.status_reported_clear),
-                emptyIcon = Icons.Outlined.Flag,
-                onClear = actions.onClearReported,
             )
         }
 

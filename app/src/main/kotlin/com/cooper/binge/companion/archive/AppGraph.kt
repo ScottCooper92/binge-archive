@@ -59,7 +59,7 @@ class AppGraph(
 
     private val deviceRecords: DeviceRecordsDatabase by lazy { DeviceRecordsDatabase.open(appContext) }
 
-    /** What this device remembers of its own use: source reports and recently resolved titles. */
+    /** What this device remembers of its own use: recently resolved titles. */
     val records: DeviceRecords by lazy { DeviceRecords(deviceRecords.dao()) }
 
     /** The watch progress the host reports, in the same database. */
@@ -93,7 +93,6 @@ class AppGraph(
             ItemReader(http, timings, resolveLog),
             SourceMapper(SourceStrings.from(appContext)),
             LogcatCoverageLog,
-            deranked = records::deranked,
             recordResolved = records::recordResolved,
             settings = sourceSettings::current,
             timings = timings,
@@ -132,10 +131,7 @@ class AppGraph(
                             index,
                             IndexFetcher(http)::fetch,
                             io,
-                            prune = {
-                                records.pruneReports()
-                                progress.pruneUnplayed()
-                            },
+                            prune = { progress.pruneUnplayed() },
                         )
                     else -> null
                 }

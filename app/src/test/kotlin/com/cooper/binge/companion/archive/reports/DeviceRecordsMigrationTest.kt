@@ -27,7 +27,7 @@ class DeviceRecordsMigrationTest {
     private val context = ApplicationProvider.getApplicationContext<Context>()
 
     @Test
-    fun `version 1's reports and recent titles survive the move to version 2`() =
+    fun `version 1's recent titles survive the move to the current version`() =
         runTest {
             val file = context.getDatabasePath(NAME).apply { parentFile?.mkdirs() }
             SQLiteDatabase.openOrCreateDatabase(file, null).use { v1 ->
@@ -37,15 +37,41 @@ class DeviceRecordsMigrationTest {
                 v1.version = 1
             }
 
-            val migrated = Room.databaseBuilder(context, DeviceRecordsDatabase::class.java, NAME).allowMainThreadQueries().build()
+            val migrated = open()
             try {
-                assertEquals(listOf("item"), migrated.dao().reportedSince(0))
                 assertEquals(listOf(RecentTitleEntity(653, "Nosferatu", "item", 7)), migrated.dao().recent().first())
                 assertEquals(emptyList<PlaybackProgressEntity>(), migrated.progressDao().inProgress(limit = 10, offset = 0))
             } finally {
                 migrated.close()
             }
         }
+
+    @Test
+    fun `version 2's titles and progress survive the drop of the report table in version 3`() =
+        runTest {
+            val file = context.getDatabasePath(NAME).apply { parentFile?.mkdirs() }
+            SQLiteDatabase.openOrCreateDatabase(file, null).use { v2 ->
+                schemaStatements(version = 2).forEach(v2::execSQL)
+                v2.execSQL("INSERT INTO source_report (identifier, problem, reported_at) VALUES ('item', 'SOURCE_PROBLEM_OTHER', 5)")
+                v2.execSQL("INSERT INTO recent_title (tmdb_id, title, identifier, resolved_at) VALUES (653, 'Nosferatu', 'item', 7)")
+                v2.version = 2
+            }
+
+            val migrated = open()
+            try {
+                assertEquals(listOf(RecentTitleEntity(653, "Nosferatu", "item", 7)), migrated.dao().recent().first())
+                assertEquals(emptyList<PlaybackProgressEntity>(), migrated.progressDao().inProgress(limit = 10, offset = 0))
+            } finally {
+                migrated.close()
+            }
+        }
+
+    private fun open() =
+        Room
+            .databaseBuilder(context, DeviceRecordsDatabase::class.java, NAME)
+            .addMigrations(DROP_SOURCE_REPORT)
+            .allowMainThreadQueries()
+            .build()
 
     /** The statements that build [version]'s schema, from its committed export. */
     private fun schemaStatements(version: Int): List<String> {

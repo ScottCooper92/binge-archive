@@ -22,7 +22,6 @@ val previewReady =
                 RecentTitle(653, "Nosferatu", "PhantasmagoriaTheater-Nosferatu1922909", PREVIEW_NOW - DAY),
                 RecentTitle(3082, "Modern Times", "modern_times_1936", PREVIEW_NOW - 4 * DAY),
             ),
-        reported = listOf("Nosferatu_DVD_quality"),
         progressTitles = 3,
     )
 
@@ -33,10 +32,9 @@ val previewEmpty =
         lastRefreshFailed = false,
         refreshing = false,
         recent = emptyList(),
-        reported = emptyList(),
     )
 
-val previewFailedRefreshing = previewReady.copy(lastRefreshFailed = true, refreshing = true, recent = emptyList(), reported = emptyList())
+val previewFailedRefreshing = previewReady.copy(lastRefreshFailed = true, refreshing = true, recent = emptyList())
 
 val previewRefreshing = previewReady.copy(refreshing = true)
 

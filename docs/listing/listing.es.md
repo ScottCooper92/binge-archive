@@ -37,7 +37,7 @@ La traducción de `listing.md`. El nombre de la app es el mismo en los dos idiom
 >
 > **Nada sobre ti.** Sin cuenta, sin inicio de sesión, sin clave. La app solo pregunta a Wikidata
 > y a Internet Archive por la película que abriste. Sin analíticas, sin informes de errores, sin
-> anuncios. Las películas encontradas hace poco, las copias que hayas marcado y por dónde ibas en
+> anuncios. Las películas encontradas hace poco y por dónde ibas en
 > una película se quedan en tu dispositivo, y puedes borrarlas. Solo Binge lee por dónde ibas, para
 > reanudar la película.
 >
