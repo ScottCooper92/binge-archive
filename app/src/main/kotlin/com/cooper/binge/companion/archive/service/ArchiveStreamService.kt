@@ -11,6 +11,8 @@ import com.binge.companion.contracts.stream.v1.ProbeRequest
 import com.binge.companion.contracts.stream.v1.ProbeResponse
 import com.binge.companion.contracts.stream.v1.ReportPlaybackRequest
 import com.binge.companion.contracts.stream.v1.ReportPlaybackResponse
+import com.binge.companion.contracts.stream.v1.ReportSourceRequest
+import com.binge.companion.contracts.stream.v1.ReportSourceResponse
 import com.binge.companion.contracts.stream.v1.ResolveRequest
 import com.binge.companion.contracts.stream.v1.ResolveResponse
 import com.binge.companion.contracts.stream.v1.StreamServiceGrpcKt
@@ -28,6 +30,7 @@ import com.cooper.binge.companion.archive.reports.PlaybackProgressStore
 import com.cooper.binge.companion.archive.resolve.ResolveOutcome
 import com.cooper.binge.companion.archive.resolve.TitleResolver
 import com.cooper.binge.companion.archive.resolve.unusableRequest
+import io.grpc.Status
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -39,11 +42,13 @@ import kotlinx.coroutines.withContext
 /**
  * STREAM v1, served from this app.
  *
- * - `Handshake` always succeeds: there is no sign-in. It declares Probe, subtitles, source
- *   and watch progress, names the Internet Archive as the provider, and ignores `HostInfo`.
+ * - `Handshake` always succeeds: there is no sign-in. It declares Probe, subtitles and
+ *   watch progress, names the Internet Archive as the provider, and ignores `HostInfo`.
  * - `Resolve` is the resolver's answer, mapped by [ArchiveErrors]. Its first message carries the
  *   title's resume point, when the device holds one.
  * - `Probe` reads the index and nothing else: it never touches the network.
+ * - `ReportSource` is no longer declared, so it is refused as `PERMISSION_DENIED` (the base class would
+ *   answer `UNIMPLEMENTED`, which the contract reads as "not installed").
  * - `ReportPlayback`, `ListContinueWatching` and `ForgetProgress` keep the user's watch progress
  *   on the device ([PlaybackProgressStore]), by the SDK's rules for it.
  *
@@ -111,6 +116,10 @@ class ArchiveStreamService(
         if (failure != null) throw errors.of(failure)
         return ProbeResponse.newBuilder().setMayHaveSources(hit != null).build()
     }
+
+    /** Not declared, so refused as the contract says an undeclared rpc is; never reached by a host that reads the handshake. */
+    override suspend fun reportSource(request: ReportSourceRequest): ReportSourceResponse =
+        throw Status.PERMISSION_DENIED.withDescription("Capability not declared").asException()
 
     /**
      * Applies one report of a sitting to the title's progress, by the SDK's `applyReport`: a finished

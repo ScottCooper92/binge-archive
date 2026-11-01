@@ -3,6 +3,7 @@ package com.cooper.binge.companion.archive.service
 import com.binge.companion.contracts.stream.v1.Capability
 import com.binge.companion.contracts.stream.v1.HandshakeRequest
 import com.binge.companion.contracts.stream.v1.ProbeRequest
+import com.binge.companion.contracts.stream.v1.ReportSourceRequest
 import com.binge.companion.contracts.stream.v1.ResolveRequest
 import com.binge.companion.contracts.stream.v1.StreamServiceGrpcKt
 import com.binge.companion.contracts.stream.v1.StreamSource
@@ -325,6 +326,13 @@ class ArchiveStreamServiceTest {
                 .build()
         assertEquals(Status.Code.INVALID_ARGUMENT, status { stub.probe(probeRequest(unspecified)) }.status.code)
         assertEquals(Status.Code.NOT_FOUND, status { stub.probe(probeRequest(series(894), episode)) }.status.code)
+    }
+
+    @Test
+    fun `ReportSource is no longer declared, so a call to it is PERMISSION_DENIED`() {
+        val failure = status { stub.reportSource(ReportSourceRequest.newBuilder().setSourceId("item/a.mp4").build()) }
+
+        assertEquals(Status.Code.PERMISSION_DENIED, failure.status.code)
     }
 
     @Test

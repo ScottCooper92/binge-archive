@@ -244,7 +244,7 @@ class Resolver(
 
 private const val TAG = "ArchiveResolver"
 
-/** Deranking and the recent-titles list are the device's own: when they fail, the sources still go out. */
+/** The recent-titles list is the device's own: when it fails, the sources still go out. */
 private fun bookkeepingFailed(
     what: String,
     cause: Throwable,
