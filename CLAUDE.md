@@ -308,8 +308,9 @@ with the Sources settings, its licence page, and the hand-off Binge's "manage" r
   resolved and the watch progress the host reports, kept on the device in `device-records.db`, and
   the Sources settings in its DataStore. The index is public metadata it can rebuild. Backup is off.
 - `device-records.db` holds what the user made, so it migrates and is never rebuilt: each version
-  is a Room auto-migration with its schema committed under `app/schemas`, and
-  `DeviceRecordsMigrationTest` opens the previous version's file with today's database.
+  is a Room migration with its schema committed under `app/schemas`: an auto-migration where it only
+  adds, and a hand-written one where it deletes a table (version 3 drops `source_report`).
+  `DeviceRecordsMigrationTest` opens each earlier version's file with today's database.
 
 ## Kotlin, Gradle and Android
 
