@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 
 /**
  * The status screen's one state stream: the index's size and freshness, a pending refresh, this
- * device's recently resolved titles and reports, how many titles hold watch progress, and the
+ * device's recently resolved titles, how many titles hold watch progress, and the
  * Sources settings.
  *
  * Each setting is saved as it is made. "Any, whatever the licence" is the exception: picking it only
@@ -70,10 +70,6 @@ class StatusViewModel(
         viewModelScope.launch { records.clearRecent() }
     }
 
-    fun clearReported() {
-        viewModelScope.launch { records.clearReports() }
-    }
-
     fun clearProgress() {
         viewModelScope.launch { progress.clear() }
     }
@@ -113,7 +109,7 @@ class StatusViewModel(
         combine(
             combine(index.filmCount(), index.lastSuccess(), index.latestRefresh(), ::IndexFacts),
             refresher.refreshing,
-            combine(records.recent(), records.reported(), progress.titleCount(), ::RecordFacts),
+            combine(records.recent(), progress.titleCount(), ::RecordFacts),
             combine(sourceSettings.settings, confirmingAnyLicence, ::SourcesFacts),
         ) { facts, refreshing, records, sources ->
             StatusUiState.Ready(
@@ -122,7 +118,6 @@ class StatusViewModel(
                 lastRefreshFailed = facts.latestFailed,
                 refreshing = refreshing,
                 recent = records.recent.map { RecentTitle(it.tmdbId, it.title, it.identifier, it.resolvedAt) },
-                reported = records.reported,
                 progressTitles = records.progressTitles,
                 sources = sources.settings,
                 confirmingAnyLicence = sources.confirmingAny,
@@ -140,7 +135,6 @@ class StatusViewModel(
 
     private class RecordFacts(
         val recent: List<RecentTitleEntity>,
-        val reported: List<String>,
         val progressTitles: Int,
     )
 

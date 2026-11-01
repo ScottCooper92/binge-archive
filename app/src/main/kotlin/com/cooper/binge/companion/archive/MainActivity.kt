@@ -59,7 +59,6 @@ class MainActivity : ComponentActivity() {
                     onOpenSources = { showingLicences = false },
                     onOpenUrl = ::openUrl,
                     onClearRecent = viewModel::clearRecent,
-                    onClearReported = viewModel::clearReported,
                     onClearProgress = viewModel::clearProgress,
                     onTitleMatches = viewModel::setTitleMatches,
                     onLicences = viewModel::chooseLicences,

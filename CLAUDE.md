@@ -188,8 +188,7 @@ query (step 3): they keep the index's order.
    item, preferring h.264 in MP4, then any MP4, then height, length and size. The label is
    the item's own Archive title, else "Title (year)", and the licence goes in `licence_label` and `licence_kind`. SubRip and WebVTT
    become subtitle tracks, at most ten. Each item's
-   sources are sent as soon as the item is read, in download order; an item this device reported is
-   held back and sent last. At most fifty sources. URLs are `https://archive.org/download/…`, with a
+   sources are sent as soon as the item is read, in download order. At most fifty sources. URLs are `https://archive.org/download/…`, with a
    nominal 24-hour expiry. Before an item's sources are sent, the user's minimum quality drops those
    below it, and "only copies with subtitles in my language" drops those with no track in the
    device's language.
@@ -217,7 +216,7 @@ action with the SDK's manifest meta-data (`com.binge.companion.name`, `.icon`, `
 `ArchiveStreamService` serves STREAM v1:
 
 - **`Handshake`** always succeeds: there is no sign-in. It declares `CAPABILITY_PROBE`,
-  `CAPABILITY_SUBTITLES`, `CAPABILITY_REPORT_SOURCE` and `CAPABILITY_PLAYBACK_PROGRESS`, names
+  `CAPABILITY_SUBTITLES` and `CAPABILITY_PLAYBACK_PROGRESS`, names
   "Internet Archive" as the provider, and ignores `HostInfo`.
 - **`Resolve`** is the resolver's `ResolveOutcome`, mapped in one place, `ArchiveErrors`.
   `NOT_FOUND` carries a `LocalizedMessage`, "Not on the Internet Archive", in the device's locale.
@@ -227,10 +226,9 @@ action with the SDK's manifest meta-data (`com.binge.companion.name`, `.icon`, `
   completed episode has none, and a stream with no sources carries none.
 - **`Probe`** reads the index and never the network, and ignores the Sources settings. It refuses
   what `Resolve` refuses, and a valid series is `NOT_FOUND`.
-- **`ReportSource`** takes a `source_id` of the form `<identifier>/<file name>`, the identifier in
-  the Archive's character set; anything else is `INVALID_ARGUMENT`. The index is not consulted, so
-  an item found by any route can be reported. The report is stored on the device
-  (`device-records.db`, separate from the index) and pushes that item after every other for 30 days.
+- **Source reporting is gone.** The handshake no longer declares `CAPABILITY_REPORT_SOURCE`, so the
+  host never calls `ReportSource`. A report moved no source for the user, so it is not taken; the
+  `source_report` table was dropped in `device-records.db` version 3.
 - **Watch progress** (`CAPABILITY_PLAYBACK_PROGRESS`) lives in `device-records.db`
   (`reports/PlaybackProgress.kt`), keyed by media type, TMDB id, season and episode; a movie's
   season and episode are -1, since season 0 is a series' specials. The SDK's helpers apply the
@@ -261,15 +259,15 @@ with the Sources settings, its licence page, and the hand-off Binge's "manage" r
   `Ready` or `Error`, never a set of flags. `StatusScreen` (phone) and `ui/tv/TvStatusScreen` take the
   state and a `StatusActions`, so every arm renders in a frame. Sections: what this is (and the
   licence page), Sources, the index (films linked, last refresh, a failed refresh, "Refresh now"),
-  who the data comes from, recently resolved titles, reported copies, and watch progress (a count
+  who the data comes from, recently resolved titles, and watch progress (a count
   and one clear row; on the TV the row changes in place, so clearing keeps the focus).
 - **Wide windows** (#49): `PhoneStatusRoot` is the one place the phone's layout is chosen, from
   the window size class. Below 840dp it is `StatusScreen` or the licence page alone, capped at
   `content_max_width` and centred. From 840dp it is `StatusListDetail`: the status list and its
   detail (Sources, or the licence page) side by side, in even halves. No screen below it asks the
   window.
-- **Recently resolved and reported** live in `device-records.db` (`reports/DeviceRecords.kt`), on
-  the device only, never shown to the host. Each list has a clear action.
+- **Recently resolved** titles live in `device-records.db` (`reports/DeviceRecords.kt`), on
+  the device only, never shown to the host. The list has a clear action.
 - **`SettingsHandOffActivity`** answers `CompanionManifest.ACTION_SETTINGS`. It checks its caller
   with the SDK's `HandOffPolicy` (the same pins as the Service) and opens `MainActivity`. A start
   with no calling package opens nothing.
@@ -306,7 +304,7 @@ with the Sources settings, its licence page, and the hand-off Binge's "manage" r
   its own or an exception's message. A release build is given `ResolveLog.NONE` (`resolveLogFor(BuildConfig.DEBUG)`), so it logs nothing.
 - **Coverage misses are logged on the device, by route**, for binge-companions#148's measurement.
   They never leave the device: no analytics, no crash reporting and no upload of any kind.
-- The app stores no user data beyond the user's own source reports, the last ten titles it
+- The app stores no user data beyond the last ten titles it
   resolved and the watch progress the host reports, kept on the device in `device-records.db`, and
   the Sources settings in its DataStore. The index is public metadata it can rebuild. Backup is off.
 - `device-records.db` holds what the user made, so it migrates and is never rebuilt: each version

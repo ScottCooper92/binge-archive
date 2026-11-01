@@ -96,7 +96,6 @@ class StatusViewModelTest {
             index.ensureSeeded()
             index.recordFailure("offline")
             records.recordResolved(10331, "Night of the Living Dead", "Night.Of.The.Living.Dead_1080p")
-            records.record("Nosferatu_DVD_quality", "SOURCE_PROBLEM_UNPLAYABLE")
 
             val ready = StatusViewModel(index, records, FakeRefresher(MutableStateFlow(true)), settings, progress).ready()
 
@@ -105,24 +104,21 @@ class StatusViewModelTest {
             assertTrue(ready.lastRefreshFailed)
             assertTrue(ready.refreshing)
             assertEquals(listOf(RecentTitle(10331, "Night of the Living Dead", "Night.Of.The.Living.Dead_1080p", 9_000L)), ready.recent)
-            assertEquals(listOf("Nosferatu_DVD_quality"), ready.reported)
         }
 
     @Test
     fun `refresh now asks the refresher, and clearing empties each list`() =
         runBlocking {
             records.recordResolved(653, "Nosferatu", "PhantasmagoriaTheater-Nosferatu1922909")
-            records.record("x", "SOURCE_PROBLEM_OTHER")
             val refresher = FakeRefresher()
             val viewModel = StatusViewModel(index, records, refresher, settings, progress)
-            viewModel.ready { it.recent.isNotEmpty() && it.reported.isNotEmpty() }
+            viewModel.ready { it.recent.isNotEmpty() }
 
             viewModel.refreshNow()
             viewModel.clearRecent()
-            viewModel.clearReported()
 
             assertEquals(1, refresher.requests)
-            val cleared = viewModel.ready { it.recent.isEmpty() && it.reported.isEmpty() }
+            val cleared = viewModel.ready { it.recent.isEmpty() }
             assertEquals(emptyList<RecentTitle>(), cleared.recent)
         }
 

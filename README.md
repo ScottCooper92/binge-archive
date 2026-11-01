@@ -20,8 +20,7 @@ holds an openly licensed copy, Binge offers it to play, and names the licence on
   to resume it, and is forgotten once you finish it or after 90 days unplayed.
 
 The app itself has a status screen and a licence page. The status screen shows what the app does,
-its Sources settings, how fresh its index is, the films it found for you recently, any copies
-you reported, and how many titles Binge can resume, with a button to clear them. Sources chooses whether title matches are used, which licences are accepted, a
+its Sources settings, how fresh its index is, the films it found for you recently, and how many titles Binge can resume, with a button to clear them. Sources chooses whether title matches are used, which licences are accepted, a
 minimum quality, and whether a copy must have subtitles in your language. The licence
 page says which licences it accepts, and why. You find films from Binge. The app speaks English and Spanish.
 

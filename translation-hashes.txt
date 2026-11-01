@@ -73,9 +73,5 @@ app:status_refresh_failed  1731c4b38f45
 app:status_refresh_failed_detail  e74ac6d1d2d9
 app:status_refresh_now  148677068467
 app:status_refresh_waiting  658137b8971d
-app:status_reported_clear  927e7bb74312
-app:status_reported_detail  00f5e4c456ee
-app:status_reported_empty  ab7ebf8d09e3
-app:status_reported_title  34540bb7b089
 app:status_sources_title  fdc5d2e9410c
 app:subtitle_automatic  2169be84eaed

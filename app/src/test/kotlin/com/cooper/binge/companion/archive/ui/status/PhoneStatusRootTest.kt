@@ -30,7 +30,6 @@ class PhoneStatusRootTest {
             lastRefreshFailed = false,
             refreshing = false,
             recent = emptyList(),
-            reported = emptyList(),
         )
 
     private fun show(

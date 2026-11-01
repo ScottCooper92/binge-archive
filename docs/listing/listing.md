@@ -40,7 +40,7 @@ README.
 >
 > **Nothing about you.** No account, no sign-in, no key. The app asks Wikidata and the Internet
 > Archive about the film you opened, and nothing else. No analytics, no crash reporting, no adverts.
-> The films it found recently, any copies you reported and where you got to in a film stay on your
+> The films it found recently and where you got to in a film stay on your
 > device, and you can clear them. Only Binge reads where you got to, to resume the film.
 >
 > **Phone and Android TV.** In English and Spanish.

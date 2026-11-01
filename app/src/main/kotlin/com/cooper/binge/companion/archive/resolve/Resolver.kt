@@ -72,7 +72,6 @@ class Resolver(
     private val reader: ItemReader,
     private val mapper: SourceMapper,
     private val coverage: CoverageLog,
-    private val deranked: suspend () -> Set<String> = { emptySet() },
     /** Told of each resolve that found sources: the TMDB id, the title and the first source's Archive item. */
     private val recordResolved: suspend (tmdbId: Int, title: String, identifier: String) -> Unit = { _, _, _ -> },
     /** The user's settings now. A failure to read them is an `IOException`, so the resolve fails. */
@@ -186,8 +185,8 @@ class Resolver(
 
     /**
      * Each item's sources as soon as the item is read, so a deadline keeps what was found before it. Items
-     * come in download order; one this device reported is held back and sent after every other. At most
-     * [SourceMapper.MAX_SOURCES] in all, after the user's [settings] have dropped what they exclude.
+     * come in download order. At most [SourceMapper.MAX_SOURCES] in all, after the user's [settings] have
+     * dropped what they exclude.
      */
     private fun sources(
         tmdbId: Int,
@@ -197,9 +196,7 @@ class Resolver(
         begun: Long,
     ): Flow<StreamSource> =
         flow {
-            val derankedIds = attempt { deranked() }.onFailure { bookkeepingFailed("deranking", it) }.getOrDefault(emptySet())
             val expiresAt = mapper.expiresAt()
-            val heldBack = mutableListOf<LicensedItem>()
             var items = 0
             var sent = 0
             var filtered = false
@@ -234,9 +231,8 @@ class Resolver(
                 ).flowOn(deadline(begun))
                 .collect { licensed ->
                     items++
-                    if (licensed.item.identifier in derankedIds) heldBack += licensed else send(licensed)
+                    send(licensed)
                 }
-            heldBack.forEach { send(it) }
             log.line { ResolveEvents.answer("sources=$sent items=$items", elapsedSince(begun)) }
             when {
                 sent == 0 && filtered -> coverage.miss(CoverageMiss(tmdbId, found.route, CoverageMiss.Reason.FILTERED_BY_SETTINGS))

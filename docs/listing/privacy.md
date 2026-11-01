@@ -11,9 +11,6 @@ https://github.com/ScottCooper92/binge-archive.
   the Archive. It is refreshed about once a week. It says nothing about you.
 - **The last ten films it found for Binge**, so the app's screen can show them. You can clear the
   list on that screen.
-- **Copies you reported**, when you tell Binge a copy did not play. The app offers that copy last
-  for 30 days. After that the app forgets the report. You can also clear reports on the app's
-  screen, or uninstall the app, at any time.
 - **Where you got to in films Binge played from this app's copies**, so Binge can resume them and
   show them in Continue watching: the film or episode, your position, its length, and when you last
   played it. A finished film is forgotten. A finished episode is kept, so Binge can offer the next

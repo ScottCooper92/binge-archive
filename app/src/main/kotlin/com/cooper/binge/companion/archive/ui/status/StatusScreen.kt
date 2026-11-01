@@ -12,7 +12,6 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.outlined.ClearAll
 import androidx.compose.material.icons.outlined.CloudOff
-import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Inventory2
@@ -51,7 +50,7 @@ import com.binge.designsystem.R as DesR
 
 /**
  * The phone's status screen: what this app is, the Sources settings, the index, who the data comes
- * from, this device's recently resolved titles and reports, and its watch progress. [now] is a parameter so frames pass a
+ * from, this device's recently resolved titles, and its watch progress. [now] is a parameter so frames pass a
  * fixed instant. On a window wider than the reading width the column is capped and centred.
  *
  * As the list pane of [StatusListDetail], [selected] names the detail open beside it: the Sources
@@ -102,7 +101,6 @@ private fun StatusGroups(
             item { ItemGroup(title = stringResource(R.string.status_index_title), rows = indexRows(state, actions, now)) }
             item { ItemGroup(title = stringResource(R.string.status_sources_title), rows = sourceRows(actions)) }
             item { ItemGroup(title = stringResource(R.string.status_recent_title), rows = recentRows(state.recent, actions, now)) }
-            item { ItemGroup(title = stringResource(R.string.status_reported_title), rows = reportedRows(state.reported, actions)) }
             item { WatchProgressGroup(state.progressTitles, actions.onClearProgress) }
         }
     }
@@ -317,31 +315,6 @@ private fun recentRows(
             label = stringResource(R.string.status_recent_clear),
             destination = ListItemDestination.Action,
             onClick = actions.onClearRecent,
-        )
-}
-
-@Composable
-private fun reportedRows(
-    reported: List<String>,
-    actions: StatusActions,
-): List<ListItem> {
-    if (reported.isEmpty()) {
-        return listOf(ListItem(icon = Icons.Outlined.Flag, label = stringResource(R.string.status_reported_empty), clickable = false))
-    }
-    return reported.map { identifier ->
-        ListItem(
-            icon = Icons.Outlined.Flag,
-            label = identifier,
-            detail = stringResource(R.string.status_reported_detail),
-            destination = ListItemDestination.External,
-            onClick = { actions.onOpenUrl(StatusLinks.item(identifier)) },
-        )
-    } +
-        ListItem(
-            icon = Icons.Outlined.ClearAll,
-            label = stringResource(R.string.status_reported_clear),
-            destination = ListItemDestination.Action,
-            onClick = actions.onClearReported,
         )
 }
 

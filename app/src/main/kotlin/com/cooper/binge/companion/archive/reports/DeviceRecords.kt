@@ -13,20 +13,9 @@ import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.Transaction
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
-import java.util.concurrent.TimeUnit
-
-/**
- * A source the user told the host did not work: which Archive item, why, and when. Kept on this
- * device only, and never sent anywhere.
- */
-@Entity(tableName = "source_report")
-data class SourceReportEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val identifier: String,
-    val problem: String,
-    @ColumnInfo(name = "reported_at") val reportedAt: Long,
-)
 
 /**
  * A title this app resolved for a host, for the status screen's "Recently resolved". Kept on this
@@ -43,21 +32,6 @@ data class RecentTitleEntity(
 
 @Dao
 interface DeviceRecordsDao {
-    @Insert
-    suspend fun insertReport(report: SourceReportEntity)
-
-    @Query("SELECT DISTINCT identifier FROM source_report WHERE reported_at >= :since")
-    suspend fun reportedSince(since: Long): List<String>
-
-    @Query("SELECT DISTINCT identifier FROM source_report WHERE reported_at >= :since ORDER BY identifier")
-    fun reportedSinceFlow(since: Long): Flow<List<String>>
-
-    @Query("DELETE FROM source_report")
-    suspend fun clearReports()
-
-    @Query("DELETE FROM source_report WHERE reported_at < :before")
-    suspend fun deleteReportsBefore(before: Long)
-
     /** Records [title] and keeps only the [keep] most recent. */
     @Transaction
     suspend fun recordResolved(
@@ -82,14 +56,14 @@ interface DeviceRecordsDao {
 }
 
 /**
- * What this device remembers of its own use: the user's source reports, the titles it recently
- * resolved and the watch progress the host reports. Its own database, so the index stays public
- * data only. It holds what the user made, so it migrates and is never rebuilt: version 2 added
- * `playback_progress`.
+ * What this device remembers of its own use: the titles it recently resolved and the watch progress the
+ * host reports. Its own database, so the index stays public data only. It holds what the user made, so
+ * it migrates and is never rebuilt: version 2 added `playback_progress`, and version 3 dropped the
+ * `source_report` table, which source reporting no longer fills.
  */
 @Database(
-    entities = [SourceReportEntity::class, RecentTitleEntity::class, PlaybackProgressEntity::class],
-    version = 2,
+    entities = [RecentTitleEntity::class, PlaybackProgressEntity::class],
+    version = 3,
     autoMigrations = [AutoMigration(from = 1, to = 2)],
 )
 abstract class DeviceRecordsDatabase : RoomDatabase() {
@@ -99,36 +73,26 @@ abstract class DeviceRecordsDatabase : RoomDatabase() {
 
     companion object {
         fun open(context: Context): DeviceRecordsDatabase =
-            Room.databaseBuilder(context, DeviceRecordsDatabase::class.java, "device-records.db").build()
+            Room
+                .databaseBuilder(context, DeviceRecordsDatabase::class.java, "device-records.db")
+                .addMigrations(DROP_SOURCE_REPORT)
+                .build()
     }
 }
 
-/**
- * The device's own records. An item reported in the last [DERANK_DAYS] days goes after every other
- * item in this device's answers; it is not removed, since one bad report should not take the only copy
- * of a film away. A report is forgotten once the window has passed ([pruneReports]). "Recently resolved" keeps the last [RECENT_KEEP] titles.
- */
+/** Version 3 drops the `source_report` table: reports are no longer taken, and the user's titles and progress are untouched. */
+internal val DROP_SOURCE_REPORT =
+    object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("DROP TABLE IF EXISTS `source_report`")
+        }
+    }
+
+/** The device's own records. "Recently resolved" keeps the last [RECENT_KEEP] titles. */
 class DeviceRecords(
     private val dao: DeviceRecordsDao,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
-    suspend fun record(
-        identifier: String,
-        problem: String,
-    ) {
-        dao.insertReport(SourceReportEntity(identifier = identifier, problem = problem, reportedAt = clock()))
-    }
-
-    suspend fun deranked(): Set<String> = dao.reportedSince(derankSince()).toSet()
-
-    /** The items pushed down now. The window is fixed when collection starts, which a screen does often. */
-    fun reported(): Flow<List<String>> = dao.reportedSinceFlow(derankSince())
-
-    suspend fun clearReports() = dao.clearReports()
-
-    /** Forgets the reports older than the derank window: past it they no longer do anything. */
-    suspend fun pruneReports() = dao.deleteReportsBefore(derankSince())
-
     suspend fun recordResolved(
         tmdbId: Int,
         title: String,
@@ -141,10 +105,7 @@ class DeviceRecords(
 
     suspend fun clearRecent() = dao.clearRecent()
 
-    private fun derankSince(): Long = clock() - TimeUnit.DAYS.toMillis(DERANK_DAYS)
-
     companion object {
-        const val DERANK_DAYS = 30L
         const val RECENT_KEEP = 10
     }
 }

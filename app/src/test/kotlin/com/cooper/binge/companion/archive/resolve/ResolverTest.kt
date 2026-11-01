@@ -148,7 +148,6 @@ class ResolverTest {
 
     private fun resolverWith(
         http: ResolverHttp = archive.http(),
-        deranked: suspend () -> Set<String> = { emptySet() },
         recordResolved: suspend (Int, String, String) -> Unit = { _, _, _ -> },
         settings: SourceSettings = SourceSettings.DEFAULT,
         deviceLanguage: String = "en",
@@ -161,7 +160,6 @@ class ResolverTest {
         ItemReader(http, timings),
         SourceMapper(testStrings, clock = { NOW_MILLIS }, deviceLanguage = { deviceLanguage }),
         misses::add,
-        deranked = deranked,
         recordResolved = recordResolved,
         settings = { settings },
         timings = timings,
@@ -422,18 +420,6 @@ class ResolverTest {
         }
 
     @Test
-    fun `a failing deranking lookup still sends the sources`() =
-        runTest {
-            archive.sparql = { resolveFixture("wikidata-653.tsv") }
-            archive.search = { searchResponse("Nosferatu_DVD_quality" to 900L) }
-
-            val resolver = resolverWith(deranked = { error("db closed") })
-            val sources = sources(resolver.resolve(movie(653), episode = null)).toList()
-
-            assertTrue(sources.isNotEmpty())
-        }
-
-    @Test
     fun `a failing recent-titles write still sends the sources`() =
         runTest {
             archive.sparql = { resolveFixture("wikidata-653.tsv") }
@@ -443,34 +429,6 @@ class ResolverTest {
             val sources = sources(resolver.resolve(movie(653), episode = null)).toList()
 
             assertTrue(sources.isNotEmpty())
-        }
-
-    @Test
-    fun `an item this device reported is sent after every other, even when it reads first`() =
-        runTest {
-            archive.sparql = { resolveFixture("wikidata-653.tsv") }
-            archive.search = { searchResponse("Nosferatu_DVD_quality" to 900L, "PhantasmagoriaTheater-Nosferatu1922909" to 500L) }
-            archive.metadataBodies["Nosferatu_DVD_quality"] =
-                """{"metadata":{"mediatype":"movies","licenseurl":"http://creativecommons.org/publicdomain/zero/1.0/"},""" +
-                """"files":[{"name":"dvd.mp4","format":"h.264","height":"480","length":"5600"}]}"""
-            val reported =
-                archive.http().let { http ->
-                    Resolver(
-                        IndexRepository(database.indexDao(), seed = { seed }),
-                        ItemFinder(http),
-                        ItemReader(http),
-                        SourceMapper(testStrings, clock = { NOW_MILLIS }),
-                        misses::add,
-                        deranked = { setOf("Nosferatu_DVD_quality") },
-                    )
-                }
-
-            val sources = sources(reported.resolve(movie(653), episode = null)).toList()
-
-            assertEquals(
-                listOf("PhantasmagoriaTheater-Nosferatu1922909", "Nosferatu_DVD_quality"),
-                sources.map { it.id.substringBefore('/') }.distinct(),
-            )
         }
 
     @Test
