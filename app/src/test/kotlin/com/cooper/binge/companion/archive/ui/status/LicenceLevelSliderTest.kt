@@ -7,7 +7,6 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.test.core.app.ApplicationProvider
-import com.cooper.binge.companion.archive.R
 import com.cooper.binge.companion.archive.resolve.LicenceLevel
 import com.cooper.binge.companion.archive.theme.ArchiveTheme
 import org.junit.Rule
@@ -15,15 +14,15 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
-/** The slider announces the stop's short name; the thumb stays on "Any" while its confirm is open, and returns to the saved level when that is cancelled. */
+/** The thumb stays on "Any" while its confirm is open, and returns to the saved level when that is cancelled. */
 @RunWith(RobolectricTestRunner::class)
 class LicenceLevelSliderTest {
     @get:Rule
     val compose = createComposeRule()
 
     private fun label(level: LicenceLevel): String {
-        val index = SourceSettingChoices.licences.indexOfFirst { it.value == level }
-        return ApplicationProvider.getApplicationContext<android.app.Application>().getString(STOP_LABELS[index])
+        val choice = SourceSettingChoices.licences.first { it.value == level }
+        return ApplicationProvider.getApplicationContext<android.app.Application>().getString(choice.label)
     }
 
     private fun assertShows(level: LicenceLevel) {
@@ -50,15 +49,5 @@ class LicenceLevelSliderTest {
         confirming = false
         compose.waitForIdle()
         assertShows(LicenceLevel.PUBLIC_DOMAIN)
-    }
-
-    private companion object {
-        val STOP_LABELS =
-            listOf(
-                R.string.settings_licences_stop_public_domain,
-                R.string.settings_licences_stop_default,
-                R.string.settings_licences_stop_creative_commons,
-                R.string.settings_licences_stop_any,
-            )
     }
 }
