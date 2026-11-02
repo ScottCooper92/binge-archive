@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.IOException
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
@@ -57,7 +58,7 @@ class IndexRepository(
      */
     suspend fun lookupWithoutWaiting(media: MediaId): IndexHit? {
         if (!seeded) {
-            if (dao.refreshCount() == 0) {
+            if (!indexIsPresent()) {
                 background.launch { attempt { ensureSeeded() } }
                 return null
             }
@@ -65,6 +66,13 @@ class IndexRepository(
         }
         return lookup(media)
     }
+
+    /**
+     * Whether the device already holds an index: a refresh in the log. Room runs the count on its own query executor, off
+     * the caller's thread, and it is held to [PRESENT_CHECK_MILLIS] so a slow first open of the database in a cold process
+     * cannot spend the host's deadline: past it the answer is "no", which is the cold-install path.
+     */
+    private suspend fun indexIsPresent(): Boolean = withTimeoutOrNull(PRESENT_CHECK_MILLIS) { dao.refreshCount() > 0 } ?: false
 
     /** The most recent refresh, successful or not: a failed one is what the status screen warns about. */
     fun latestRefresh(): Flow<RefreshLogEntity?> = dao.latestRefresh().onStart { ensureSeeded() }
@@ -159,3 +167,6 @@ class IndexRepository(
         return IndexHit(isFilm = false, wikidataArchiveIds = links.map { it.archiveId }.distinct(), imdbArchiveIds = emptyList())
     }
 }
+
+/** How long [IndexRepository.lookupWithoutWaiting] waits to learn whether the index is there, a small part of the resolve budget. */
+internal const val PRESENT_CHECK_MILLIS = 1_000L
