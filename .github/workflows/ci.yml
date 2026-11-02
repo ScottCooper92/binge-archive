@@ -259,7 +259,7 @@ jobs:
 
       # binge-ci's shared step: a pinned release verified against its published checksum, with
       # shellcheck at warning severity.
-      - uses: ScottCooper92/binge-ci/.github/actions/actionlint@0c5177c6b9f591bf2d4c87a2d0d48d2680b4c398 # v1
+      - uses: ScottCooper92/binge-ci/.github/actions/actionlint@494e473b01f083178315f3f723383fefba23c937 # v1
 
   # A red nightly has no PR or push to carry it, so without this it is a red mark in the
   # Actions tab that nothing points at. One issue stays open while the canary is red and
@@ -274,7 +274,7 @@ jobs:
     permissions:
       issues: write
     steps:
-      - uses: ScottCooper92/binge-ci/.github/actions/nightly-report@0c5177c6b9f591bf2d4c87a2d0d48d2680b4c398 # v1
+      - uses: ScottCooper92/binge-ci/.github/actions/nightly-report@494e473b01f083178315f3f723383fefba23c937 # v1
         with:
           result: ${{ needs.build.result }}
           title: Nightly CI is failing on main
