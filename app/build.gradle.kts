@@ -216,7 +216,8 @@ dependencies {
  *
  * Offline, or with either host down, it writes nothing and the build goes on; the app then starts
  * with an empty index. A seed younger than a week is reused rather than fetched again, and
- * `-Parchive.skipSeed` skips the fetch altogether.
+ * `-Parchive.skipSeed` skips the fetch altogether. `-Parchive.requireSeed` (the device smoke's) makes a
+ * missing seed fail the build with the reason.
  */
 abstract class GenerateIndexSeed : JavaExec() {
     @get:OutputDirectory
@@ -225,13 +226,19 @@ abstract class GenerateIndexSeed : JavaExec() {
     @get:Input
     abstract val versionName: Property<String>
 
+    @get:Input
+    abstract val requireSeed: Property<Boolean>
+
     override fun exec() {
         args(
-            outputDirectory
-                .file("index/seed.tsv")
-                .get()
-                .asFile.absolutePath,
-            versionName.get(),
+            listOfNotNull(
+                outputDirectory
+                    .file("index/seed.tsv")
+                    .get()
+                    .asFile.absolutePath,
+                versionName.get(),
+                "require".takeIf { requireSeed.get() },
+            ),
         )
         super.exec()
     }
@@ -245,6 +252,7 @@ val generateIndexSeed =
         mainClass.set("com.cooper.binge.companion.archive.index.SeedMainKt")
         outputDirectory.set(layout.buildDirectory.dir("generated/indexSeed"))
         versionName.set(android.defaultConfig.versionName ?: "build")
+        requireSeed.set(project.hasProperty("archive.requireSeed"))
         onlyIf("archive.skipSeed is not set") { !project.hasProperty("archive.skipSeed") }
         val seed = outputDirectory.file("index/seed.tsv")
         outputs.upToDateWhen { seed.get().asFile.let { it.exists() && System.currentTimeMillis() - it.lastModified() < seedMaxAgeMillis } }
