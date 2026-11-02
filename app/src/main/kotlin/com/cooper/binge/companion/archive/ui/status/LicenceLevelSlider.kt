@@ -63,6 +63,8 @@ fun LicenceLevelSlider(
             BingeStop(
                 label = stringResource(stopLabels[index]),
                 icon = choice.icon,
+                // The short name is what is drawn; a screen reader hears the whole level, as it did before the slider moved.
+                contentDescription = stringResource(choice.label),
                 emphasis = if (choice.value == LicenceLevel.ANY) BingeStopEmphasis.Warning else BingeStopEmphasis.Normal,
             )
         }
