@@ -50,14 +50,18 @@ class IndexRepository(
     }
 
     /**
-     * [lookup], except that it never waits for the seed: until the seed is in, it starts loading it in the background and
-     * answers null, so a first `Resolve` on a cold install goes straight to the network routes (which place a film the
-     * index does not know) instead of spending the host's deadline on a load.
+     * [lookup], except that it never waits for the seed: when the index has nothing in it yet, it starts loading the seed
+     * in the background and answers null, so a first `Resolve` on a cold install goes straight to the network routes
+     * (which place a film the index does not know) instead of spending the host's deadline on a load. An index the
+     * device already holds is read at once: only the seed load is skipped, never the lookup (#98).
      */
     suspend fun lookupWithoutWaiting(media: MediaId): IndexHit? {
         if (!seeded) {
-            background.launch { attempt { ensureSeeded() } }
-            return null
+            if (dao.refreshCount() == 0) {
+                background.launch { attempt { ensureSeeded() } }
+                return null
+            }
+            seeded = true
         }
         return lookup(media)
     }

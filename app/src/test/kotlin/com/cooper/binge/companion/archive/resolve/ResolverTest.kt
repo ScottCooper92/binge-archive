@@ -146,6 +146,15 @@ class ResolverTest {
             assertTrue(misses.toString(), misses.any { it.reason == CoverageMiss.Reason.NOT_IN_INDEX })
         }
 
+    @Test
+    fun `without waiting for the seed, an index the device already holds still classes a known non-film`() =
+        runBlocking {
+            IndexRepository(database.indexDao(), seed = { seed }).ensureSeeded()
+            val coldProcess = resolverWith(waitForSeed = false)
+
+            assertEquals(ResolveOutcome.NotAFilm, coldProcess.resolve(movie(146742), episode = null))
+        }
+
     private fun resolverWith(
         http: ResolverHttp = archive.http(),
         recordResolved: suspend (Int, String, String) -> Unit = { _, _, _ -> },

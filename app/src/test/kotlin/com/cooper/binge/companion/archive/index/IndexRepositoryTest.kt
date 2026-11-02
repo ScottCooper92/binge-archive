@@ -93,6 +93,39 @@ class IndexRepositoryTest {
     }
 
     @Test
+    fun `a lookup that does not wait answers from an index the device already holds, on a process that has not seeded`() =
+        runTest {
+            repository().ensureSeeded()
+            val freshProcess =
+                IndexRepository(dao, seed = { error("the seed must not be read: the index is already there") }, clock = { now })
+
+            assertEquals(
+                listOf("Night.Of.The.Living.Dead_1080p"),
+                freshProcess.lookupWithoutWaiting(movie(10331))?.wikidataArchiveIds,
+            )
+            assertFalse(checkNotNull(freshProcess.lookupWithoutWaiting(movie(146742))).isFilm)
+        }
+
+    @Test
+    fun `a populated index is still answered from when the seed would not load`() =
+        runTest {
+            repository().ensureSeeded()
+            val freshProcess = IndexRepository(dao, seed = { error("seed unreadable") }, clock = { now })
+
+            assertNotNull(freshProcess.lookupWithoutWaiting(movie(10331)))
+            assertNotNull(freshProcess.lookupWithoutWaiting(movie(10331)))
+        }
+
+    @Test
+    fun `a lookup that does not wait still answers null, and loads the seed, when the index is empty`() {
+        val loaded = java.util.concurrent.CountDownLatch(1)
+        val index = IndexRepository(dao, seed = { sampleSnapshot.also { loaded.countDown() } }, clock = { now })
+
+        assertNull(runBlocking { index.lookupWithoutWaiting(movie(10331)) })
+        assertTrue(loaded.await(5, java.util.concurrent.TimeUnit.SECONDS))
+    }
+
+    @Test
     fun `an id the index does not know is null`() =
         runTest {
             assertNull(repository().lookup(movie(1)))
