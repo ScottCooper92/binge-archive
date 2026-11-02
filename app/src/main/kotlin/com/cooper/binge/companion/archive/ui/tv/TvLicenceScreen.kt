@@ -2,8 +2,6 @@ package com.cooper.binge.companion.archive.ui.tv
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Gavel
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -12,15 +10,16 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.tv.component.TvOptionRow
+import com.binge.designsystem.tv.component.TvSectionTitle
 import com.binge.designsystem.tv.template.TvTwoPaneCopy
 import com.binge.designsystem.tv.template.TvTwoPanePage
 import com.binge.designsystem.tv.template.TvTwoPaneSplit
 import com.binge.designsystem.tv.template.TvTwoPaneStyle
 import com.cooper.binge.companion.archive.R
-import com.cooper.binge.companion.archive.ui.status.allowedLicences
+import com.cooper.binge.companion.archive.ui.status.licenceGroups
 import com.binge.designsystem.R as DesR
 
-/** The licence allowlist on the television, the same words as the phone's page. Back returns to the status screen. */
+/** Every licence by the setting that first offers it, the phone's page on the television. Back returns to the status screen. */
 @Composable
 fun TvLicenceScreen(modifier: Modifier = Modifier) {
     val entry = remember { FocusRequester() }
@@ -32,22 +31,24 @@ fun TvLicenceScreen(modifier: Modifier = Modifier) {
         modifier = modifier,
         copy = {
             TvTwoPaneCopy(
-                headline = stringResource(R.string.licences_allowed),
-                body = stringResource(R.string.licences_intro),
-                note = stringResource(R.string.licences_not_allowed),
+                headline = stringResource(R.string.settings_licences),
+                body = stringResource(R.string.licences_intro_all),
             )
         },
         action = {
             Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s))) {
-                allowedLicences().forEachIndexed { index, (name, detail) ->
-                    TvOptionRow(
-                        label = name,
-                        selected = false,
-                        onClick = {},
-                        icon = Icons.Outlined.Gavel,
-                        supportingText = detail,
-                        modifier = if (index == 0) Modifier.focusRequester(entry) else Modifier,
-                    )
+                licenceGroups().forEachIndexed { groupIndex, (title, types) ->
+                    TvSectionTitle(stringResource(title))
+                    types.forEachIndexed { index, type ->
+                        TvOptionRow(
+                            label = stringResource(type.name),
+                            selected = false,
+                            onClick = {},
+                            icon = type.icon,
+                            supportingText = stringResource(type.detail),
+                            modifier = if (groupIndex == 0 && index == 0) Modifier.focusRequester(entry) else Modifier,
+                        )
+                    }
                 }
             }
         },

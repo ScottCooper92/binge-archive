@@ -13,8 +13,6 @@
     <string name="status_about_title">Qué es esto</string>
     <string name="status_about_headline">Películas gratis para Binge</string>
     <string name="status_about_body">Esta app busca copias de películas en Internet Archive para que Binge las reproduzca. De forma predeterminada solo ofrece obras de dominio público, con CC0 o con CC BY.</string>
-    <string name="status_licences_row">Qué licencias</string>
-    <string name="status_licences_detail">Qué se puede ofrecer y por qué</string>
     <string name="status_index_title">Índice</string>
     <string name="status_films_linked">Películas enlazadas</string>
     <string name="status_last_refreshed">Última actualización</string>
@@ -75,11 +73,8 @@
     <string name="licences_unknown">Licencia no reconocida</string>
     <string name="licences_unknown_detail">Un texto de licencia que esta aplicación no sabe leer, así que no puede saber qué permite</string>
     <string name="licences_title">Qué licencias</string>
-    <string name="licences_intro">De forma predeterminada, solo se ofrece una copia si Internet Archive la publica con una de estas licencias. Fuentes, en la pantalla principal, permite restringirlo o ampliarlo.</string>
-    <string name="licences_allowed">Permitidas</string>
     <string name="licences_pdm_detail">Marca de dominio público: sin derechos de autor conocidos en ningún país</string>
     <string name="licences_pd_us_detail">Dominio público de Creative Commons: sin derechos de autor en Estados Unidos</string>
     <string name="licences_cc0_detail">El titular renunció a todos sus derechos</string>
     <string name="licences_cc_by_detail">Se puede compartir, citando al autor</string>
-    <string name="licences_not_allowed">No se ofrecen de forma predeterminada: licencias de compartir igual, no comerciales o sin obras derivadas, ni obras sin licencia.</string>
 </resources>

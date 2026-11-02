@@ -91,8 +91,8 @@ private fun ColumnScope.TvStatusRows(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s))) {
         TvRow(
-            label = stringResource(R.string.status_licences_row),
-            supporting = stringResource(R.string.status_licences_detail),
+            label = stringResource(R.string.licences_more),
+            supporting = null,
             icon = Icons.Outlined.Gavel,
             onClick = actions.onOpenLicences,
             modifier = Modifier.focusRequester(entry),

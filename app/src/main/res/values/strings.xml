@@ -23,8 +23,6 @@
     <string name="status_about_title">What this is</string>
     <string name="status_about_headline">Free films for Binge</string>
     <string name="status_about_body">This app finds copies of films on the Internet Archive for Binge to play. By default it only offers items in the public domain, under CC0 or under CC BY.</string>
-    <string name="status_licences_row">Which licences</string>
-    <string name="status_licences_detail">What may be offered, and why</string>
     <string name="status_index_title">Index</string>
     <string name="status_films_linked">Films linked</string>
     <string name="status_last_refreshed">Last refreshed</string>
@@ -77,8 +75,6 @@
 
     <!-- The licence explainer. -->
     <string name="licences_title">Which licences</string>
-    <string name="licences_intro">By default, a copy is offered only if the Internet Archive lists it under one of these. Sources, on the main screen, can narrow or widen this.</string>
-    <string name="licences_allowed">Allowed</string>
     <string name="licences_pdm_detail">Public Domain Mark: no known copyright anywhere</string>
     <string name="licences_pd_us_detail">Creative Commons public domain: no copyright in the United States</string>
     <string name="licences_cc0_detail">The rights holder gave up every right</string>
@@ -106,5 +102,4 @@
     <string name="licences_restricted_detail">The rights holder has kept every right, including sharing</string>
     <string name="licences_unknown">Unrecognised licence</string>
     <string name="licences_unknown_detail">Licence text this app can\'t read, so it can\'t tell what it allows</string>
-    <string name="licences_not_allowed">Not offered by default: share-alike, non-commercial and no-derivatives licences, and items with no licence.</string>
 </resources>
