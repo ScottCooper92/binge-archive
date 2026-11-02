@@ -277,8 +277,9 @@ with the Sources settings, its licence page, and the hand-off Binge's "manage" r
   in my language" (default off). Under the slider, the chosen level's name and what it means sit in a
   cell sized to the longest level's text, so nothing moves as it changes. "Any, whatever the licence"
   asks first, on the design system's confirm, focus on Cancel on the TV; `StatusViewModel` saves it
-  only on confirm, and until then the slider shows the saved level. On the TV the slider is the
-  design system's `TvNumberStepper`. These four are the only
+  only on confirm. Until then the phone's slider holds on "Any", in the error accent, and returns to
+  the saved level on a cancel, while the TV's stepper stays on the saved level. On the TV the slider is
+  the design system's `TvNumberStepper`. These four are the only
   settings that change what is resolved; adding another is a decision for the maintainer in an
   issue.
 - **No browse and no search.**
