@@ -20,8 +20,10 @@
         android:required="false" />
 
     <!--
-        No backup: the app keeps an index it can rebuild and no user data, so there is nothing to
-        restore and nothing to leak. The data extraction rules say the same for device transfer.
+        No backup: the app keeps a public index it can rebuild, plus what the user made on this device
+        (the Sources settings, the last ten resolved titles and watch progress), and that stays on this
+        device. The data extraction rules say the same for device transfer; docs/listing/privacy.md has
+        the full list.
 
         The network security config trusts the system's CAs only and refuses cleartext. Both hosts the
         app talks to serve HTTPS.
