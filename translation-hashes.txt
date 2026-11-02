@@ -4,7 +4,6 @@
 app:licence_none_stated  9d434927ef03
 app:licence_public_domain  8c3ff64bb211
 app:licence_public_domain_us  a32c095cfb93
-app:licences_allowed  1bb201d18835
 app:licences_cc0_detail  436eb814cead
 app:licences_cc_by_detail  455d9e3183df
 app:licences_cc_by_nc_detail  a199e32fe07d
@@ -16,11 +15,9 @@ app:licences_group_cc_by  a7b5a9439674
 app:licences_group_other_cc  e1c126f62f4a
 app:licences_group_public_domain  19144e2bbeb8
 app:licences_group_unclear  29c4e0485317
-app:licences_intro  5467ce052589
 app:licences_intro_all  e07253ce6fbc
 app:licences_more  d8027361874f
 app:licences_none_stated_detail  7d1dad9d2ea2
-app:licences_not_allowed  a8e4d183e98f
 app:licences_pd_us_detail  b554bdac8d88
 app:licences_pdm_detail  fa0dc14a53ba
 app:licences_restricted  be4a37a6760d
@@ -58,8 +55,6 @@ app:status_about_title  45d2766ee518
 app:status_films_linked  a27100c7547c
 app:status_index_title  39c3be1198a2
 app:status_last_refreshed  58095fd7c9e1
-app:status_licences_detail  1a2be978163a
-app:status_licences_row  98f23bffb823
 app:status_loading  de96814f63b9
 app:status_never_refreshed  a9549d7d0636
 app:status_progress_clear  185e027c8db2
