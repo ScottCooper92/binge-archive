@@ -1,6 +1,7 @@
 package com.cooper.binge.companion.archive.index
 
 import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -91,6 +92,53 @@ class IndexRepositoryTest {
             Thread.setDefaultUncaughtExceptionHandler(previous)
         }
     }
+
+    // runBlocking, not runTest: the count runs on Room's own thread, and virtual time would fire the lookup's timeout before it returned.
+    @Test
+    fun `a lookup that does not wait answers from an index the device already holds, on a process that has not seeded`() =
+        runBlocking {
+            repository().ensureSeeded()
+            val freshProcess =
+                IndexRepository(dao, seed = { error("the seed must not be read: the index is already there") }, clock = { now })
+
+            assertEquals(
+                listOf("Night.Of.The.Living.Dead_1080p"),
+                freshProcess.lookupWithoutWaiting(movie(10331))?.wikidataArchiveIds,
+            )
+            assertFalse(checkNotNull(freshProcess.lookupWithoutWaiting(movie(146742))).isFilm)
+        }
+
+    @Test
+    fun `a populated index is still answered from when the seed would not load`() =
+        runBlocking {
+            repository().ensureSeeded()
+            val freshProcess = IndexRepository(dao, seed = { error("seed unreadable") }, clock = { now })
+
+            assertNotNull(freshProcess.lookupWithoutWaiting(movie(10331)))
+            assertNotNull(freshProcess.lookupWithoutWaiting(movie(10331)))
+        }
+
+    @Test
+    fun `a lookup that does not wait still answers null, and loads the seed, when the index is empty`() {
+        val loaded = java.util.concurrent.CountDownLatch(1)
+        val index = IndexRepository(dao, seed = { sampleSnapshot.also { loaded.countDown() } }, clock = { now })
+
+        assertNull(runBlocking { index.lookupWithoutWaiting(movie(10331)) })
+        assertTrue(loaded.await(5, java.util.concurrent.TimeUnit.SECONDS))
+    }
+
+    @Test
+    fun `a lookup that does not wait does not hang on a database that is slow to open, and answers null`() =
+        runBlocking {
+            repository().ensureSeeded()
+            val slowToOpen =
+                object : IndexDao by dao {
+                    override suspend fun refreshCount(): Int = awaitCancellation()
+                }
+            val index = IndexRepository(slowToOpen, seed = { null }, clock = { now })
+
+            assertNull(index.lookupWithoutWaiting(movie(10331)))
+        }
 
     @Test
     fun `an id the index does not know is null`() =

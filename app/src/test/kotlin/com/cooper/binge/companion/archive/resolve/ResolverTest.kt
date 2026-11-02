@@ -146,6 +146,38 @@ class ResolverTest {
             assertTrue(misses.toString(), misses.any { it.reason == CoverageMiss.Reason.NOT_IN_INDEX })
         }
 
+    @Test
+    fun `without waiting for the seed, an index the device already holds still classes a known non-film`() =
+        runBlocking {
+            IndexRepository(database.indexDao(), seed = { seed }).ensureSeeded()
+            val coldProcess = resolverWith(waitForSeed = false)
+
+            assertEquals(ResolveOutcome.NotAFilm, coldProcess.resolve(movie(146742), episode = null))
+        }
+
+    @Test
+    fun `without waiting for the seed, a cold process with a populated index resolves from it when Wikidata fails`() =
+        runBlocking {
+            IndexRepository(database.indexDao(), seed = { seed }).ensureSeeded()
+            archive.sparqlStatus = 503
+            archive.search = { resolveFixture("search-downloads-10331.json") }
+
+            val sources = sources(resolverWith(waitForSeed = false).resolve(movie(10331), episode = null)).toList()
+
+            assertEquals(3, sources.size)
+            assertEquals(listOf(CoverageMiss(10331, Route.WIKIDATA, CoverageMiss.Reason.WIKIDATA_FAILED)), misses)
+        }
+
+    @Test
+    fun `without waiting for the seed, a film the populated index does not know reaches the routes and is not found`() =
+        runBlocking {
+            IndexRepository(database.indexDao(), seed = { seed }).ensureSeeded()
+            archive.sparql = { "?ia\t?imdb\t?title\t?date\t?amount\t?unit\n" }
+
+            assertEquals(ResolveOutcome.NotFound, resolverWith(waitForSeed = false).resolve(movie(1), episode = null))
+            assertEquals(listOf(CoverageMiss(1, null, CoverageMiss.Reason.NOT_IN_CATALOGUE)), misses)
+        }
+
     private fun resolverWith(
         http: ResolverHttp = archive.http(),
         recordResolved: suspend (Int, String, String) -> Unit = { _, _, _ -> },
