@@ -283,9 +283,9 @@ with the Sources settings, its licence page, and the hand-off Binge's "manage" r
   settings that change what is resolved; adding another is a decision for the maintainer in an
   issue.
 - **No browse and no search.**
-- Everything is the design system's: `ItemGroup` rows on the phone, `TvTwoPanePage` and
-  `TvOptionRow` on the television. The one exception is the phone's licence slider, Material 3's
-  `Slider` (`ui/status/LicenceLevelSlider.kt`), until the design system has a stepped slider. The brand colour is chosen once, in `theme/`.
+- Everything is the design system's: `ItemGroup` rows on the phone, `BingeStopSlider` for the phone's
+  licence slider (`ui/status/LicenceLevelSlider.kt` is a thin wrapper), `TvTwoPanePage` and
+  `TvOptionRow` on the television. The brand colour is chosen once, in `theme/`.
 
 ## Talking to Wikidata and the Archive
 
