@@ -12,7 +12,8 @@ import com.cooper.binge.companion.archive.R
 
 /**
  * The home-screen banner as the launcher draws it: at its own 320x180 and at the smallest size a launcher
- * row shrinks it to, where the name has to stay legible. It is launcher art, so no theme wraps it.
+ * row shrinks it to, where the name has to stay legible. It is launcher art with no theme, strings or window, so these
+ * frames use a plain `@Preview` at the drawable's own size and not the device-and-locale multipreviews screens use.
  */
 class TvBannerScreenshotTest {
     @PreviewTest
