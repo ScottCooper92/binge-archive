@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        The brand colour the host may tint what it draws for this companion with (CompanionManifest.META_COLOR and
+        META_COLOR_DARK). Emerald, as the app's own theme is. The plain key is the one a light theme reads, so it is the
+        shade that clears 3:1 against white; the dark key is the lighter shade that clears it against a dark surface.
+    -->
+    <color name="companion_brand">#059669</color>
+    <color name="companion_brand_dark">#34D399</color>
+</resources>
