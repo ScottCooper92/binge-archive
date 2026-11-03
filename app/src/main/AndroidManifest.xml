@@ -103,6 +103,12 @@
                 android:name="com.binge.companion.icon"
                 android:resource="@drawable/ic_companion" />
             <meta-data
+                android:name="com.binge.companion.color"
+                android:resource="@color/companion_brand" />
+            <meta-data
+                android:name="com.binge.companion.color.dark"
+                android:resource="@color/companion_brand_dark" />
+            <meta-data
                 android:name="com.binge.companion.majors"
                 android:value="1" />
         </service>
