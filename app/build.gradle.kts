@@ -166,6 +166,7 @@ tvMaterialSeparation {
 dependencies {
     implementation(project(":index"))
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.core.splashscreen)
     implementation(libs.binge.companion.sdk)
     implementation(libs.binge.companion.contracts)
     implementation(libs.binge.designsystem)
@@ -207,6 +208,7 @@ dependencies {
     // @PreviewTest resolves to.
     screenshotTestImplementation(platform(libs.compose.bom))
     screenshotTestImplementation(libs.compose.ui.tooling)
+    screenshotTestImplementation(libs.compose.animation.graphics)
     screenshotTestImplementation(libs.screenshot.validation.api)
 }
 
