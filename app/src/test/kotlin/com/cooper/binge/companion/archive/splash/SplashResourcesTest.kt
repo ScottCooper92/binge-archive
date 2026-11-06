@@ -75,6 +75,22 @@ class SplashResourcesTest {
     }
 
     @Test
+    fun `the phone's splash ground is the window background, in light and in dark`() {
+        assertEquals("@color/window_background", splashItem("values", "windowSplashScreenBackground"))
+        val archive = { qualifier: String ->
+            parse(File(res, "$qualifier/styles.xml")).all("style").single { it.getAttribute("name") == "Theme.Archive" }
+        }
+        val windowBackground = archive("values").all("item").single { it.getAttribute("name") == "android:windowBackground" }
+        assertEquals("@color/window_background", windowBackground.textContent.trim())
+        listOf("values", "values-night").forEach { qualifier ->
+            assertEquals(
+                1,
+                parse(File(res, "$qualifier/colors.xml")).all("color").count { it.getAttribute("name") == "window_background" },
+            )
+        }
+    }
+
+    @Test
     fun `the launcher Activity wears the launch theme`() {
         val manifest = parse(File("src/main/AndroidManifest.xml"))
         val main = manifest.all("activity").single { it.attr("name") == ".MainActivity" }

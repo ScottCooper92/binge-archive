@@ -20,7 +20,8 @@ import com.binge.designsystem.preview.PHONE_PORTRAIT_SPEC
 import com.binge.designsystem.tv.preview.TV_PREVIEW_SPEC
 import com.cooper.binge.companion.archive.R
 
-private val PhoneGround = Color(0xFF0F1F1A)
+private val PhoneDarkGround = Color(0xFF0E0E0F)
+private val PhoneLightGround = Color(0xFFFFFBFF)
 private val TvGround = Color.Black
 private val SplashIconSize = 288.dp
 
@@ -34,12 +35,22 @@ class SplashScreenshotTest {
     @PreviewTest
     @Preview(name = "phone-start", device = PHONE_PORTRAIT_SPEC)
     @Composable
-    fun PhoneStart() = SplashFrame(atEnd = false, ground = PhoneGround)
+    fun PhoneStart() = SplashFrame(atEnd = false, ground = PhoneDarkGround)
 
     @PreviewTest
     @Preview(name = "phone-end", device = PHONE_PORTRAIT_SPEC)
     @Composable
-    fun PhoneEnd() = SplashFrame(atEnd = true, ground = PhoneGround)
+    fun PhoneEnd() = SplashFrame(atEnd = true, ground = PhoneDarkGround)
+
+    @PreviewTest
+    @Preview(name = "phone-light-start", device = PHONE_PORTRAIT_SPEC)
+    @Composable
+    fun PhoneLightStart() = SplashFrame(atEnd = false, ground = PhoneLightGround)
+
+    @PreviewTest
+    @Preview(name = "phone-light-end", device = PHONE_PORTRAIT_SPEC)
+    @Composable
+    fun PhoneLightEnd() = SplashFrame(atEnd = true, ground = PhoneLightGround)
 
     @PreviewTest
     @Preview(name = "tv-start", device = TV_PREVIEW_SPEC)
