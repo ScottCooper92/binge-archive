@@ -2,8 +2,23 @@
 <resources>
     <!--
         The window before Compose paints: light on a phone in light mode, dark in dark mode
-        (values-night), and black on a television (values-television), so the first frame agrees with
+        (window_background in values-night), and black on a television (values-television), so the first frame agrees with
         the theme each surface wears.
     -->
-    <style name="Theme.Archive" parent="@android:style/Theme.Material.Light.NoActionBar" />
+    <style name="Theme.Archive" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+    </style>
+
+    <!--
+        The launch theme: the platform splash, whose icon draws the launcher ring's arc sweeping to its resting
+        length, so it ends on the launcher icon. Before Android 12 the library draws the icon unanimated, which
+        is that resting arc. The background is the window's own (window_background, light or dark), so the hand-over to the app does not change ground. 800 ms is under the 1000 ms the platform allows an animated icon. A television
+        overrides the background to match its window (values-television).
+    -->
+    <style name="Theme.Archive.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/window_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/avd_launcher_ring</item>
+        <item name="windowSplashScreenAnimationDuration">800</item>
+        <item name="postSplashScreenTheme">@style/Theme.Archive</item>
+    </style>
 </resources>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_launcher_foreground">
+
+    <!--
+        The launcher ring's arc sweeping from nothing to its resting length, 0.84, which is ic_launcher_foreground's own
+        trimPathEnd, so the last frame is the launcher icon. An unstarted drawable shows the base vector, which is that
+        resting arc: before Android 12 the splash is the static icon.
+    -->
+    <target android:name="progressArc">
+        <aapt:attr name="android:animation" xmlns:aapt="http://schemas.android.com/aapt">
+            <objectAnimator
+                android:duration="800"
+                android:interpolator="@android:interpolator/decelerate_cubic"
+                android:propertyName="trimPathEnd"
+                android:valueFrom="0"
+                android:valueTo="0.84"
+                android:valueType="floatType" />
+        </aapt:attr>
+    </target>
+</animated-vector>

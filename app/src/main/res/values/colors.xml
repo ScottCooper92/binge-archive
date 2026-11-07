@@ -7,4 +7,7 @@
     -->
     <color name="companion_brand">#059669</color>
     <color name="companion_brand_dark">#34D399</color>
+
+    <!-- The design system's light background. The window and the launch splash share it, so each mode hands over to a matching ground (values-night has the dark one). -->
+    <color name="window_background">#FFFFFBFF</color>
 </resources>
