@@ -7,7 +7,7 @@
 # Kotlin the included binge-companions build compiles the SDK with, or every SDK class fails as
 # "compiled with an incompatible version of Kotlin".
 [versions]
-agp = "9.4.1"
+agp = "9.5.1"
 kotlin = "2.4.21"
 coreKtx = "1.19.1"
 coreSplashscreen = "1.2.0"
