@@ -48,7 +48,7 @@ README.
 > Film data from Wikidata (CC0). Films from the Internet Archive. Neither is affiliated with this
 > app.
 >
-> Open source, under the Apache 2.0 licence: github.com/ScottCooper92/binge-archive.
+> Free software, under the GNU GPL version 3 or later: github.com/ScottCooper92/binge-archive.
 
 (About 1,650 characters)
 

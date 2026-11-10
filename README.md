@@ -58,4 +58,30 @@ the privacy policy are in [`docs/listing/`](docs/listing/).
 
 ## Licence
 
-Apache 2.0. See [LICENSE](LICENSE).
+Internet Archive for Binge is free software. You can redistribute it and modify it under the terms of
+the GNU General Public License, version 3 or (at your option) any later version
+(GPL-3.0-or-later). See [LICENSE](LICENSE).
+
+    Copyright (C) 2026 Scott Cooper and the identities that author commits here
+
+    This program is free software: you can redistribute it and/or modify it under the terms of
+    the GNU General Public License as published by the Free Software Foundation, either version 3
+    of the License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+    without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    See the GNU General Public License for more details.
+
+The copyright holders are the owner, Scott Cooper, and the Claude and bot identities that authored
+commits in this repository (`Claude`, `binge-pr-author[bot]` and `binge-pr-reviewer[bot]`), at the
+owner's direction.
+
+- **An additional permission** under section 7 of the GPL, for Google's Play services and Firebase
+  libraries, is in [LICENSE-EXCEPTION.md](LICENSE-EXCEPTION.md). The app links neither today.
+- **The name and artwork are not licensed by the GPL.** See [TRADEMARKS.md](TRADEMARKS.md) and
+  [ASSETS.md](ASSETS.md). A fork has to use another name and other artwork.
+- **The contracts and SDK stay Apache 2.0.** They are in
+  [binge-companions](https://github.com/ScottCooper92/binge-companions), so anyone can write a
+  companion without taking on the GPL. The design system's licence is decided separately.
+- **Dependencies** are all under licences the GPL is compatible with: Apache 2.0, and BSD 3-Clause for
+  protobuf. JUnit (EPL 1.0) and Robolectric (MIT) are used for tests only and are not shipped.

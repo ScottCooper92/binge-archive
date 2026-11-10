@@ -46,4 +46,4 @@ La traducción de `listing.md`. El nombre de la app es el mismo en los dos idiom
 > Datos de películas de Wikidata (CC0). Películas de Internet Archive. Ninguno de los dos está
 > vinculado a esta app.
 >
-> Código abierto, con licencia Apache 2.0: github.com/ScottCooper92/binge-archive.
+> Software libre, con licencia GNU GPL versión 3 o posterior: github.com/ScottCooper92/binge-archive.
