@@ -24,6 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.binge.companion.kit.isTelevision
 import com.cooper.binge.companion.archive.theme.ArchiveTheme
 import com.cooper.binge.companion.archive.theme.ArchiveTvTheme
 import com.cooper.binge.companion.archive.ui.status.PhoneStatusRoot
@@ -31,7 +32,6 @@ import com.cooper.binge.companion.archive.ui.status.StatusActions
 import com.cooper.binge.companion.archive.ui.status.StatusViewModel
 import com.cooper.binge.companion.archive.ui.tv.TvLicenceScreen
 import com.cooper.binge.companion.archive.ui.tv.TvStatusScreen
-import com.cooper.binge.companion.archive.ui.tv.isTelevision
 
 /**
  * The app's own UI: the status screen, and the licence page it opens. A phone wears the design

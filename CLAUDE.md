@@ -22,7 +22,7 @@ Status is pre-alpha: the index, the resolver, the exported Service, the app's ow
 release tooling are in. Nothing is on Play yet, and the Service has yet to be checked against Binge
 on a device.
 
-The contracts, the SDK and the design system are consumed as source. `binge-companions/` and
+The contracts, the SDK, the kit (`binge-companion-kit`, shared helpers such as `Configuration.isTelevision()`) and the design system are consumed as source. `binge-companions/` and
 `design-system/` are git submodules, included as composite builds in `settings.gradle.kts`.
 `binge-ci/` is a third, for the shared Gradle gates. `.gitmodules` is an agent-governed path, so
 an author bot's commit can revert a change to it: bump a submodule in a commit of its own, and check

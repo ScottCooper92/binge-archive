@@ -47,6 +47,7 @@ junit = { module = "junit:junit", version.ref = "junit" }
 # Version-less on purpose: these resolve to projects of the included binge-companions build.
 binge-companion-contracts = { module = "io.github.scottcooper92:binge-companion-contracts" }
 binge-companion-sdk = { module = "io.github.scottcooper92:binge-companion-sdk" }
+binge-companion-kit = { module = "io.github.scottcooper92:binge-companion-kit" }
 # Version-less for the same reason: these resolve to the included binge-design-system build.
 binge-designsystem = { module = "com.binge:designsystem" }
 binge-designsystem-tv = { module = "com.binge:designsystem-tv" }
