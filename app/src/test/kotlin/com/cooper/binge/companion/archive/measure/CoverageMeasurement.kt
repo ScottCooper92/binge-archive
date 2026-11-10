@@ -55,7 +55,19 @@ class CoverageMeasurement {
             .newBuilder()
             .addInterceptor { chain ->
                 requests.incrementAndGet()
-                chain.proceed(chain.request()).also { if (!it.isSuccessful) synchronized(errors) { errors += it.code } }
+                var response = chain.proceed(chain.request())
+                var tries = 0
+                // Respect a 429's Retry-After (capped at 120 s), up to three times: the run must not hammer the hosts.
+                while (response.code == 429 && tries < 3) {
+                    synchronized(errors) { errors += 429 }
+                    val wait = (response.header("Retry-After")?.toLongOrNull() ?: 30L).coerceIn(1L, 120L)
+                    response.close()
+                    Thread.sleep(wait * 1000)
+                    tries++
+                    requests.incrementAndGet()
+                    response = chain.proceed(chain.request())
+                }
+                response.also { if (!it.isSuccessful) synchronized(errors) { errors += it.code } }
             }.eventListener(
                 object : EventListener() {
                     override fun responseBodyEnd(
