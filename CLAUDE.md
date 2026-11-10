@@ -109,6 +109,11 @@ public sources, refreshed weekly:
 - **Archive IMDb externals**: Archive `movies` items tagged `urn:imdb:…`, with the TMDB id Wikidata
   gives for that IMDb id, and the same non-film flag.
 
+It also holds each Wikidata-linked film's certification (age rating) in eight regions (US, GB, DE, FR, AU, NL, ES, BR),
+for `ListServedTitles`. It is one query per region (`WikidataQueries.certifications`), since all eight in one UNION ran past
+two minutes. Each value item is mapped to the string TMDB uses for that region (`Certifications`). A value with no TMDB
+string is dropped, so the film reads as unrated there. Japan has none, since TMDB has no Japanese list.
+
 **Not a film** is a known non-film kind, never "not called a film". A TMDB movie is not a film
 only when it has classes (P31) and every one is a subclass of television series, television series
 episode, miniseries, literary work or film series, and not also of film (Q11424). Anything else may
@@ -120,7 +125,7 @@ The code is split in two:
 - `:index` is plain JVM code: the queries, the parsers, the one HTTP client (`ArchiveHttp`), the
   fetcher and the seed format. It has its own fast JUnit tests against fixtures under
   `index/src/test/resources/fixtures`, trimmed from real responses.
-- `:app`'s `index` package holds the Room tables (`wikidata_link`, `archive_imdb`, `refresh_log`),
+- `:app`'s `index` package holds the Room tables (`wikidata_link`, `archive_imdb`, `film_certification`, `refresh_log`),
   `IndexRepository` and the weekly `IndexRefreshWorker`. `IndexRepository.lookup(mediaId)` is what
   the resolver and Probe read. Probe answers from it. The resolver reads `isFilm`, and reads the hit's
   Archive ids only when its live Wikidata query fails (see The resolver).
@@ -216,7 +221,7 @@ action with the SDK's manifest meta-data (`com.binge.companion.name`, `.icon`, `
 `ArchiveStreamService` serves STREAM v1:
 
 - **`Handshake`** always succeeds: there is no sign-in. It declares `CAPABILITY_PROBE`,
-  `CAPABILITY_SUBTITLES` and `CAPABILITY_PLAYBACK_PROGRESS`, names
+  `CAPABILITY_SUBTITLES`, `CAPABILITY_PLAYBACK_PROGRESS` and `CAPABILITY_LIST_SERVED_TITLES`, names
   "Internet Archive" as the provider, and ignores `HostInfo`.
 - **`Resolve`** is the resolver's `ResolveOutcome`, mapped in one place, `ArchiveErrors`.
   `NOT_FOUND` carries a `LocalizedMessage`, "Not on the Internet Archive", in the device's locale.
@@ -226,6 +231,12 @@ action with the SDK's manifest meta-data (`com.binge.companion.name`, `.icon`, `
   completed episode has none, and a stream with no sources carries none.
 - **`Probe`** reads the index and never the network, and ignores the Sources settings. It refuses
   what `Resolve` refuses, and a valid series is `NOT_FOUND`.
+- **`ListServedTitles`** pages the TMDB ids of the Wikidata-linked films, by id, from the index and never the network, and
+  ignores the Sources settings. Binge sends its region and the certifications its limit admits, as TMDB writes them for that
+  region, and whether unrated films are included. A film is listed when one of its certifications for the region is in the
+  set, or when it has none and unrated films are included; an empty set admits none. A series or a known non-film is never
+  listed, and neither is a film only the Archive's IMDb tags place. Pages hold at most 200 (100 when the host names none), and a token is
+  valid only with the request it was issued for (`service/ServedTitlesQuery.kt`).
 - **Source reporting is gone.** The handshake no longer declares `CAPABILITY_REPORT_SOURCE`, so the
   host never calls `ReportSource`. A report moved no source for the user, so it is not taken; the
   `source_report` table was dropped in `device-records.db` version 3.

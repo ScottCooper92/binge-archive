@@ -49,7 +49,7 @@ app:settings_title  caf85b0888d7
 app:settings_title_matches  aceed18d4711
 app:settings_title_matches_detail  a0a9e9d2fd61
 app:source_label_with_year  f7da0939cc40
-app:status_about_body  f98f22fe52c6
+app:status_about_body  27da7f46dfb4
 app:status_about_headline  9e972aafcf77
 app:status_about_title  45d2766ee518
 app:status_films_linked  a27100c7547c

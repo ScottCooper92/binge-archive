@@ -8,7 +8,8 @@ https://github.com/ScottCooper92/binge-archive.
 ## What the app stores on your device
 
 - **A film index.** Public data from Wikidata and the Internet Archive: which films have a copy on
-  the Archive. It is refreshed about once a week. It says nothing about you.
+  the Archive, and each film's age rating in a few countries where Wikidata has one. It is refreshed
+  about once a week. It says nothing about you.
 - **The last ten films it found for Binge**, so the app's screen can show them. You can clear the
   list on that screen.
 - **Where you got to in films Binge played from this app's copies**, so Binge can resume them and
@@ -30,7 +31,7 @@ Uninstalling the app removes it all.
 
 - **To Wikidata** (`query.wikidata.org`): the TMDB id of the film you opened in Binge, to look up
   its title, year, runtime and Archive links; and, about once a week, a query for the whole film
-  index.
+  index and the age ratings in it.
 - **To the Internet Archive** (`archive.org`): searches for that film and requests for the
   details of matching items; and, about once a week, a search for the index.
 
@@ -45,6 +46,13 @@ Your watch progress goes only to **Binge**, over the same on-device binding. It 
 anywhere else.
 
 The app has no server of its own.
+
+## What Binge tells the app
+
+When Binge shows a list of the free films this app can offer, it tells the app your **region** and
+your **rating limit**, so the app can leave out films above it. The app answers from its on-device
+index, from that one request. It does not store the region or the limit, and it does not send them
+anywhere.
 
 ## What the app does not do
 
