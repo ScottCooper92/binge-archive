@@ -38,6 +38,21 @@ internal object WikidataParsers {
             .mapNotNull { it["class"]?.takeIf(String::isNotBlank) }
             .toSet()
 
+    /**
+     * The certification rows, each value item mapped to TMDB's string for its region. A row whose
+     * region or value is not in [Certifications] is dropped, so that film reads as unrated there.
+     */
+    fun certifications(tsv: String): List<FilmCertification> =
+        SparqlTsv
+            .parse(tsv)
+            .mapNotNull { row ->
+                val tmdbId = row["tmdb"]?.toTmdbId() ?: return@mapNotNull null
+                val region = row["region"] ?: return@mapNotNull null
+                val certification =
+                    Certifications.tmdbString(region, row["value"].orEmpty().substringAfterLast('/')) ?: return@mapNotNull null
+                FilmCertification(tmdbId, region, certification)
+            }.distinct()
+
     fun imdbLinks(tsv: String): List<ImdbTmdbLink> =
         SparqlTsv.parse(tsv).mapNotNull { row ->
             val imdbId = row["imdb"]?.takeIf { it.isImdbId() } ?: return@mapNotNull null

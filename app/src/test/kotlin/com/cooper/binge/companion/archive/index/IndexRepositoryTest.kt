@@ -344,6 +344,65 @@ class IndexRepositoryTest {
             executor.shutdownNow()
         }
     }
+
+    private suspend fun served(
+        region: String,
+        allowed: Set<String>,
+        includeUnrated: Boolean = false,
+        after: Int = 0,
+        limit: Int = 100,
+    ) = repository(certifiedSnapshot).servedTitles(region, allowed, includeUnrated, after, limit)
+
+    @Test
+    fun `served titles are the films with an admitted certification for the region, in TMDB id order`() =
+        runTest {
+            assertEquals(listOf(653), served("US", setOf("PG")))
+            assertEquals(listOf(653, 10331), served("US", setOf("PG-13", "PG", "R")))
+            assertEquals(listOf(10331), served("DE", setOf("16")))
+        }
+
+    @Test
+    fun `an empty allowed set admits no certification, and a film with none is unrated`() =
+        runTest {
+            assertEquals(emptyList<Int>(), served("US", emptySet()))
+            assertEquals(listOf(34372), served("US", emptySet(), includeUnrated = true))
+            assertEquals(listOf(653, 10331, 34372), served("US", setOf("PG", "PG-13"), includeUnrated = true))
+            assertEquals(listOf(653, 34372), served("DE", emptySet(), includeUnrated = true))
+        }
+
+    @Test
+    fun `a certification in another region does not count, and a match is exact`() =
+        runTest {
+            assertEquals(emptyList<Int>(), served("GB", setOf("PG", "PG-13", "16")))
+            assertEquals(emptyList<Int>(), served("US", setOf("pg", "PG13")))
+        }
+
+    @Test
+    fun `a series and a known non-film are never served, rated or not`() =
+        runTest {
+            assertEquals(listOf(653, 10331, 34372), served("US", setOf("G", "PG", "PG-13"), includeUnrated = true))
+        }
+
+    @Test
+    fun `served titles page by TMDB id`() =
+        runTest {
+            val all = setOf("PG", "PG-13")
+            assertEquals(listOf(653, 10331), served("US", all, includeUnrated = true, limit = 2))
+            assertEquals(listOf(34372), served("US", all, includeUnrated = true, after = 10331, limit = 2))
+            assertEquals(emptyList<Int>(), served("US", all, includeUnrated = true, after = 34372))
+        }
+
+    @Test
+    fun `a refresh replaces the certifications along with the rest`() =
+        runTest {
+            val index = repository(certifiedSnapshot)
+            index.ensureSeeded()
+
+            index.replace(sampleSnapshot.copy(certifications = listOf(FilmCertification(653, "US", "R"))), RefreshSource.NETWORK)
+
+            assertEquals(emptyList<Int>(), index.servedTitles("US", setOf("PG"), false, 0, 10))
+            assertEquals(listOf(653), index.servedTitles("US", setOf("R"), false, 0, 10))
+        }
 }
 
 private const val SETTLE_MILLIS = 300L

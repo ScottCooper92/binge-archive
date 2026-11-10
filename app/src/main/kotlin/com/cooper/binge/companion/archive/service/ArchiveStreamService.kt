@@ -7,6 +7,8 @@ import com.binge.companion.contracts.stream.v1.HandshakeRequest
 import com.binge.companion.contracts.stream.v1.HandshakeResponse
 import com.binge.companion.contracts.stream.v1.ListContinueWatchingRequest
 import com.binge.companion.contracts.stream.v1.ListContinueWatchingResponse
+import com.binge.companion.contracts.stream.v1.ListServedTitlesRequest
+import com.binge.companion.contracts.stream.v1.ListServedTitlesResponse
 import com.binge.companion.contracts.stream.v1.ProbeRequest
 import com.binge.companion.contracts.stream.v1.ProbeResponse
 import com.binge.companion.contracts.stream.v1.ReportPlaybackRequest
@@ -42,11 +44,12 @@ import kotlinx.coroutines.withContext
 /**
  * STREAM v1, served from this app.
  *
- * - `Handshake` always succeeds: there is no sign-in. It declares Probe, subtitles and
- *   watch progress, names the Internet Archive as the provider, and ignores `HostInfo`.
+ * - `Handshake` always succeeds: there is no sign-in. It declares Probe, subtitles,
+ *   watch progress and the served-titles list, names the Internet Archive as the provider, and ignores `HostInfo`.
  * - `Resolve` is the resolver's answer, mapped by [ArchiveErrors]. Its first message carries the
  *   title's resume point, when the device holds one.
  * - `Probe` reads the index and nothing else: it never touches the network.
+ * - `ListServedTitles` reads the index and never the network, like Probe.
  * - `ReportSource` is no longer declared, so it is refused as `PERMISSION_DENIED` (the base class would
  *   answer `UNIMPLEMENTED`, which the contract reads as "not installed").
  * - `ReportPlayback`, `ListContinueWatching` and `ForgetProgress` keep the user's watch progress
@@ -151,6 +154,32 @@ class ArchiveStreamService(
                 .build()
         }
 
+    /**
+     * One page of the TMDB ids of the films this app can try to resolve: Wikidata-linked films only, filtered to the host's region
+     * and the certifications its limit admits. Reads the index and never the network, and ignores the Sources settings, as Probe
+     * does. The order is the TMDB id, so it is stable across the pages of a listing. One title more than the page is read, to know
+     * whether another page follows.
+     */
+    override suspend fun listServedTitles(request: ListServedTitlesRequest): ListServedTitlesResponse =
+        withContext(io) {
+            CAPABILITIES.requireDeclared(Capability.CAPABILITY_LIST_SERVED_TITLES)
+            val query = ServedTitlesQuery.of(request).getOrElse { throw errors.invalid(it.message.orEmpty()) }
+            val ids = index.servedTitles(query.region, query.allowed, query.includeUnrated, query.after, query.pageSize + 1)
+            val page = ids.take(query.pageSize)
+            ListServedTitlesResponse
+                .newBuilder()
+                .addAllTitles(
+                    page.map {
+                        MediaId
+                            .newBuilder()
+                            .setMediaType(MediaType.MEDIA_TYPE_MOVIE)
+                            .setTmdbId(it)
+                            .build()
+                    },
+                ).apply { if (ids.size > query.pageSize) setNextPageToken(ServedTitlesQuery.tokenAfter(request, page.last())) }
+                .build()
+        }
+
     /** Forgets a movie, one episode, or with no episode a whole series. OK when nothing is held. */
     override suspend fun forgetProgress(request: ForgetProgressRequest): ForgetProgressResponse =
         withContext(io) {
@@ -178,6 +207,7 @@ class ArchiveStreamService(
                 Capability.CAPABILITY_PROBE,
                 Capability.CAPABILITY_SUBTITLES,
                 Capability.CAPABILITY_PLAYBACK_PROGRESS,
+                Capability.CAPABILITY_LIST_SERVED_TITLES,
             )
     }
 }

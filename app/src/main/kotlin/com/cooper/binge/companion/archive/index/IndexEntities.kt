@@ -14,6 +14,14 @@ data class WikidataLinkEntity(
     @ColumnInfo(name = "is_film") val isFilm: Boolean,
 )
 
+/** A film's certification in one region, as TMDB writes it. A film with no row for a region is unrated there. */
+@Entity(tableName = "film_certification", primaryKeys = ["tmdb_id", "region", "certification"])
+data class FilmCertificationEntity(
+    @ColumnInfo(name = "tmdb_id") val tmdbId: Int,
+    val region: String,
+    val certification: String,
+)
+
 /**
  * An Archive item found by its IMDb id, with the TMDB movie id Wikidata gives for that IMDb id. The
  * TMDB columns are null when Wikidata has none: such an item cannot be found yet, and is kept so

@@ -22,12 +22,13 @@ interface IndexDao {
     suspend fun replace(
         links: List<WikidataLinkEntity>,
         archiveItems: List<ArchiveImdbEntity>,
+        certifications: List<FilmCertificationEntity>,
         log: RefreshLogEntity,
     ) {
         deleteLinks()
         deleteArchiveItems()
-        insertLinks(links)
-        insertArchiveItems(archiveItems)
+        deleteCertifications()
+        insertIndex(links, archiveItems, certifications)
         insertLog(log)
     }
 
@@ -58,6 +59,32 @@ interface IndexDao {
     )
     fun filmCount(): Flow<Int>
 
+    /**
+     * One page of the films `ListServedTitles` lists: Wikidata movie links that are not a known non-film
+     * kind, past [after], in TMDB id order. A film is listed when one of its certifications for [region]
+     * is in [allowed], or, with [includeUnrated], when it has none for [region] at all. An empty [allowed]
+     * admits no certification.
+     */
+    @Query(
+        "SELECT DISTINCT l.tmdb_id FROM wikidata_link l " +
+            "WHERE l.media_type = 'MOVIE' AND l.is_film = 1 AND l.tmdb_id > :after AND (" +
+            "EXISTS (SELECT 1 FROM film_certification c WHERE c.tmdb_id = l.tmdb_id AND c.region = :region " +
+            "AND c.certification IN (:allowed)) " +
+            "OR (:includeUnrated = 1 AND NOT EXISTS (SELECT 1 FROM film_certification c " +
+            "WHERE c.tmdb_id = l.tmdb_id AND c.region = :region))) " +
+            "ORDER BY l.tmdb_id LIMIT :limit",
+    )
+    suspend fun servedTitles(
+        region: String,
+        allowed: List<String>,
+        includeUnrated: Boolean,
+        after: Int,
+        limit: Int,
+    ): List<Int>
+
+    @Query("DELETE FROM film_certification")
+    suspend fun deleteCertifications()
+
     @Query("DELETE FROM wikidata_link")
     suspend fun deleteLinks()
 
@@ -65,8 +92,9 @@ interface IndexDao {
     suspend fun deleteArchiveItems()
 
     @Insert
-    suspend fun insertLinks(links: List<WikidataLinkEntity>)
-
-    @Insert
-    suspend fun insertArchiveItems(items: List<ArchiveImdbEntity>)
+    suspend fun insertIndex(
+        links: List<WikidataLinkEntity>,
+        items: List<ArchiveImdbEntity>,
+        certifications: List<FilmCertificationEntity>,
+    )
 }
