@@ -235,8 +235,9 @@ action with the SDK's manifest meta-data (`com.binge.companion.name`, `.icon`, `
   ignores the Sources settings. Binge sends its region and the certifications its limit admits, as TMDB writes them for that
   region, and whether unrated films are included. A film is listed when one of its certifications for the region is in the
   set, or when it has none and unrated films are included; an empty set admits none. A series or a known non-film is never
-  listed, and neither is a film only the Archive's IMDb tags place. Pages hold at most 200 (100 when the host names none), and a token is
-  valid only with the request it was issued for (`service/ServedTitlesQuery.kt`).
+  listed, and neither is a film only the Archive's IMDb tags place. The SDK's helpers apply the contract's rules (`requireValid`,
+  `effectivePageSize`, `ServedTitlesPageToken`): pages hold at most 200 (100 when the host names none), and a token is valid only
+  with the request it was issued for. The token's offset is the last TMDB id served, so paging survives a refresh between pages.
 - **Source reporting is gone.** The handshake no longer declares `CAPABILITY_REPORT_SOURCE`, so the
   host never calls `ReportSource`. A report moved no source for the user, so it is not taken; the
   `source_report` table was dropped in `device-records.db` version 3.

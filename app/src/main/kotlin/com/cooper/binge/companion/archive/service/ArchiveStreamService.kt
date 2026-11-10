@@ -23,6 +23,7 @@ import com.binge.companion.contracts.v1.MediaId
 import com.binge.companion.contracts.v1.MediaType
 import com.binge.companion.sdk.ContinueWatchingPageToken
 import com.binge.companion.sdk.MAX_LIST_PAGE_SIZE
+import com.binge.companion.sdk.ServedTitlesPageToken
 import com.binge.companion.sdk.asResume
 import com.binge.companion.sdk.effectivePageSize
 import com.binge.companion.sdk.requireDeclared
@@ -157,15 +158,19 @@ class ArchiveStreamService(
     /**
      * One page of the TMDB ids of the films this app can try to resolve: Wikidata-linked films only, filtered to the host's region
      * and the certifications its limit admits. Reads the index and never the network, and ignores the Sources settings, as Probe
-     * does. The order is the TMDB id, so it is stable across the pages of a listing. One title more than the page is read, to know
-     * whether another page follows.
+     * does. The order is the TMDB id, so it is stable across the pages of a listing. The SDK's page token carries the last TMDB id
+     * served as its offset, so a refresh between two pages never repeats or skips a title. One title more than the page is read, to
+     * know whether another page follows.
      */
     override suspend fun listServedTitles(request: ListServedTitlesRequest): ListServedTitlesResponse =
         withContext(io) {
             CAPABILITIES.requireDeclared(Capability.CAPABILITY_LIST_SERVED_TITLES)
-            val query = ServedTitlesQuery.of(request).getOrElse { throw errors.invalid(it.message.orEmpty()) }
-            val ids = index.servedTitles(query.region, query.allowed, query.includeUnrated, query.after, query.pageSize + 1)
-            val page = ids.take(query.pageSize)
+            request.requireValid()
+            val size = request.effectivePageSize()
+            val after = ServedTitlesPageToken.skipOf(request)
+            val allowed = request.allowedCertificationsList.toSet()
+            val ids = index.servedTitles(request.region.uppercase(), allowed, request.includeUnrated, after, size + 1)
+            val page = ids.take(size)
             ListServedTitlesResponse
                 .newBuilder()
                 .addAllTitles(
@@ -176,7 +181,7 @@ class ArchiveStreamService(
                             .setTmdbId(it)
                             .build()
                     },
-                ).apply { if (ids.size > query.pageSize) setNextPageToken(ServedTitlesQuery.tokenAfter(request, page.last())) }
+                ).apply { if (ids.size > size) setNextPageToken(ServedTitlesPageToken.issue(request, page.last())) }
                 .build()
         }
 
