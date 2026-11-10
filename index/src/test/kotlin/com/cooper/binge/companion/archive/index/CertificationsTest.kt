@@ -77,7 +77,15 @@ class CertificationsTest {
         assertRegion(
             "NL",
             "P2684",
-            mapOf("Q23649980" to "AL", "Q23649981" to "6", "Q23649982" to "9", "Q23649983" to "12", "Q23649984" to "16"),
+            mapOf(
+                "Q23649980" to "AL",
+                "Q23649981" to "6",
+                "Q23649982" to "9",
+                "Q23649983" to "12",
+                "Q23649984" to "16",
+                "Q83154238" to "14",
+                "Q83154241" to "18",
+            ),
         )
 
     @Test
@@ -120,6 +128,8 @@ class CertificationsTest {
         assertNull(Certifications.tmdbString("US", "Q47274658"))
         assertNull(Certifications.tmdbString("DE", "Q18665330"))
         assertNull(Certifications.tmdbString("JP", "Q23790275"))
+        // Spain's "particularly suitable for kids" is an appendant category, not a rating of its own.
+        assertNull(Certifications.tmdbString("ES", "Q27253957"))
     }
 
     @Test

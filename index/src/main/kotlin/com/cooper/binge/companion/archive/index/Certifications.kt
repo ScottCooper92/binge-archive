@@ -20,7 +20,9 @@ data class FilmCertification(
  *
  * The property ids and value items were read from Wikidata itself. The TMDB strings are the ones
  * TMDB's certification list has for each region: Germany's are plain numbers ("12", not "FSK 12"),
- * Spain's all-ages value is "APTA", and TMDB has no Japanese list, so Japan is not here.
+ * Spain's all-ages value is "APTA", and TMDB has no Japanese list, so Japan is not here. Spain's "particularly suitable
+ * for kids" item (Q27253957) is left out on purpose: Wikidata describes it as an appendant category used together with
+ * a rating, not as a rating of its own.
  */
 internal object Certifications {
     /** Region to the Wikidata property that holds its film certification. */
@@ -89,6 +91,8 @@ internal object Certifications {
                     "Q23649982" to "9",
                     "Q23649983" to "12",
                     "Q23649984" to "16",
+                    "Q83154238" to "14",
+                    "Q83154241" to "18",
                 ),
             "ES" to
                 mapOf(
