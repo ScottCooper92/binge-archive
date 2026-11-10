@@ -12,13 +12,17 @@ import java.io.IOException
  *     L <movie|tv> <tmdb id> <archive id> <1|0 may be a film>
  *     A <archive id> <imdb id>
  *     I <imdb id> <tmdb id> <1|0 may be a film>
+ *     C <tmdb id> <region> <TMDB certification>
+ *
+ * v3 added the `C` records. A v2 seed, which has none, still reads: every film is then unrated.
  *
  * v2 changed what the flag means, not the layout: 0 is now a known non-film kind, where in v1 it
  * was anything not a subclass of film. A v1 seed is refused rather than read with the old meaning.
  */
 object SeedFormat {
     const val ASSET_PATH = "index/seed.tsv"
-    private const val HEADER = "# binge-archive index seed v2"
+    private const val HEADER = "# binge-archive index seed v3"
+    private const val HEADER_V2 = "# binge-archive index seed v2"
 
     fun write(
         snapshot: IndexSnapshot,
@@ -28,14 +32,16 @@ object SeedFormat {
         snapshot.links.forEach { out.append(row("L", it.mediaType.name.lowercase(), it.tmdbId, it.archiveId, it.isFilm.flag())) }
         snapshot.archiveItems.forEach { out.append(row("A", it.archiveId, it.imdbId)) }
         snapshot.imdbLinks.forEach { out.append(row("I", it.imdbId, it.tmdbId, it.isFilm.flag())) }
+        snapshot.certifications.forEach { out.append(row("C", it.tmdbId, it.region, it.certification)) }
     }
 
     fun read(reader: BufferedReader): IndexSnapshot {
         val lines = reader.lineSequence().iterator()
-        if (!lines.hasNext() || lines.next() != HEADER) throw IOException("Not a v2 index seed")
+        if (!lines.hasNext() || lines.next() !in setOf(HEADER, HEADER_V2)) throw IOException("Not a v2 or v3 index seed")
         val links = mutableListOf<WikidataLink>()
         val archiveItems = mutableListOf<ArchiveImdbItem>()
         val imdbLinks = mutableListOf<ImdbTmdbLink>()
+        val certifications = mutableListOf<FilmCertification>()
         lines.forEach { line ->
             if (line.isBlank()) return@forEach
             val tag = line.substringBefore('\t')
@@ -47,10 +53,14 @@ object SeedFormat {
                     fields(cells, count = 3).let { (imdbId, tmdbId, film) ->
                         imdbLinks += ImdbTmdbLink(imdbId, tmdbId(tmdbId), film == "1")
                     }
+                "C" ->
+                    fields(cells, count = 3).let { (tmdbId, region, certification) ->
+                        certifications += FilmCertification(tmdbId(tmdbId), region, certification)
+                    }
                 else -> throw IOException("Unknown seed record: $tag")
             }
         }
-        return IndexSnapshot(links = links, archiveItems = archiveItems, imdbLinks = imdbLinks)
+        return IndexSnapshot(links = links, archiveItems = archiveItems, imdbLinks = imdbLinks, certifications = certifications)
     }
 
     private fun link(cells: List<String>): WikidataLink {

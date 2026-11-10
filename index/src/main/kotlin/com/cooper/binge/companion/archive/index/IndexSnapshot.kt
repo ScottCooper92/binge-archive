@@ -41,4 +41,6 @@ data class IndexSnapshot(
     val links: List<WikidataLink>,
     val archiveItems: List<ArchiveImdbItem>,
     val imdbLinks: List<ImdbTmdbLink>,
+    /** Each film's certification by region, for `ListServedTitles`. A film with none in a region is unrated there. */
+    val certifications: List<FilmCertification> = emptyList(),
 )

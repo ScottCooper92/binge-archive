@@ -15,6 +15,7 @@ class SeedFormatTest {
                 ),
             archiveItems = listOf(ArchiveImdbItem("silent-aelita-queen-of-mars", "tt0014646")),
             imdbLinks = listOf(ImdbTmdbLink("tt0014646", 2973, isFilm = true)),
+            certifications = listOf(FilmCertification(10331, "US", "PG-13"), FilmCertification(10331, "DE", "16")),
         )
 
     private fun read(text: String) = SeedFormat.read(text.reader().buffered())
@@ -27,7 +28,15 @@ class SeedFormatTest {
     }
 
     @Test
-    fun `a file without the v2 header is refused`() {
+    fun `a v2 seed still reads, with no certifications`() {
+        val v2 = "# binge-archive index seed v2\nL\tmovie\t10331\tNight.Of.The.Living.Dead_1080p\t1\n"
+
+        assertEquals(emptyList<FilmCertification>(), read(v2).certifications)
+        assertEquals(10331, read(v2).links.single().tmdbId)
+    }
+
+    @Test
+    fun `a file without a v2 or v3 header is refused`() {
         assertThrows(IOException::class.java) { read("") }
         assertThrows(IOException::class.java) { read("L\tmovie\t1\tx\t1\n") }
     }
@@ -39,11 +48,13 @@ class SeedFormatTest {
 
     @Test
     fun `a malformed record is refused rather than half read`() {
-        val header = "# binge-archive index seed v2\n"
+        val header = "# binge-archive index seed v3\n"
         assertThrows(IOException::class.java) { read(header + "X\t1\n") }
         assertThrows(IOException::class.java) { read(header + "L\tfilm\t1\tx\t1\n") }
         assertThrows(IOException::class.java) { read(header + "L\tmovie\t0\tx\t1\n") }
         assertThrows(IOException::class.java) { read(header + "A\tonly-one\n") }
+        assertThrows(IOException::class.java) { read(header + "C\t10331\tUS\n") }
+        assertThrows(IOException::class.java) { read(header + "C\t0\tUS\tPG\n") }
     }
 
     @Test

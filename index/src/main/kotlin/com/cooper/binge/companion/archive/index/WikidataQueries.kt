@@ -47,6 +47,22 @@ internal object WikidataQueries {
         }
         """.trimIndent()
 
+    /**
+     * The certification the linked films have in [region], one row per TMDB id and value item. Only films with an
+     * Archive identifier, so the answer stays small. One query per region: the property is the selective side, and
+     * eight regions in one UNION ran past two minutes on the query service where each alone takes under a second.
+     */
+    fun certifications(region: String): String {
+        val property = checkNotNull(Certifications.PROPERTIES[region]) { "No certification property for $region" }
+        return """
+            SELECT ?tmdb ?region ?value WHERE {
+              ?item wdt:$property ?value .
+              ?item wdt:P4947 ?tmdb ; wdt:P724 [] .
+              BIND("$region" AS ?region)
+            }
+            """.trimIndent()
+    }
+
     /** The classes the linked films are instances of, and whether each is a known non-film kind. */
     val NON_FILM_CLASSES: String =
         """

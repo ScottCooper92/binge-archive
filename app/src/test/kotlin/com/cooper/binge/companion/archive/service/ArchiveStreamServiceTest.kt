@@ -143,6 +143,7 @@ class ArchiveStreamServiceTest {
                     Capability.CAPABILITY_PROBE,
                     Capability.CAPABILITY_SUBTITLES,
                     Capability.CAPABILITY_PLAYBACK_PROGRESS,
+                    Capability.CAPABILITY_LIST_SERVED_TITLES,
                 ),
                 response.capabilitiesList,
             )

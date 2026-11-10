@@ -26,7 +26,7 @@ class IndexFetcherTest {
             object : Dispatcher() {
                 override fun dispatch(request: RecordedRequest): MockResponse {
                     requests += request
-                    val body = request.body?.utf8().orEmpty()
+                    val body = java.net.URLDecoder.decode(request.body?.utf8().orEmpty(), "UTF-8")
                     return when {
                         request.url.encodedPath == "/archive" ->
                             MockResponse
@@ -34,6 +34,7 @@ class IndexFetcherTest {
                                 .code(archiveStatus)
                                 .body(if (request.url.queryParameter("page") == "1") archiveBody else EMPTY_PAGE)
                                 .build()
+                        body.contains("P4947") && body.contains("?region") -> MockResponse(body = certificationsFor(body))
                         body.contains("P345") -> MockResponse(body = fixture("wikidata-imdb.tsv"))
                         body.contains("DISTINCT") -> MockResponse(body = fixture("wikidata-non-film-classes.tsv"))
                         else -> MockResponse(body = linksBody)
@@ -41,6 +42,13 @@ class IndexFetcherTest {
                 }
             }
         server.start()
+    }
+
+    /** The certifications fixture's rows for the region the query binds, as the query service would answer it. */
+    private fun certificationsFor(query: String): String {
+        val region = Regex("BIND\\(\"([A-Z]{2})\"").find(query)!!.groupValues[1]
+        val lines = fixture("wikidata-certifications.tsv").lines()
+        return (listOf(lines.first()) + lines.drop(1).filter { it.contains("\t\"$region\"\t") }).joinToString("\n")
     }
 
     @After
@@ -69,6 +77,22 @@ class IndexFetcherTest {
         )
         assertEquals(3, snapshot.archiveItems.size)
         assertEquals(setOf(2973, 124525, 3009), snapshot.imdbLinks.map { it.tmdbId }.toSet())
+    }
+
+    @Test
+    fun `a refresh asks for each region's certifications in a query of its own, and maps their values`() {
+        val snapshot = fetcher().fetch()
+
+        val certificationQueries =
+            requests.map { java.net.URLDecoder.decode(it.body?.utf8().orEmpty(), "UTF-8") }.filter { it.contains("?region") }
+        assertEquals(Certifications.PROPERTIES.size, certificationQueries.size)
+        Certifications.PROPERTIES.forEach { (region, property) ->
+            assertEquals(1, certificationQueries.count { it.contains("wdt:$property ") })
+            assertTrue(snapshot.certifications.any { it.region == region })
+        }
+        assertTrue(FilmCertification(44381, "US", "G") in snapshot.certifications)
+        assertTrue(FilmCertification(238, "GB", "18") in snapshot.certifications)
+        assertTrue(FilmCertification(26531, "DE", "0") in snapshot.certifications)
     }
 
     @Test

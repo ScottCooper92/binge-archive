@@ -74,6 +74,22 @@ class IndexRepository(
      */
     private suspend fun indexIsPresent(): Boolean = withTimeoutOrNull(PRESENT_CHECK_MILLIS) { dao.refreshCount() > 0 } ?: false
 
+    /**
+     * One page of the TMDB ids of the films the index can list for `ListServedTitles`, in id order, past [after] and at most
+     * [limit] of them. [region] is upper-case and [allowed] holds TMDB's certification strings for it. Only Wikidata-linked films
+     * are listed, since the index holds certifications for no other. Reads the index and nothing else.
+     */
+    suspend fun servedTitles(
+        region: String,
+        allowed: Set<String>,
+        includeUnrated: Boolean,
+        after: Int,
+        limit: Int,
+    ): List<Int> {
+        ensureSeeded()
+        return dao.servedTitles(region, allowed.toList(), includeUnrated, after, limit)
+    }
+
     /** The most recent refresh, successful or not: a failed one is what the status screen warns about. */
     fun latestRefresh(): Flow<RefreshLogEntity?> = dao.latestRefresh().onStart { ensureSeeded() }
 
@@ -107,6 +123,7 @@ class IndexRepository(
         dao.replace(
             links = snapshot.links.distinct().map { WikidataLinkEntity(it.mediaType, it.tmdbId, it.archiveId, it.isFilm) },
             archiveItems = archiveItems,
+            certifications = snapshot.certifications.distinct().map { FilmCertificationEntity(it.tmdbId, it.region, it.certification) },
             log =
                 RefreshLogEntity(
                     finishedAt = clock(),

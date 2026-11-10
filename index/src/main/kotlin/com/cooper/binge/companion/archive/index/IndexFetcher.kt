@@ -28,7 +28,11 @@ class IndexFetcher(
             imdbIds.chunked(IMDB_BATCH).flatMap { batch ->
                 WikidataParsers.imdbLinks(sparql(WikidataQueries.imdbToTmdb(batch)))
             }
-        return IndexSnapshot(links = links, archiveItems = archiveItems, imdbLinks = imdbLinks)
+        val certifications =
+            Certifications.PROPERTIES.keys.flatMap { region ->
+                WikidataParsers.certifications(sparql(WikidataQueries.certifications(region)))
+            }
+        return IndexSnapshot(links = links, archiveItems = archiveItems, imdbLinks = imdbLinks, certifications = certifications)
     }
 
     /** POST, not GET: the IMDb join carries a few thousand ids, past what a URL should hold. */

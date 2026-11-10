@@ -102,4 +102,45 @@ class WikidataParsersTest {
     fun `no links at all is a failure, never an empty index`() {
         assertThrows(IOException::class.java) { WikidataParsers.checkNotEmpty(emptyList()) }
     }
+
+    @Test
+    fun `certification rows become TMDB strings by region, and a value TMDB has no string for is dropped`() {
+        val certifications = WikidataParsers.certifications(fixture("wikidata-certifications.tsv"))
+
+        assertEquals(
+            listOf(
+                FilmCertification(44381, "US", "G"),
+                FilmCertification(935, "US", "PG"),
+                FilmCertification(28966, "US", "PG-13"),
+                FilmCertification(238, "US", "R"),
+                FilmCertification(17835, "GB", "15"),
+                FilmCertification(238, "GB", "18"),
+                FilmCertification(26531, "DE", "0"),
+                FilmCertification(67556, "DE", "6"),
+                FilmCertification(4595, "FR", "U"),
+                FilmCertification(887, "AU", "G"),
+                FilmCertification(740454, "AU", "PG"),
+                FilmCertification(18700, "NL", "AL"),
+                FilmCertification(5255, "NL", "6"),
+                FilmCertification(1162, "BR", "L"),
+                FilmCertification(204, "BR", "16"),
+                FilmCertification(653, "ES", "APTA"),
+                FilmCertification(2748, "ES", "7"),
+                FilmCertification(28580, "ES", "12"),
+            ),
+            certifications,
+        )
+    }
+
+    @Test
+    fun `a certification row with a bad TMDB id or an unknown region is skipped`() {
+        val tsv =
+            "?tmdb\t?region\t?value\n" +
+                "\"0\"\t\"US\"\t<http://www.wikidata.org/entity/Q18665330>\n" +
+                "\"9\"\t\"JP\"\t<http://www.wikidata.org/entity/Q23790275>\n" +
+                "\"10\"\t\"US\"\t<http://www.wikidata.org/entity/Q18665330>\n" +
+                "\"10\"\t\"US\"\t<http://www.wikidata.org/entity/Q18665330>\n"
+
+        assertEquals(listOf(FilmCertification(10, "US", "G")), WikidataParsers.certifications(tsv))
+    }
 }

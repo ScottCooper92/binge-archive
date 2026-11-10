@@ -12,7 +12,7 @@
     <string name="status_loading">Cargando el índice…</string>
     <string name="status_about_title">Qué es esto</string>
     <string name="status_about_headline">Películas gratis para Binge</string>
-    <string name="status_about_body">Esta app busca copias de películas en Internet Archive para que Binge las reproduzca. De forma predeterminada solo ofrece obras de dominio público, con CC0 o con CC BY.</string>
+    <string name="status_about_body">Esta app busca copias de películas en Internet Archive para que Binge las reproduzca. De forma predeterminada solo ofrece obras de dominio público, con CC0 o con CC BY. Binge indica a esta app tu región y tu límite de calificación, para que pueda listar las películas que puede ofrecerte. La app no los guarda.</string>
     <string name="status_index_title">Índice</string>
     <string name="status_films_linked">Películas enlazadas</string>
     <string name="status_last_refreshed">Última actualización</string>

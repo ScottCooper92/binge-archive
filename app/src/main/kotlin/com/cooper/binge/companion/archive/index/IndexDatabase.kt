@@ -7,8 +7,8 @@ import androidx.room.RoomDatabase
 
 /** The on-device index. Public metadata only; it holds nothing about the user. */
 @Database(
-    entities = [WikidataLinkEntity::class, ArchiveImdbEntity::class, RefreshLogEntity::class],
-    version = 1,
+    entities = [WikidataLinkEntity::class, ArchiveImdbEntity::class, FilmCertificationEntity::class, RefreshLogEntity::class],
+    version = 2,
 )
 abstract class IndexDatabase : RoomDatabase() {
     abstract fun indexDao(): IndexDao

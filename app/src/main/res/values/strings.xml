@@ -22,7 +22,7 @@
     <string name="status_loading">Loading the index…</string>
     <string name="status_about_title">What this is</string>
     <string name="status_about_headline">Free films for Binge</string>
-    <string name="status_about_body">This app finds copies of films on the Internet Archive for Binge to play. By default it only offers items in the public domain, under CC0 or under CC BY.</string>
+    <string name="status_about_body">This app finds copies of films on the Internet Archive for Binge to play. By default it only offers items in the public domain, under CC0 or under CC BY. Binge tells this app your region and rating limit, so it can list the films it can offer you. The app does not keep them.</string>
     <string name="status_index_title">Index</string>
     <string name="status_films_linked">Films linked</string>
     <string name="status_last_refreshed">Last refreshed</string>

@@ -53,3 +53,20 @@ internal val sampleSnapshot =
                 ImdbTmdbLink("tt0063350", 10331, isFilm = true),
             ),
     )
+
+/**
+ * [sampleSnapshot] with certifications: Nosferatu is PG in the US, Night of the Living Dead is PG-13 in the US and 16 in
+ * Germany, and the 1895 film has none anywhere. The non-film (146742) and the series (894) carry some too, to show they are
+ * never listed.
+ */
+internal val certifiedSnapshot =
+    sampleSnapshot.copy(
+        certifications =
+            listOf(
+                FilmCertification(653, "US", "PG"),
+                FilmCertification(10331, "US", "PG-13"),
+                FilmCertification(10331, "DE", "16"),
+                FilmCertification(146742, "US", "G"),
+                FilmCertification(894, "US", "G"),
+            ),
+    )
