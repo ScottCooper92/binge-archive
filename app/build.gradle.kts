@@ -168,6 +168,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.binge.companion.sdk)
+    implementation(libs.binge.companion.kit)
     implementation(libs.binge.companion.contracts)
     implementation(libs.binge.designsystem)
     // The television surface in ui/tv. tv-material and the phone's Material 3 are never mixed in one file.
