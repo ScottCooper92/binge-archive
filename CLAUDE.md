@@ -178,7 +178,9 @@ query (step 3): they keep the index's order.
    `NotFound`.
    Wikidata is always asked first, since only it gives the title, year and runtime. That query has
    its own budget of 4 s (`ResolverHttp`), well inside the host's 10 s deadline, and running out of it
-   is an `IOException` like any other failure. If that query
+   is an `IOException` like any other failure. The query is hedged (`ResolverHttp.sparql`): a stalled request is how it usually fails, since an
+   immediate retry answers in well under a second, so when the first has not answered after 1.2 s (`HEDGE_DELAY_MILLIS`), or fails with a
+   5xx, an identical second is sent beside it. The first success wins, the other is cancelled, and both share the one 4 s budget. If that query
    fails, the index hit's Archive ids stand in: its Wikidata ids as route 1, else its IMDb-tagged ids
    as route 2. They are read with no title facts, so the label takes the item's own title, and the
    minimum length is off. The licence check still applies. The fallback is logged as a
