@@ -37,7 +37,7 @@ Archive's IMDb tags, 3 is the title-and-year search.
 | --- | ---: | ---: |
 | 1, Wikidata ids | 46 | 35 |
 | 2, Archive IMDb tags | 0 | 0 |
-| 3, title search | 43 | 11 |
+| 3, title search | 41 | 11 |
 
 - Stage 2 placed no film that stage 1 had not. Both stages are asked for each title, and stage 2 never won.
 - One public-domain film answered with sources and recorded no route.
