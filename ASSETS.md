@@ -20,8 +20,11 @@ answers in `docs/listing/`.
 
 ## Terms
 
-TODO: the owner is deciding these before this change merges. Until then, nothing here is licensed
-for reuse, and a fork has to replace every file listed above.
+All rights reserved. The name and the artwork are the owner's alone.
+
+The only permission is this: you may redistribute these files, unmodified, as part of an unmodified
+copy of the app. A fork, or any modified build, must replace every file listed above with its own,
+and must not use the name (see [TRADEMARKS.md](TRADEMARKS.md)).
 
 A fork under the GPL keeps the code, and has to replace this artwork with its own. See also
 [TRADEMARKS.md](TRADEMARKS.md).
