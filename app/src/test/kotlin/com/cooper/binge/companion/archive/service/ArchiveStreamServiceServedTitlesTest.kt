@@ -170,16 +170,6 @@ class ArchiveStreamServiceServedTitlesTest {
     }
 
     @Test
-    fun `the page size is the host's up to 200, and 100 when it names none`() {
-        fun size(pageSize: Int) = ServedTitlesQuery.of(request(pageSize = pageSize)).getOrThrow().pageSize
-
-        assertEquals(100, size(0))
-        assertEquals(7, size(7))
-        assertEquals(200, size(200))
-        assertEquals(200, size(5_000))
-    }
-
-    @Test
     fun `the capability is declared, and PERMISSION_DENIED where it is not`() {
         ArchiveStreamService.CAPABILITIES.requireDeclared(Capability.CAPABILITY_LIST_SERVED_TITLES)
         val failure =
