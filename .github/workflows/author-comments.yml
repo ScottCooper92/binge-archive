@@ -61,8 +61,9 @@ jobs:
     concurrency:
       group: author-comments-${{ github.event.issue.number || github.event.pull_request.number }}
       cancel-in-progress: false
-    uses: ScottCooper92/binge-ci/.github/workflows/author-comments.yml@4ea9f85339ca1f32747cfcbe89aaf1252e5bfdd5 # v1
+    uses: ScottCooper92/binge-ci/.github/workflows/author-comments.yml@3e2474893ae086da95307d7f19633c9b388c5007 # v1
     with:
+      private_submodules: binge-design-system,binge-ci
       author_bot_id: ${{ vars.AUTHOR_BOT_ID }}
       maintainer_handle: ScottCooper92
       # jvm: this repo's ci.yml is setup-java and setup-gradle and nothing else. The Android
