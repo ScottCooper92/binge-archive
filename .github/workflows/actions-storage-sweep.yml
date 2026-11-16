@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   sweep:
-    uses: ScottCooper92/binge-ci/.github/workflows/actions-storage-sweep.yml@4ea9f85339ca1f32747cfcbe89aaf1252e5bfdd5 # v1
+    uses: ScottCooper92/binge-ci/.github/workflows/actions-storage-sweep.yml@3e2474893ae086da95307d7f19633c9b388c5007 # v1
     with:
       max_age_days: 7
       dry_run: ${{ inputs.dry_run == true }}
