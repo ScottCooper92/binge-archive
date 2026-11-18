@@ -60,7 +60,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
-    uses: ScottCooper92/binge-ci/.github/workflows/submodule-pins.yml@0e23ad4311757677213da647bd150eca33d256f0 # v1.0.49
+    uses: ScottCooper92/binge-ci/.github/workflows/submodule-pins.yml@c34892a468b77ebc2f92ef7ec716e27ad5c50d69 # v1.0.50
     with:
       private_submodules: binge-design-system,binge-ci
     secrets:
@@ -304,7 +304,7 @@ jobs:
 
       # binge-ci's shared step: a pinned release verified against its published checksum, with
       # shellcheck at warning severity.
-      - uses: ScottCooper92/binge-ci/.github/actions/actionlint@0e23ad4311757677213da647bd150eca33d256f0 # v1.0.49
+      - uses: ScottCooper92/binge-ci/.github/actions/actionlint@c34892a468b77ebc2f92ef7ec716e27ad5c50d69 # v1.0.50
 
   # A red nightly has no PR or push to carry it, so without this it is a red mark in the
   # Actions tab that nothing points at. One issue stays open while the canary is red and
@@ -319,7 +319,7 @@ jobs:
     permissions:
       issues: write
     steps:
-      - uses: ScottCooper92/binge-ci/.github/actions/nightly-report@0e23ad4311757677213da647bd150eca33d256f0 # v1.0.49
+      - uses: ScottCooper92/binge-ci/.github/actions/nightly-report@c34892a468b77ebc2f92ef7ec716e27ad5c50d69 # v1.0.50
         with:
           result: ${{ needs.build.result }}
           title: Nightly CI is failing on main
