@@ -35,7 +35,7 @@ jobs:
     if: >-
       (!github.event.pull_request || github.event.pull_request.head.repo.full_name == github.repository) &&
       (!github.event.workflow_run || github.event.workflow_run.head_repository.full_name == github.repository)
-    uses: ScottCooper92/binge-ci/.github/workflows/author-retarget.yml@37267fa7e22a43babb58aecf4577ce3cd0253b41 # v1.0.47
+    uses: ScottCooper92/binge-ci/.github/workflows/author-retarget.yml@0e23ad4311757677213da647bd150eca33d256f0 # v1.0.49
     with:
       private_submodules: binge-design-system,binge-ci
       author_bot_id: ${{ vars.AUTHOR_BOT_ID }}
