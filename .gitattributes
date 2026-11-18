@@ -1,0 +1,4 @@
+# translation-hashes.txt is a map of key to hash, read order-free by checkTranslationStaleness.
+# Union-merging lets two PRs that add different strings merge cleanly; if both changed the same
+# key, the check fails until ./gradlew updateTranslationHashes is re-run.
+translation-hashes.txt merge=union
