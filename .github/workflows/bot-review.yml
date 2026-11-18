@@ -64,7 +64,7 @@ jobs:
       (github.event_name != 'workflow_run' || github.event.workflow_run.event != 'schedule') &&
       (!github.event.pull_request || github.event.pull_request.head.repo.full_name == github.repository) &&
       (!github.event.workflow_run || github.event.workflow_run.head_repository.full_name == github.repository)
-    uses: ScottCooper92/binge-ci/.github/workflows/bot-review.yml@3e2474893ae086da95307d7f19633c9b388c5007 # v1
+    uses: ScottCooper92/binge-ci/.github/workflows/bot-review.yml@37267fa7e22a43babb58aecf4577ce3cd0253b41 # v1.0.47
     with:
       private_submodules: binge-design-system,binge-ci
       dispatch_pr: ${{ inputs.pr }}
